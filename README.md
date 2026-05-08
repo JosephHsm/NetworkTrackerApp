@@ -177,7 +177,7 @@ CSV 파일의 열 순서 및 의미입니다.
 | `serving_band` | String | 주파수 밴드 번호 (API 31+만 수집, 이하 공백) | `1` (LTE B1), `78` (NR n78) |
 | `serving_tac` | Int | Tracking Area Code | `5120` |
 | `mcc` | String | Mobile Country Code | `450` (한국) |
-| `mnc` | String | Mobile Network Code | `05` (SKT), `06` (KT), `11` (LGU+) |
+| `mnc` | String | Mobile Network Code | `05` (SKT), `06` (LG U+), `08` (KT) |
 
 ### 신호 강도 (LTE / NR 공통)
 
@@ -234,19 +234,22 @@ CSV 파일의 열 순서 및 의미입니다.
 ```json
 {
   "type":    "LTE",
-  "cell_id": 987654321,
-  "pci":     102,
-  "earfcn":  1300,
-  "tac":     5120,
-  "rsrp":    -95,
-  "rsrq":    -12,
-  "rssi":    -75,
-  "snr":     8,
-  "ta":      0,
-  "level":   2,
-  "bands":   "1"
+  "cell_id": "2147483647",
+  "pci":     273,
+  "earfcn":  2600,
+  "tac":     2147483647,
+  "rsrp":    -75,
+  "rsrq":    -13,
+  "rssi":    -53,
+  "snr":     2147483647,
+  "ta":      2147483647,
+  "level":   4,
+  "bands":   "5"
 }
 ```
+
+> `2147483647` = `Int.MAX_VALUE` = Android `CellInfo.UNAVAILABLE`.  
+> 이웃 셀의 `cell_id`, `tac`, `snr`, `ta` 등은 기기가 제공하지 않는 경우 이 값으로 반환됩니다.
 
 ### NR(5G) 이웃 셀
 
@@ -285,20 +288,25 @@ CSV 파일의 열 순서 및 의미입니다.
 
 ## 실제 예시 데이터
 
-아래는 5G NSA 환경(서울, SKT)에서 수집한 실제 행 예시입니다 (일부 식별자 마스킹).
+아래는 2026-05-08 실제 기기(LG U+, 서울)에서 수집한 행입니다.
 
 ```
 timestamp,datetime,latitude,longitude,gps_accuracy_m,gps_speed_ms,gps_bearing_deg,gps_altitude_m,network_type,override_network_type,generation,is_5g,is_5g_actual,is_5g_display,nr_cell_seen,nr_serving_cell_seen,serving_cell_id,serving_pci,serving_freq_arfcn,serving_band,serving_tac,mcc,mnc,rsrp_dbm,rsrq_db,rssi_dbm,sinr_snr_db,signal_level,timing_advance_lte,csi_rsrp_dbm,csi_rsrq_db,csi_sinr_db,rx_speed_Bps,tx_speed_Bps,rx_bitrate_Mbps,tx_bitrate_Mbps,neighbor_count,nr_neighbor_count,lte_neighbor_count,neighbors_json
 
-1715123456789,2024-05-08 14:30:56,37.501234,127.023456,4.8,1.2,90.0,48.0,LTE,NR_NSA,5G,true,false,true,true,false,123456789,234,1300,1,5120,450,05,-80,-12,-65,15,3,4,-85,-11,17,1250000,62500,10.0000,0.5000,3,1,2,"[{""type"":""NR(5G)"",""nci"":""12345678901"",""pci"":500,""arfcn"":630048,""tac"":5120,""ss_rsrp"":-88,""ss_rsrq"":-10,""ss_sinr"":18,""csi_rsrp"":-90,""csi_rsrq"":-11,""csi_sinr"":16,""level"":3,""bands"":""78""},{""type"":""LTE"",""cell_id"":""987654321"",""pci"":102,""earfcn"":1300,""tac"":5120,""rsrp"":-95,""rsrq"":-12,""rssi"":-75,""snr"":8,""ta"":0,""level"":2,""bands"":""1""},{""type"":""LTE"",""cell_id"":""111222333"",""pci"":311,""earfcn"":2850,""tac"":5120,""rsrp"":-105,""rsrq"":-15,""rssi"":-85,""snr"":2,""ta"":0,""level"":1,""bands"":""3""}]"
+1778208302329,2026-05-08 11:45:02,37.54656443,127.06817323,5.4635096,0.0,,52.76727294921875,LTE,NR_NSA,5G,true,false,true,false,false,52543756,273,100,1,8282,450,06,-84,-13,-51,13,4,,,,,84375,17360,0.6750,0.1389,4,0,4,"[{""type"":""LTE"",""cell_id"":""2147483647"",""pci"":273,""earfcn"":2600,""tac"":2147483647,""rsrp"":-75,""rsrq"":-13,""rssi"":-53,""snr"":2147483647,""ta"":2147483647,""level"":4,""bands"":""5""},{""type"":""LTE"",""cell_id"":""2147483647"",""pci"":421,""earfcn"":2600,""tac"":2147483647,""rsrp"":-81,""rsrq"":-18,""rssi"":-53,""snr"":2147483647,""ta"":2147483647,""level"":4,""bands"":""5""},{""type"":""LTE"",""cell_id"":""2147483647"",""pci"":273,""earfcn"":3050,""tac"":2147483647,""rsrp"":-95,""rsrq"":-13,""rssi"":-61,""snr"":2147483647,""ta"":2147483647,""level"":3,""bands"":""7""},{""type"":""LTE"",""cell_id"":""2147483647"",""pci"":418,""earfcn"":3050,""tac"":2147483647,""rsrp"":-102,""rsrq"":-17,""rssi"":-73,""snr"":2147483647,""ta"":2147483647,""level"":2,""bands"":""7""}]"
 ```
 
 **해석:**
-- `LTE + NR_NSA + is_5g=true` → **5G NSA** 환경 (LTE 앵커로 연결, 5G로 데이터 보조)
-- `rsrp=-80 dBm` → 양호한 LTE 신호 (−80 이상: 양호)
-- `timing_advance=4` → 기지국까지 약 **312 m**
-- `csi_rsrp=-85 dBm` → 5G NR 빔의 수신 전력 (인접 NR 셀에서 수신)
-- `rx_bitrate=10 Mbps` → 현재 수신 처리량
+- `mcc=450, mnc=06` → **LG U+** (한국)
+- `LTE + NR_NSA + is_5g=true` → **5G NSA** 환경 (LTE 앵커 연결, NR 보조 데이터)
+- `earfcn=100` → LTE **Band 1 (2100 MHz)**, `serving_band=1`로 확인
+- `rsrp=-84 dBm` → 보통 수준의 LTE 신호 (−80 이하지만 −90 이상 → 사용 가능)
+- `rsrq=-13 dB, sinr=13 dB` → 신호 품질 양호
+- `signal_level=4` → Android 기준 최고 단계
+- `timing_advance` 공백 → 해당 레코드에서 기기가 TA를 미제공 (`CellInfo.UNAVAILABLE`)
+- `csi_rsrp/rsrq/sinr` 공백 → 서빙 NR 셀 없음 (NSA이므로 NR 셀이 `isRegistered=false`)
+- `rx_bitrate=0.6750 Mbps` → 수집 시점 순간 수신 처리량
+- 이웃 셀 4개: Band 5(850 MHz) × 2, Band 7(2600 MHz) × 2 — 모두 LTE
 
 ---
 
