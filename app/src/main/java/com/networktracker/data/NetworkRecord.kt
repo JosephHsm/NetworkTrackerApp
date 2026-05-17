@@ -47,6 +47,11 @@ data class NetworkRecord(
     val neighborCount: Int = 0,
     val nrNeighborCount: Int = 0,            // NR(5G) 이웃 셀 수 — 5G 커버리지 밀도
     val lteNeighborCount: Int = 0,           // LTE 이웃 셀 수 — 4G↔5G 채널링 판단 근거
+
+    val imuSpeedMs: Float? = null,           // 가속도 센서 적분 속도 (m/s) — GPS 불가 시 보조
+    val handoverDetected: Boolean = false,   // 이전 샘플 대비 서빙셀 ID 변경(핸드오버 발생)
+    val pingPongDetected: Boolean = false,   // 30초 내 이전 셀로 복귀(핑퐁 핸드오버)
+
     val neighborsJson: String = "[]"
 ) {
     fun toCsvRow(): String {
@@ -94,6 +99,9 @@ data class NetworkRecord(
             append(neighborCount);                            append(',')
             append(nrNeighborCount);                          append(',')
             append(lteNeighborCount);                         append(',')
+            append(imuSpeedMs        ?: "");                  append(',')
+            append(handoverDetected);                         append(',')
+            append(pingPongDetected);                         append(',')
             append('"'); append(escapedNeighbors); append('"')
         }
     }
@@ -108,6 +116,8 @@ data class NetworkRecord(
             "rsrp_dbm,rsrq_db,rssi_dbm,sinr_snr_db,signal_level," +
             "timing_advance_lte,csi_rsrp_dbm,csi_rsrq_db,csi_sinr_db," +
             "rx_speed_Bps,tx_speed_Bps,rx_bitrate_Mbps,tx_bitrate_Mbps," +
-            "neighbor_count,nr_neighbor_count,lte_neighbor_count,neighbors_json"
+            "neighbor_count,nr_neighbor_count,lte_neighbor_count," +
+            "imu_speed_ms,handover_detected,ping_pong_detected," +
+            "neighbors_json"
     }
 }

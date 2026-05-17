@@ -4,6 +4,10 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -15,17 +19,73 @@ import androidx.core.content.ContextCompat
 import com.networktracker.data.NetworkRecord
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.math.sqrt
 
 class NetworkDataCollector(private val context: Context) {
 
-    private val tel = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-    private val lm  = context.getSystemService(Context.LOCATION_SERVICE)  as LocationManager
+    private val tel       = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+    private val lm        = context.getSystemService(Context.LOCATION_SERVICE)  as LocationManager
+    private val sensorMgr = context.getSystemService(Context.SENSOR_SERVICE)    as SensorManager
 
     private var prevRxBytes = TrafficStats.getTotalRxBytes()
     private var prevTxBytes = TrafficStats.getTotalTxBytes()
     private var prevTimeMs  = System.currentTimeMillis()
 
     @Volatile private var lastLocation: Location? = null
+
+    // ── 가속도 센서 기반 속도 추정 ────────────────────────────────────────────
+    private val linearAccelSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+    @Volatile private var imuVelocityMs  = 0f
+    @Volatile private var imuLastTimeNs  = 0L
+
+    private val imuListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            // TYPE_LINEAR_ACCELERATION: 중력 제거된 선가속도 (m/s²)
+            val ax = event.values[0]
+            val ay = event.values[1]
+            val aHoriz = sqrt((ax * ax + ay * ay).toDouble()).toFloat()
+            val nowNs  = event.timestamp
+            if (imuLastTimeNs > 0L) {
+                val dtSec = (nowNs - imuLastTimeNs) * 1e-9f
+                if (aHoriz > 0.3f) {
+                    // 유의미한 가속 → 속도 적분 (최대 80 m/s = ~288 km/h 상한)
+                    imuVelocityMs = (imuVelocityMs + aHoriz * dtSec).coerceAtMost(80f)
+                } else {
+                    // 정지 상태로 판단 → 감쇠 (drift 억제)
+                    imuVelocityMs = (imuVelocityMs * (1f - dtSec * 1.5f)).coerceAtLeast(0f)
+                }
+            }
+            imuLastTimeNs = nowNs
+        }
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    fun startImuSensor() {
+        linearAccelSensor?.let { sensor ->
+            sensorMgr.registerListener(imuListener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        }
+    }
+
+    fun stopImuSensor() {
+        sensorMgr.unregisterListener(imuListener)
+        imuVelocityMs = 0f
+        imuLastTimeNs = 0L
+    }
+
+    // ── 핸드오버 / 핑퐁 감지 ─────────────────────────────────────────────────
+    // 최근 10회 서빙셀 이력 (cellId, timestamp_ms)
+    private val cellHistory   = ArrayDeque<Pair<String, Long>>()
+    private var lastCellId    = ""
+
+    private fun checkHandover(newCellId: String, nowMs: Long): Pair<Boolean, Boolean> {
+        if (newCellId.isEmpty() || newCellId == lastCellId) return Pair(false, false)
+        // 핑퐁: 30초 이내 같은 셀로 복귀
+        val pingPong = cellHistory.any { (id, ts) -> id == newCellId && (nowMs - ts) < 30_000L }
+        cellHistory.addFirst(Pair(lastCellId, nowMs))
+        if (cellHistory.size > 10) cellHistory.removeLast()
+        lastCellId = newCellId
+        return Pair(true, pingPong)
+    }
 
     private val gpsListener = LocationListener { loc -> lastLocation = loc }
     private val netListener = LocationListener { loc ->
@@ -155,6 +215,13 @@ class NetworkDataCollector(private val context: Context) {
             else null
         }.getOrNull()
 
+        // GPS 속도로 IMU drift 보정 (GPS 가용 시 기준값으로 리셋)
+        location?.takeIf { it.hasSpeed() && it.speed > 0.1f }?.let { loc ->
+            imuVelocityMs = loc.speed
+            imuLastTimeNs = 0L
+        }
+        val imuSpeed = imuVelocityMs.takeIf { it > 0f || linearAccelSensor != null }
+
         // 기존 변수
         var networkType         = "UNKNOWN"
         var overrideNetworkType = "NONE"
@@ -201,7 +268,8 @@ class NetworkDataCollector(private val context: Context) {
 
                         is CellInfoLte -> {
                             val sig = cell.cellSignalStrength
-                            val id  = cell.cellIdentity.ci.toString()
+                            // CI가 UNAVAILABLE이면 빈 문자열 (2147483647 또는 Long.MAX_VALUE 방지)
+                            val id  = cell.cellIdentity.ci.validToString()
                             if (serving) {
                                 servingCellId    = id
                                 rsrp             = sig.rsrp.valid()
@@ -220,15 +288,16 @@ class NetworkDataCollector(private val context: Context) {
                             } else {
                                 neighbors.put(JSONObject().apply {
                                     put("type",    "LTE")
-                                    put("cell_id", id)
-                                    put("pci",     cell.cellIdentity.pci)
-                                    put("earfcn",  cell.cellIdentity.earfcn)
-                                    put("tac",     cell.cellIdentity.tac)
-                                    put("rsrp",    sig.rsrp)
-                                    put("rsrq",    sig.rsrq)
-                                    put("rssi",    sig.rssi)
-                                    put("snr",     sig.rssnr)
-                                    put("ta",      sig.timingAdvance)
+                                    // 이웃셀 CI는 모뎀이 미제공 시 UNAVAILABLE → null로 기록
+                                    putOpt("cell_id", id.ifEmpty { null })
+                                    put("pci",     cell.cellIdentity.pci.toJsonOrNull())
+                                    put("earfcn",  cell.cellIdentity.earfcn.toJsonOrNull())
+                                    put("tac",     cell.cellIdentity.tac.toJsonOrNull())
+                                    put("rsrp",    sig.rsrp.toJsonOrNull())
+                                    put("rsrq",    sig.rsrq.toJsonOrNull())
+                                    put("rssi",    sig.rssi.toJsonOrNull())
+                                    put("snr",     sig.rssnr.toJsonOrNull())
+                                    put("ta",      sig.timingAdvance.toJsonOrNull())
                                     put("level",   sig.level)
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                         put("bands", cell.cellIdentity.bands.joinToString(","))
@@ -242,7 +311,8 @@ class NetworkDataCollector(private val context: Context) {
                             nrCellSeen = true
                             val sig      = cell.cellSignalStrength as CellSignalStrengthNr
                             val identity = cell.cellIdentity      as CellIdentityNr
-                            val nci = identity.nci.toString()
+                            // NCI는 36비트 Long — UNAVAILABLE_LONG(Long.MAX_VALUE) 필터링
+                            val nci = identity.nci.validToString()
                             if (serving) {
                                 nrServingCellSeen = true
                                 servingCellId    = nci
@@ -263,16 +333,16 @@ class NetworkDataCollector(private val context: Context) {
                             } else {
                                 neighbors.put(JSONObject().apply {
                                     put("type",     "NR(5G)")
-                                    put("nci",      nci)
-                                    put("pci",      identity.pci)
-                                    put("arfcn",    identity.nrarfcn)
-                                    put("tac",      identity.tac)
-                                    put("ss_rsrp",  sig.ssRsrp)
-                                    put("ss_rsrq",  sig.ssRsrq)
-                                    put("ss_sinr",  sig.ssSinr)
-                                    put("csi_rsrp", sig.csiRsrp)
-                                    put("csi_rsrq", sig.csiRsrq)
-                                    put("csi_sinr", sig.csiSinr)
+                                    putOpt("nci",      nci.ifEmpty { null })
+                                    put("pci",      identity.pci.toJsonOrNull())
+                                    put("arfcn",    identity.nrarfcn.toJsonOrNull())
+                                    put("tac",      identity.tac.toJsonOrNull())
+                                    put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
+                                    put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
+                                    put("ss_sinr",  sig.ssSinr.toJsonOrNull())
+                                    put("csi_rsrp", sig.csiRsrp.toJsonOrNull())
+                                    put("csi_rsrq", sig.csiRsrq.toJsonOrNull())
+                                    put("csi_sinr", sig.csiSinr.toJsonOrNull())
                                     put("level",    sig.level)
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                         put("bands", identity.bands.joinToString(","))
@@ -312,6 +382,8 @@ class NetworkDataCollector(private val context: Context) {
             generation = toGeneration(networkType, is5G)
         }
 
+        val (handover, pingPong) = checkHandover(servingCellId, now)
+
         return NetworkRecord(
             timestamp           = now,
             latitude            = location?.latitude,
@@ -349,6 +421,9 @@ class NetworkDataCollector(private val context: Context) {
             neighborCount       = neighborCount,
             nrNeighborCount     = nrNeighborCount,
             lteNeighborCount    = lteNeighborCount,
+            imuSpeedMs          = imuSpeed,
+            handoverDetected    = handover,
+            pingPongDetected    = pingPong,
             neighborsJson       = neighbors.toString()
         )
     }
@@ -388,6 +463,20 @@ class NetworkDataCollector(private val context: Context) {
 
     private fun Int.valid(): Int? =
         takeUnless { it == Int.MAX_VALUE || it == Int.MIN_VALUE || it == CellInfo.UNAVAILABLE }
+
+    // 이웃셀 JSON 저장용: UNAVAILABLE이면 JSONObject.NULL 반환
+    private fun Int.toJsonOrNull(): Any =
+        if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
+            JSONObject.NULL else this
+
+    // UNAVAILABLE인 Int → 빈 문자열 (serving cell ID 등 String 필드용)
+    private fun Int.validToString(): String =
+        if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
+            "" else this.toString()
+
+    // NR NCI는 Long — UNAVAILABLE_LONG(= Long.MAX_VALUE) 필터링
+    private fun Long.validToString(): String =
+        if (this == Long.MAX_VALUE || this == Long.MIN_VALUE) "" else this.toString()
 
     private fun hasLocation() =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==

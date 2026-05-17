@@ -58,6 +58,7 @@ class NetworkLoggingService : Service() {
         startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
         collector.startLocationUpdates()
         collector.startTelephonyListener()
+        collector.startImuSensor()
         handler.post(tick)
         isRunning = true
 
@@ -69,6 +70,7 @@ class NetworkLoggingService : Service() {
         handler.removeCallbacks(tick)
         collector.stopLocationUpdates()
         collector.stopTelephonyListener()
+        collector.stopImuSensor()
         // 중지 시 누적된 레코드를 한번에 CSV로 저장
         activeFile = csvLogger.saveAndClose()
         super.onDestroy()

@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         // 미리보기 UI용 별도 리스너 시작 (5G NSA 감지 포함)
         previewCollector.startLocationUpdates()
         previewCollector.startTelephonyListener()
+        previewCollector.startImuSensor()
         handler.post(uiTick)
         refreshFileList()
     }
@@ -85,6 +86,7 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(uiTick)
         previewCollector.stopLocationUpdates()
         previewCollector.stopTelephonyListener()
+        previewCollector.stopImuSensor()
     }
 
     // ── UI 갱신 ───────────────────────────────────────────────────────────────
@@ -116,7 +118,9 @@ class MainActivity : AppCompatActivity() {
                         appendLine("경  도    : ${r.longitude?.let { "%.6f".format(it) } ?: "취득 중..."}")
                         appendLine("GPS정확도 : ${r.gpsAccuracyM?.let { "%.1f m".format(it) } ?: "-"}")
                         if (r.gpsSpeedMs != null)
-                            appendLine("속  도    : ${"%.1f".format(r.gpsSpeedMs)} m/s  (${"%.1f".format(r.gpsSpeedMs * 3.6)} km/h)")
+                            appendLine("GPS속도   : ${"%.1f".format(r.gpsSpeedMs)} m/s  (${"%.1f".format(r.gpsSpeedMs * 3.6)} km/h)")
+                        if (r.imuSpeedMs != null)
+                            appendLine("IMU속도   : ${"%.1f".format(r.imuSpeedMs)} m/s  (${"%.1f".format(r.imuSpeedMs * 3.6)} km/h)")
                         if (r.gpsBearing != null)
                             appendLine("방  향    : ${"%.0f".format(r.gpsBearing)}°")
                         if (r.gpsAltitude != null)
@@ -153,6 +157,10 @@ class MainActivity : AppCompatActivity() {
                         val txMbps = r.txSpeedBps * 8.0 / 1_000_000.0
                         appendLine("수신속도  : ${formatBps(r.rxSpeedBps)}  (${"%.2f".format(rxMbps)} Mbps)")
                         appendLine("송신속도  : ${formatBps(r.txSpeedBps)}  (${"%.2f".format(txMbps)} Mbps)")
+
+                        // 핸드오버
+                        if (r.handoverDetected)
+                            appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버 감지!" else "→ 핸드오버 감지")
 
                         // 이웃 셀
                         append("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
