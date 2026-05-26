@@ -77,8 +77,13 @@ class NetworkDataCollector(private val context: Context) {
     private val cellHistory   = ArrayDeque<Pair<String, Long>>()
     private var lastCellId    = ""
 
+    // CellInfoListener(API 31+)가 서빙셀 변경을 감지했을 때 서비스가 즉시 수집하도록 알리는 콜백
+    var onCellChangeDetected: (() -> Unit)? = null
+
     private fun checkHandover(newCellId: String, nowMs: Long): Pair<Boolean, Boolean> {
         if (newCellId.isEmpty() || newCellId == lastCellId) return Pair(false, false)
+        // 첫 수집(lastCellId가 아직 비어 있음)은 핸드오버가 아닌 초기화로 처리
+        if (lastCellId.isEmpty()) { lastCellId = newCellId; return Pair(false, false) }
         // 핑퐁: 30초 이내 같은 셀로 복귀
         val pingPong = cellHistory.any { (id, ts) -> id == newCellId && (nowMs - ts) < 30_000L }
         cellHistory.addFirst(Pair(lastCellId, nowMs))
@@ -157,7 +162,10 @@ class NetworkDataCollector(private val context: Context) {
     // API 31+: TelephonyCallback (PhoneStateListener 대체)
     @RequiresApi(Build.VERSION_CODES.S)
     private fun registerTelephonyCallback() {
-        val cb = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
+        val cb = object : TelephonyCallback(),
+            TelephonyCallback.DisplayInfoListener,
+            TelephonyCallback.CellInfoListener {
+
             override fun onDisplayInfoChanged(info: TelephonyDisplayInfo) {
                 displayOverrideType = when (info.overrideNetworkType) {
                     TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA      -> "NR_NSA"
@@ -169,9 +177,30 @@ class NetworkDataCollector(private val context: Context) {
                     info.overrideNetworkType == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA ||
                     info.overrideNetworkType == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED
             }
+
+            // 모뎀이 셀 정보를 업데이트할 때마다 호출됨 — 서빙셀 변경 시 즉시 수집 트리거
+            override fun onCellInfoChanged(cellInfos: List<CellInfo>) {
+                val newId = extractServingId(cellInfos)
+                if (newId.isNotEmpty() && newId != lastCellId) {
+                    onCellChangeDetected?.invoke()
+                }
+            }
         }
         telephonyCallbackRef = cb
         tel.registerTelephonyCallback(context.mainExecutor, cb)
+    }
+
+    // CellInfoListener 콜백 파라미터에서 서빙셀 ID만 빠르게 추출 (권한 불필요)
+    private fun extractServingId(cells: List<CellInfo>): String {
+        for (cell in cells) {
+            if (!cell.isRegistered) continue
+            return when (cell) {
+                is CellInfoLte -> cell.cellIdentity.ci.validToString()
+                is CellInfoNr  -> (cell.cellIdentity as CellIdentityNr).nci.validToString()
+                else           -> ""
+            }
+        }
+        return ""
     }
 
     // API 30 전용: PhoneStateListener (API 31에서 deprecated, 하위 호환 유지)

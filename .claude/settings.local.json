@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew assembleDebug)",
+      "PowerShell(where.exe java 2>&1; $env:JAVA_HOME)",
+      "PowerShell(Get-ChildItem *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\admin\\\\NetworkTrackerApp\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\admin\\\\NetworkTrackerApp\\\\app\" -Recurse | Where-Object {$_.Extension -in @\\('.kt', '.java'\\)} | Select-Object FullName)",
+      "Bash(gradlew.bat assembleDebug)",
+      "PowerShell(gradle *)",
+      "PowerShell(ls \"$env:USERPROFILE\\\\.gradle\\\\wrapper\\\\dists\" 2>&1)",
+      "PowerShell(ls \"$env:USERPROFILE\\\\.gradle\\\\wrapper\\\\dists\\\\gradle-9.3.1-bin\" -Recurse | Where-Object { $_.Name -like \"gradle\" -or $_.Name -like \"gradle.bat\" } | Select-Object FullName)",
+      "PowerShell(ls \"$env:USERPROFILE\\\\.gradle\\\\wrapper\\\\dists\\\\gradle-9.3.1-bin\" -Recurse | Select-Object -First 20 FullName)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(gh repo *)",
+      "PowerShell(gh repo *)"
+    ]
+  }
+}

@@ -59,6 +59,15 @@ class NetworkLoggingService : Service() {
         collector.startLocationUpdates()
         collector.startTelephonyListener()
         collector.startImuSensor()
+
+        // API 31+: 서빙셀 변경 이벤트 발생 시 즉시 추가 수집 (기존 주기 수집과 병행)
+        collector.onCellChangeDetected = {
+            val record = collector.collect()
+            csvLogger.log(record)
+            recordCount = csvLogger.recordCount()
+            updateNotification()
+        }
+
         handler.post(tick)
         isRunning = true
 
@@ -68,6 +77,7 @@ class NetworkLoggingService : Service() {
     override fun onDestroy() {
         isRunning = false
         handler.removeCallbacks(tick)
+        collector.onCellChangeDetected = null
         collector.stopLocationUpdates()
         collector.stopTelephonyListener()
         collector.stopImuSensor()
