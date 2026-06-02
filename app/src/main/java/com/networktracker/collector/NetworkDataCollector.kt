@@ -307,10 +307,17 @@ class NetworkDataCollector(private val context: Context) {
         var bestNbrRsrp: Int? = null; var bestNbrPci: Int? = null; var bestNbrArfcn: Int? = null
 
         // allCellInfo 데이터 신선도 — 클수록 stale (정상: <5000ms)
+        // API 30+: timestampMillis(ms), API 29: getTimeStamp()(ns, deprecated)
         val cellInfoAgeMs: Long? = if (hasLocation()) runCatching {
-            tel.allCellInfo?.firstOrNull()?.let { cell ->
-                (SystemClock.elapsedRealtimeNanos() - cell.timestampNanos) / 1_000_000L
-            }
+            val firstCell = tel.allCellInfo?.firstOrNull()
+            if (firstCell != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    SystemClock.elapsedRealtime() - firstCell.timestampMillis
+                } else {
+                    @Suppress("DEPRECATION")
+                    (SystemClock.elapsedRealtimeNanos() - firstCell.timeStamp) / 1_000_000L
+                }
+            } else null
         }.getOrNull() else null
 
         runCatching {
