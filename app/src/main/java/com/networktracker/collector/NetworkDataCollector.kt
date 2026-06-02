@@ -11,8 +11,11 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.os.Build
+import android.os.SystemClock
 import android.telephony.*
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
@@ -23,37 +26,41 @@ import kotlin.math.sqrt
 
 class NetworkDataCollector(private val context: Context) {
 
-    private val tel       = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-    private val lm        = context.getSystemService(Context.LOCATION_SERVICE)  as LocationManager
-    private val sensorMgr = context.getSystemService(Context.SENSOR_SERVICE)    as SensorManager
+    private val tel       = context.getSystemService(Context.TELEPHONY_SERVICE)     as TelephonyManager
+    private val lm        = context.getSystemService(Context.LOCATION_SERVICE)      as LocationManager
+    private val sensorMgr = context.getSystemService(Context.SENSOR_SERVICE)        as SensorManager
+    private val cm        = context.getSystemService(Context.CONNECTIVITY_SERVICE)  as ConnectivityManager
 
-    private var prevRxBytes = TrafficStats.getTotalRxBytes()
-    private var prevTxBytes = TrafficStats.getTotalTxBytes()
-    private var prevTimeMs  = System.currentTimeMillis()
+    // 수집 활동 태그 (세션 시작 전 MainActivity에서 설정)
+    var activityTag: String = ""
+    var collectTrigger: String = "periodic"   // 서비스가 collect() 호출 전에 설정
+
+    // 전체 Rx/Tx (Wi-Fi + 셀룰러)
+    private var prevRxBytes       = TrafficStats.getTotalRxBytes()
+    private var prevTxBytes       = TrafficStats.getTotalTxBytes()
+    // 셀룰러 전용 Rx/Tx
+    private var prevMobileRxBytes = TrafficStats.getMobileRxBytes()
+    private var prevMobileTxBytes = TrafficStats.getMobileTxBytes()
+    private var prevTimeMs        = System.currentTimeMillis()
 
     @Volatile private var lastLocation: Location? = null
 
     // ── 가속도 센서 기반 속도 추정 ────────────────────────────────────────────
     private val linearAccelSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
-    @Volatile private var imuVelocityMs  = 0f
-    @Volatile private var imuLastTimeNs  = 0L
+    @Volatile private var imuVelocityMs = 0f
+    @Volatile private var imuLastTimeNs = 0L
 
     private val imuListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
-            // TYPE_LINEAR_ACCELERATION: 중력 제거된 선가속도 (m/s²)
-            val ax = event.values[0]
-            val ay = event.values[1]
+            val ax = event.values[0]; val ay = event.values[1]
             val aHoriz = sqrt((ax * ax + ay * ay).toDouble()).toFloat()
             val nowNs  = event.timestamp
             if (imuLastTimeNs > 0L) {
                 val dtSec = (nowNs - imuLastTimeNs) * 1e-9f
-                if (aHoriz > 0.3f) {
-                    // 유의미한 가속 → 속도 적분 (최대 80 m/s = ~288 km/h 상한)
-                    imuVelocityMs = (imuVelocityMs + aHoriz * dtSec).coerceAtMost(80f)
-                } else {
-                    // 정지 상태로 판단 → 감쇠 (drift 억제)
-                    imuVelocityMs = (imuVelocityMs * (1f - dtSec * 1.5f)).coerceAtLeast(0f)
-                }
+                imuVelocityMs = if (aHoriz > 0.3f)
+                    (imuVelocityMs + aHoriz * dtSec).coerceAtMost(80f)
+                else
+                    (imuVelocityMs * (1f - dtSec * 1.5f)).coerceAtLeast(0f)
             }
             imuLastTimeNs = nowNs
         }
@@ -61,35 +68,50 @@ class NetworkDataCollector(private val context: Context) {
     }
 
     fun startImuSensor() {
-        linearAccelSensor?.let { sensor ->
-            sensorMgr.registerListener(imuListener, sensor, SensorManager.SENSOR_DELAY_GAME)
-        }
+        linearAccelSensor?.let { sensorMgr.registerListener(imuListener, it, SensorManager.SENSOR_DELAY_GAME) }
     }
 
     fun stopImuSensor() {
         sensorMgr.unregisterListener(imuListener)
-        imuVelocityMs = 0f
-        imuLastTimeNs = 0L
+        imuVelocityMs = 0f; imuLastTimeNs = 0L
     }
 
     // ── 핸드오버 / 핑퐁 감지 ─────────────────────────────────────────────────
-    // 최근 10회 서빙셀 이력 (cellId, timestamp_ms)
-    private val cellHistory   = ArrayDeque<Pair<String, Long>>()
-    private var lastCellId    = ""
+    private data class HandoverResult(
+        val handover: Boolean,
+        val pingPong: Boolean,
+        val prevCellId: String,
+        val prevRsrp: Int?,
+        val prevRsrq: Int?
+    )
 
-    // CellInfoListener(API 31+)가 서빙셀 변경을 감지했을 때 서비스가 즉시 수집하도록 알리는 콜백
+    private val cellHistory       = ArrayDeque<Pair<String, Long>>()
+    private var lastCellId        = ""
+    private var lastRsrp: Int?    = null
+    private var lastRsrq: Int?    = null
+    private var lastHandoverMs    = 0L           // cell_duration_s 계산용
+    private var prevSampleRsrp: Int? = null      // rsrp_delta 계산용
+    private var prevSampleSinr: Int? = null      // sinr_delta 계산용
+
+    // 서빙셀 변경 시 서비스가 즉시 수집하도록 알리는 콜백 (API 31+)
     var onCellChangeDetected: (() -> Unit)? = null
 
-    private fun checkHandover(newCellId: String, nowMs: Long): Pair<Boolean, Boolean> {
-        if (newCellId.isEmpty() || newCellId == lastCellId) return Pair(false, false)
-        // 첫 수집(lastCellId가 아직 비어 있음)은 핸드오버가 아닌 초기화로 처리
-        if (lastCellId.isEmpty()) { lastCellId = newCellId; return Pair(false, false) }
-        // 핑퐁: 30초 이내 같은 셀로 복귀
+    private fun checkHandover(newCellId: String, nowMs: Long, curRsrp: Int?, curRsrq: Int?): HandoverResult {
+        if (newCellId.isEmpty() || newCellId == lastCellId) {
+            lastRsrp = curRsrp; lastRsrq = curRsrq
+            return HandoverResult(false, false, "", null, null)
+        }
+        if (lastCellId.isEmpty()) {
+            lastCellId = newCellId; lastRsrp = curRsrp; lastRsrq = curRsrq
+            return HandoverResult(false, false, "", null, null)
+        }
         val pingPong = cellHistory.any { (id, ts) -> id == newCellId && (nowMs - ts) < 30_000L }
         cellHistory.addFirst(Pair(lastCellId, nowMs))
         if (cellHistory.size > 10) cellHistory.removeLast()
-        lastCellId = newCellId
-        return Pair(true, pingPong)
+        lastHandoverMs = nowMs
+        val result = HandoverResult(true, pingPong, lastCellId, lastRsrp, lastRsrq)
+        lastCellId = newCellId; lastRsrp = curRsrp; lastRsrq = curRsrq
+        return result
     }
 
     private val gpsListener = LocationListener { loc -> lastLocation = loc }
@@ -98,14 +120,14 @@ class NetworkDataCollector(private val context: Context) {
             lastLocation = loc
     }
 
-    // 5G NSA 감지 상태 (API 31+: TelephonyCallback / API 30: PhoneStateListener)
-    @Volatile private var displayOverrideType: String = "NONE"
-    @Volatile private var displayIs5G: Boolean = false
+    @Volatile private var displayOverrideType = "NONE"
+    @Volatile private var displayIs5G         = false
 
-    private var phoneStateListener: PhoneStateListener? = null  // API 30 전용
-    @Volatile private var telephonyCallbackRef: Any? = null     // TelephonyCallback (API 31+)
+    @Suppress("DEPRECATION")
+    private var phoneStateListener: PhoneStateListener? = null
+    @Volatile private var telephonyCallbackRef: Any? = null
 
-    // ── 위치 업데이트 ──────────────────────────────────────────────────────────
+    // ── 위치 업데이트 ─────────────────────────────────────────────────────────
 
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
@@ -129,7 +151,7 @@ class NetworkDataCollector(private val context: Context) {
         runCatching { lm.removeUpdates(netListener) }
     }
 
-    // ── 5G NSA 감지 리스너 ─────────────────────────────────────────────────────
+    // ── 5G NSA 감지 리스너 ────────────────────────────────────────────────────
 
     fun startTelephonyListener() {
         when {
@@ -139,15 +161,13 @@ class NetworkDataCollector(private val context: Context) {
     }
 
     fun stopTelephonyListener() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            unregisterTelephonyCallback()
-        } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) unregisterTelephonyCallback()
+        else {
             @Suppress("DEPRECATION")
             phoneStateListener?.let { tel.listen(it, PhoneStateListener.LISTEN_NONE) }
             phoneStateListener = null
         }
-        displayOverrideType = "NONE"
-        displayIs5G = false
+        displayOverrideType = "NONE"; displayIs5G = false
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -159,7 +179,6 @@ class NetworkDataCollector(private val context: Context) {
         telephonyCallbackRef = null
     }
 
-    // API 31+: TelephonyCallback (PhoneStateListener 대체)
     @RequiresApi(Build.VERSION_CODES.S)
     private fun registerTelephonyCallback() {
         val cb = object : TelephonyCallback(),
@@ -178,19 +197,15 @@ class NetworkDataCollector(private val context: Context) {
                     info.overrideNetworkType == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED
             }
 
-            // 모뎀이 셀 정보를 업데이트할 때마다 호출됨 — 서빙셀 변경 시 즉시 수집 트리거
             override fun onCellInfoChanged(cellInfos: List<CellInfo>) {
                 val newId = extractServingId(cellInfos)
-                if (newId.isNotEmpty() && newId != lastCellId) {
-                    onCellChangeDetected?.invoke()
-                }
+                if (newId.isNotEmpty() && newId != lastCellId) onCellChangeDetected?.invoke()
             }
         }
         telephonyCallbackRef = cb
         tel.registerTelephonyCallback(context.mainExecutor, cb)
     }
 
-    // CellInfoListener 콜백 파라미터에서 서빙셀 ID만 빠르게 추출 (권한 불필요)
     private fun extractServingId(cells: List<CellInfo>): String {
         for (cell in cells) {
             if (!cell.isRegistered) continue
@@ -203,7 +218,6 @@ class NetworkDataCollector(private val context: Context) {
         return ""
     }
 
-    // API 30 전용: PhoneStateListener (API 31에서 deprecated, 하위 호환 유지)
     @RequiresApi(Build.VERSION_CODES.R)
     @Suppress("DEPRECATION")
     private fun registerDisplayInfoListener() {
@@ -224,18 +238,33 @@ class NetworkDataCollector(private val context: Context) {
         tel.listen(listener, PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED)
     }
 
-    // ── 데이터 수집 ────────────────────────────────────────────────────────────
+    // ── 데이터 수집 ───────────────────────────────────────────────────────────
 
     @SuppressLint("MissingPermission")
     fun collect(): NetworkRecord {
-        val now = System.currentTimeMillis()
+        val now       = System.currentTimeMillis()
         val elapsedMs = (now - prevTimeMs).coerceAtLeast(1L)
 
-        val curRx = TrafficStats.getTotalRxBytes()
-        val curTx = TrafficStats.getTotalTxBytes()
-        val rxSpeed = speedBps(prevRxBytes, curRx, elapsedMs)
-        val txSpeed = speedBps(prevTxBytes, curTx, elapsedMs)
-        prevRxBytes = curRx; prevTxBytes = curTx; prevTimeMs = now
+        // 전체 Rx/Tx
+        val curRx    = TrafficStats.getTotalRxBytes()
+        val curTx    = TrafficStats.getTotalTxBytes()
+        val rxSpeed  = speedBps(prevRxBytes, curRx, elapsedMs)
+        val txSpeed  = speedBps(prevTxBytes, curTx, elapsedMs)
+        prevRxBytes  = curRx; prevTxBytes = curTx
+
+        // 셀룰러 전용 Rx/Tx — getMobileRxBytes() 미지원 단말은 -1 반환
+        val curMobileRx      = TrafficStats.getMobileRxBytes()
+        val curMobileTx      = TrafficStats.getMobileTxBytes()
+        val mobileRxSpeed    = if (curMobileRx >= 0 && prevMobileRxBytes >= 0)
+            speedBps(prevMobileRxBytes, curMobileRx, elapsedMs) else 0L
+        val mobileTxSpeed    = if (curMobileTx >= 0 && prevMobileTxBytes >= 0)
+            speedBps(prevMobileTxBytes, curMobileTx, elapsedMs) else 0L
+        if (curMobileRx >= 0) prevMobileRxBytes = curMobileRx
+        if (curMobileTx >= 0) prevMobileTxBytes = curMobileTx
+
+        prevTimeMs = now
+
+        val wifiActive = isWifiActive()
 
         val location: Location? = lastLocation ?: runCatching {
             if (hasLocation())
@@ -244,14 +273,12 @@ class NetworkDataCollector(private val context: Context) {
             else null
         }.getOrNull()
 
-        // GPS 속도로 IMU drift 보정 (GPS 가용 시 기준값으로 리셋)
         location?.takeIf { it.hasSpeed() && it.speed > 0.1f }?.let { loc ->
             imuVelocityMs = loc.speed
             imuLastTimeNs = 0L
         }
         val imuSpeed = imuVelocityMs.takeIf { it > 0f || linearAccelSensor != null }
 
-        // 기존 변수
         var networkType         = "UNKNOWN"
         var overrideNetworkType = "NONE"
         var generation          = "UNKNOWN"
@@ -261,32 +288,34 @@ class NetworkDataCollector(private val context: Context) {
         var nrCellSeen          = false
         var nrServingCellSeen   = false
         var servingCellId       = ""
-        var rsrp: Int?          = null; var rsrq: Int?   = null
+        var rsrp: Int?          = null; var rsrq: Int?    = null
         var rssi: Int?          = null; var sinrSnr: Int? = null
         var signalLevel: Int?   = null
-        val neighbors           = JSONArray()
-        var neighborCount       = 0
-
-        // 신규 변수
-        var csiRsrp: Int?       = null
-        var csiRsrq: Int?       = null
-        var csiSinr: Int?       = null
-        var servingPci: Int?    = null
-        var servingFreqArfcn: Int? = null
+        var csiRsrp: Int?       = null; var csiRsrq: Int? = null; var csiSinr: Int? = null
+        var servingPci: Int?    = null; var servingFreqArfcn: Int? = null
         var servingBandStr      = ""
         var servingTac: Int?    = null
-        var mcc                 = ""
-        var mnc                 = ""
+        var mcc                 = ""; var mnc = ""
         var timingAdvanceLte: Int? = null
-        var nrNeighborCount     = 0
-        var lteNeighborCount    = 0
+        var nrNeighborCount     = 0; var lteNeighborCount = 0; var neighborCount = 0
+
+        // 이웃셀을 (rsrp, JSONObject) 쌍으로 수집한 뒤 RSRP 내림차순 정렬
+        data class NbrEntry(val rsrp: Int, val json: JSONObject)
+        val nbrList = mutableListOf<NbrEntry>()
+
+        // 이웃셀 최강 RSRP 추적
+        var bestNbrRsrp: Int? = null; var bestNbrPci: Int? = null; var bestNbrArfcn: Int? = null
+
+        // allCellInfo 데이터 신선도 — 클수록 stale (정상: <5000ms)
+        val cellInfoAgeMs: Long? = if (hasLocation()) runCatching {
+            tel.allCellInfo?.firstOrNull()?.let { cell ->
+                (SystemClock.elapsedRealtimeNanos() - cell.timestampNanos) / 1_000_000L
+            }
+        }.getOrNull() else null
 
         runCatching {
-            // dataNetworkType: 데이터 연결 RAT 기준 (voice와 별개, NSA에서도 LTE 반환)
             networkType = resolveNetworkType()
             is5GActual  = networkType == "NR(5G)"
-
-            // TelephonyDisplayInfo 기반 NSA 5G 감지 (리스너가 미리 업데이트한 값)
             overrideNetworkType = displayOverrideType
             is5GDisplay         = displayIs5G
 
@@ -294,10 +323,8 @@ class NetworkDataCollector(private val context: Context) {
                 tel.allCellInfo?.forEach { cell ->
                     val serving = cell.isRegistered
                     when (cell) {
-
                         is CellInfoLte -> {
                             val sig = cell.cellSignalStrength
-                            // CI가 UNAVAILABLE이면 빈 문자열 (2147483647 또는 Long.MAX_VALUE 방지)
                             val id  = cell.cellIdentity.ci.validToString()
                             if (serving) {
                                 servingCellId    = id
@@ -315,32 +342,36 @@ class NetworkDataCollector(private val context: Context) {
                                 cell.cellIdentity.mccString?.let { mcc = it }
                                 cell.cellIdentity.mncString?.let { mnc = it }
                             } else {
-                                neighbors.put(JSONObject().apply {
-                                    put("type",    "LTE")
-                                    // 이웃셀 CI는 모뎀이 미제공 시 UNAVAILABLE → null로 기록
+                                val nRsrp   = sig.rsrp.valid()
+                                val nPci    = cell.cellIdentity.pci.valid()
+                                val nEarfcn = cell.cellIdentity.earfcn.valid()
+                                // 최강 이웃셀 갱신
+                                if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
+                                    bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nEarfcn
+                                }
+                                val json = JSONObject().apply {
+                                    put("type",   "LTE")
                                     putOpt("cell_id", id.ifEmpty { null })
-                                    put("pci",     cell.cellIdentity.pci.toJsonOrNull())
-                                    put("earfcn",  cell.cellIdentity.earfcn.toJsonOrNull())
-                                    put("tac",     cell.cellIdentity.tac.toJsonOrNull())
-                                    put("rsrp",    sig.rsrp.toJsonOrNull())
-                                    put("rsrq",    sig.rsrq.toJsonOrNull())
-                                    put("rssi",    sig.rssi.toJsonOrNull())
-                                    put("snr",     sig.rssnr.toJsonOrNull())
-                                    put("ta",      sig.timingAdvance.toJsonOrNull())
-                                    put("level",   sig.level)
+                                    put("pci",    nPci.toJsonOrNull())
+                                    put("earfcn", nEarfcn.toJsonOrNull())
+                                    put("tac",    cell.cellIdentity.tac.toJsonOrNull())
+                                    put("rsrp",   sig.rsrp.toJsonOrNull())
+                                    put("rsrq",   sig.rsrq.toJsonOrNull())
+                                    put("rssi",   sig.rssi.toJsonOrNull())
+                                    put("snr",    sig.rssnr.toJsonOrNull())
+                                    put("ta",     sig.timingAdvance.toJsonOrNull())
+                                    put("level",  sig.level)
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                         put("bands", cell.cellIdentity.bands.joinToString(","))
-                                })
-                                lteNeighborCount++
-                                neighborCount++
+                                }
+                                nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                                lteNeighborCount++; neighborCount++
                             }
                         }
-
                         is CellInfoNr -> {
                             nrCellSeen = true
                             val sig      = cell.cellSignalStrength as CellSignalStrengthNr
                             val identity = cell.cellIdentity      as CellIdentityNr
-                            // NCI는 36비트 Long — UNAVAILABLE_LONG(Long.MAX_VALUE) 필터링
                             val nci = identity.nci.validToString()
                             if (serving) {
                                 nrServingCellSeen = true
@@ -360,11 +391,17 @@ class NetworkDataCollector(private val context: Context) {
                                 identity.mccString?.let { mcc = it }
                                 identity.mncString?.let { mnc = it }
                             } else {
-                                neighbors.put(JSONObject().apply {
+                                val nRsrp   = sig.ssRsrp.valid()
+                                val nPci    = identity.pci.valid()
+                                val nArfcn  = identity.nrarfcn.valid()
+                                if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
+                                    bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nArfcn
+                                }
+                                val json = JSONObject().apply {
                                     put("type",     "NR(5G)")
                                     putOpt("nci",      nci.ifEmpty { null })
-                                    put("pci",      identity.pci.toJsonOrNull())
-                                    put("arfcn",    identity.nrarfcn.toJsonOrNull())
+                                    put("pci",      nPci.toJsonOrNull())
+                                    put("arfcn",    nArfcn.toJsonOrNull())
                                     put("tac",      identity.tac.toJsonOrNull())
                                     put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
                                     put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
@@ -375,46 +412,56 @@ class NetworkDataCollector(private val context: Context) {
                                     put("level",    sig.level)
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                         put("bands", identity.bands.joinToString(","))
-                                })
-                                nrNeighborCount++
-                                neighborCount++
+                                }
+                                nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                                nrNeighborCount++; neighborCount++
                             }
                         }
-
                         is CellInfoWcdma -> if (!serving) {
-                            neighbors.put(JSONObject().apply {
+                            nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
                                 put("type",   "WCDMA")
                                 put("cid",    cell.cellIdentity.cid)
                                 put("psc",    cell.cellIdentity.psc)
                                 put("uarfcn", cell.cellIdentity.uarfcn)
                                 put("dbm",    cell.cellSignalStrength.dbm)
                                 put("level",  cell.cellSignalStrength.level)
-                            }); neighborCount++
+                            })); neighborCount++
                         }
-
                         is CellInfoGsm -> if (!serving) {
-                            neighbors.put(JSONObject().apply {
+                            nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
                                 put("type",  "GSM")
                                 put("cid",   cell.cellIdentity.cid)
                                 put("arfcn", cell.cellIdentity.arfcn)
                                 put("bsic",  cell.cellIdentity.bsic)
                                 put("dbm",   cell.cellSignalStrength.dbm)
                                 put("level", cell.cellSignalStrength.level)
-                            }); neighborCount++
+                            })); neighborCount++
                         }
                     }
                 }
             }
-
-            // TelephonyDisplayInfo 미수신 상태에서도 allCellInfo로 NR 서빙셀 직접 감지
             is5G       = is5GActual || is5GDisplay || nrServingCellSeen
             generation = toGeneration(networkType, is5G)
         }
 
-        val (handover, pingPong) = checkHandover(servingCellId, now)
+        // 이웃셀 RSRP 내림차순 정렬 후 JSONArray 구성
+        nbrList.sortByDescending { it.rsrp }
+        val neighbors = JSONArray().also { arr -> nbrList.forEach { arr.put(it.json) } }
+
+        val ho = checkHandover(servingCellId, now, rsrp, rsrq)
+
+        // 이전 샘플 대비 변화량 (핸드오버 직후는 셀이 바뀌므로 null)
+        val rsrpDelta  = if (!ho.handover) rsrp?.let { r -> prevSampleRsrp?.let { p -> r - p } } else null
+        val sinrDelta  = if (!ho.handover) sinrSnr?.let { s -> prevSampleSinr?.let { p -> s - p } } else null
+        prevSampleRsrp = rsrp
+        prevSampleSinr = sinrSnr
+
+        val cellDurationS = if (lastHandoverMs > 0L) (now - lastHandoverMs) / 1000L else 0L
+        val hoCount30s    = cellHistory.count { (_, ts) -> (now - ts) < 30_000L }
 
         return NetworkRecord(
             timestamp           = now,
+            activity            = activityTag,
             latitude            = location?.latitude,
             longitude           = location?.longitude,
             gpsAccuracyM        = location?.accuracy,
@@ -447,17 +494,52 @@ class NetworkDataCollector(private val context: Context) {
             csiSinr             = csiSinr,
             rxSpeedBps          = rxSpeed,
             txSpeedBps          = txSpeed,
+            mobileRxSpeedBps    = mobileRxSpeed,
+            mobileTxSpeedBps    = mobileTxSpeed,
+            wifiActive          = wifiActive,
             neighborCount       = neighborCount,
             nrNeighborCount     = nrNeighborCount,
             lteNeighborCount    = lteNeighborCount,
+            bestNbrRsrp         = bestNbrRsrp,
+            bestNbrPci          = bestNbrPci,
+            bestNbrArfcn        = bestNbrArfcn,
             imuSpeedMs          = imuSpeed,
-            handoverDetected    = handover,
-            pingPongDetected    = pingPong,
+            handoverDetected    = ho.handover,
+            pingPongDetected    = ho.pingPong,
+            collectTrigger      = collectTrigger,
+            cellDurationS       = cellDurationS,
+            hoCount30s          = hoCount30s,
+            rsrpDelta           = rsrpDelta,
+            sinrDelta           = sinrDelta,
+            cellInfoAgeMs       = cellInfoAgeMs,
+            prevServingCellId   = ho.prevCellId,
+            prevRsrp            = ho.prevRsrp,
+            prevRsrq            = ho.prevRsrq,
             neighborsJson       = neighbors.toString()
         )
     }
 
-    // tel.dataNetworkType: 데이터 연결 기준 RAT (tel.networkType보다 정확, API 30에서 deprecated된 networkType 대체)
+    // ── 헬퍼 ─────────────────────────────────────────────────────────────────
+
+    /** 다음 collect()가 신선한 allCellInfo를 쓰도록 모뎀에 갱신 요청 (API 29+, 비동기) */
+    @SuppressLint("MissingPermission")
+    fun refreshCellInfo() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && hasLocation()) {
+            runCatching {
+                tel.requestCellInfoUpdate(context.mainExecutor,
+                    object : TelephonyManager.CellInfoCallback() {
+                        override fun onCellInfo(cellInfos: MutableList<CellInfo>) {}
+                        override fun onError(errorCode: Int, detail: Throwable?) {}
+                    })
+            }
+        }
+    }
+
+    private fun isWifiActive(): Boolean {
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
     @SuppressLint("MissingPermission")
     private fun resolveNetworkType(): String = runCatching {
         when (tel.dataNetworkType) {
@@ -478,11 +560,11 @@ class NetworkDataCollector(private val context: Context) {
     }.getOrDefault("UNKNOWN")
 
     private fun toGeneration(type: String, is5G: Boolean) = when {
-        is5G                                                                     -> "5G"
-        type == "LTE"                                                            -> "4G"
-        type in setOf("HSPA+", "HSPA", "HSUPA", "HSDPA", "UMTS", "TD-SCDMA")  -> "3G"
-        type in setOf("EDGE", "GPRS", "GSM")                                    -> "2G"
-        else                                                                     -> "UNKNOWN"
+        is5G                                                                    -> "5G"
+        type == "LTE"                                                           -> "4G"
+        type in setOf("HSPA+", "HSPA", "HSUPA", "HSDPA", "UMTS", "TD-SCDMA") -> "3G"
+        type in setOf("EDGE", "GPRS", "GSM")                                   -> "2G"
+        else                                                                    -> "UNKNOWN"
     }
 
     private fun speedBps(prev: Long, cur: Long, elapsedMs: Long): Long {
@@ -493,17 +575,15 @@ class NetworkDataCollector(private val context: Context) {
     private fun Int.valid(): Int? =
         takeUnless { it == Int.MAX_VALUE || it == Int.MIN_VALUE || it == CellInfo.UNAVAILABLE }
 
-    // 이웃셀 JSON 저장용: UNAVAILABLE이면 JSONObject.NULL 반환
-    private fun Int.toJsonOrNull(): Any =
-        if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
+    // nullable/non-nullable 모두 처리하는 단일 버전
+    private fun Int?.toJsonOrNull(): Any =
+        if (this == null || this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
             JSONObject.NULL else this
 
-    // UNAVAILABLE인 Int → 빈 문자열 (serving cell ID 등 String 필드용)
     private fun Int.validToString(): String =
         if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
             "" else this.toString()
 
-    // NR NCI는 Long — UNAVAILABLE_LONG(= Long.MAX_VALUE) 필터링
     private fun Long.validToString(): String =
         if (this == Long.MAX_VALUE || this == Long.MIN_VALUE) "" else this.toString()
 

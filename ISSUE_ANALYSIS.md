@@ -1,243 +1,402 @@
 # NetworkTrackerApp — 이슈 분석 및 수정 내역
 
 > 논문 데이터 수집 앱 운용 중 발견한 문제점 정리 및 코드 수정 기록  
-> 작성일: 2026-05-17
+> 최초 작성: 2026-05-17 / 데이터 검증 및 갱신: 2026-06-02
 
 ---
 
-## 1. 사전 이슈 목록 (수집 중 발견)
+## 1. 이슈 목록
 
-코드 수정 전, 데이터를 직접 들여다보며 파악한 의문점 및 문제들.
-
-| # | 증상 | 분류 |
-|---|------|------|
-| 1 | 핑퐁 핸드오버 — 언제, 왜 발생하는지 모름. RSRP 값이 크게 안 떨어졌는데도 핑퐁 | 분석 + 기능 추가 필요 |
-| 2 | 가속도 센서로 속도 측정 추가 요청 | 기능 추가 |
-| 3 | 데이터레이트가 갑자기 올라갈 때 수신 세기(RSRP)는 크게 안 좋아진 게 아님 | 원인 분석 필요 |
-| 4 | 집에도 계속 틀어놔서 일관성 있게 찍히는지 확인 필요 | 운용 이슈 |
-| 5 | `sinr_snr_db` 컬럼에 빈칸이 자주 생김 | 원인 분석 필요 |
-| 6 | 서빙셀 ID와 이웃셀 ID의 자릿수가 다름. PCI·EARFCN은 같은데 왜? | 버그 + 원인 분석 |
-| 7 | 이웃 셀 리스트의 `cell_id`(또는 `nci`)가 전부 동일한 값 | 버그 |
-| 8 | 핸드오버 타겟 셀 선택 규칙을 모르겠음. 이웃 리스트 1위가 아닌 셀로 가거나, 목록에 없던 셀로 가기도 함 | 원인 분석 필요 |
-| 9 | 이웃 리스트 내용 전반에 대한 검증 필요 | 버그 포함 |
+| # | 증상 | 분류 | 검증 결과 |
+|---|------|------|-----------|
+| 1 | 핑퐁 핸드오버 발생 | 분석 + 감지 기능 추가 | 실측 82건 확인 |
+| 2 | 가속도 센서 속도 측정 추가 | 기능 추가 | 구현 완료 |
+| 3 | 데이터레이트 급등 시 RSRP 변화 없음 | 원인 분석 | **데이터로 검증됨** |
+| 4 | 집에서 상시 로깅 일관성 확인 | 운용 이슈 | **home 파일로 검증됨** |
+| 5 | `sinr_snr_db` 빈칸 자주 발생 | 원인 분석 | **실측 19.8% 결측 확인** |
+| 6 | 서빙셀 ID 자릿수 차이 | 버그 + 원인 분석 | **코드 버그 확인, 현재 환경 미발현** |
+| 7 | 이웃셀 `cell_id` 전부 동일값 | 버그 | **데이터로 완전 검증됨** |
+| 8 | 핸드오버 타겟 셀 선택 규칙 불명 | 원인 분석 | 이론 설명 가능, 데이터 직접 검증 불가 |
+| 9 | 이웃 리스트 전반 검증 | 버그 포함 | 이슈 7과 동일 원인 |
 
 ---
 
-## 2. 이슈별 원인 분석
+## 2. 이슈별 원인 분석 및 데이터 검증
 
-### [이슈 7 / 이슈 9] 이웃셀 ID가 전부 동일
+### [이슈 7 / 이슈 9] 이웃셀 cell_id 전부 동일
 
-**근본 원인:** Android `getAllCellInfo()` API의 설계 한계.  
-모뎀은 이웃 셀(Neighbor Cell)의 Cell Identity(CI / NCI)를 거의 제공하지 않는다.  
-값을 읽으면 `CellInfo.UNAVAILABLE = Integer.MAX_VALUE = 2147483647`이 반환된다.  
-기존 코드는 이 값을 필터링 없이 JSON에 그대로 저장했기 때문에 모든 이웃셀 ID가 동일하게 찍힘.
+**근본 원인:** Android `allCellInfo()` API의 설계 한계.  
+모뎀은 이웃 셀의 Cell Identity를 거의 제공하지 않으며, 읽으면 `CellInfo.UNAVAILABLE = 2147483647`이 반환됩니다.
 
-```kotlin
-// 기존 (문제 코드)
-put("cell_id", cell.cellIdentity.ci.toString())  // UNAVAILABLE이면 "2147483647"
+**데이터 검증 결과 (2026-06-02 실측):**
 
-// 수정 후
-put("cell_id", cell.cellIdentity.ci.toJsonOrNull())  // UNAVAILABLE → null
-```
+| 버전 | 이웃셀 수 | 2147483647 비율 | null 비율 | 유효 CI 비율 |
+|------|----------|----------------|-----------|-------------|
+| 구버전 (20260506) | 7,053 | **100.0%** | 0% | 0% |
+| 신버전 (20260512+) | 30,173 | 40.5% | **59.5%** | 0% |
 
-**결론:** 이웃 셀의 Cell ID는 Android에서 기본적으로 미제공. `null`이 정상이며, 이웃셀 구별에는 `pci + earfcn/arfcn` 조합을 사용해야 함.
+구버전: 주장 그대로 전부 `2147483647`. 신버전: 수정 후 null로 변환됨.  
+단, **유효 CI는 0건** — Android 모뎀이 이웃셀 CI를 실제로 제공하지 않는다는 사실이 확인됩니다.
+
+**결론:** 이웃셀 CI는 Android에서 기본적으로 미제공. `null`이 정상.
+
+**이웃셀 식별 가능 여부 — 실측 검증:**
+
+PCI(0–503)는 인접 셀 간 충돌만 방지하도록 설계되어 원거리에서 재사용됩니다.
+
+실측 데이터(서울 지하철 4개 세션) 검증 결과:
+
+| 지표 | 값 |
+|------|---|
+| PCI+EARFCN 고유 조합 수 | 260개 |
+| CI 2개 이상 충돌하는 조합 수 | **104개 (40%)** |
+| 최악 사례 | PCI=485, EARFCN=100 → **7개 다른 eNB**에서 동시 사용 |
+
+**이웃셀의 전역 고유 식별은 현재 Android API로는 불가능합니다.**  
+PCI+EARFCN은 단일 세션의 로컬 범위(수 km 이내)에서만 임시 구별 수단으로 쓸 수 있으며, 세션을 넘나들거나 서울 전역 분석에는 사용할 수 없습니다.
 
 ---
 
-### [이슈 6] 서빙셀 ID vs 이웃셀 ID 자릿수 차이 (PCI/EARFCN은 동일)
+### [이슈 6] 서빙셀 ID 자릿수 차이 (PCI/EARFCN은 동일)
 
-**근본 원인:** LTE와 NR의 Cell Identity 비트 폭이 다름.
+**근본 원인:** LTE와 NR의 Cell Identity 비트 폭 차이.
 
 | 규격 | 필드 | 비트 | 최대값 | 최대 자릿수 |
 |------|------|------|--------|------------|
 | LTE  | CI (Cell Identity) | 28 bit | 268,435,455 | 9자리 |
 | NR   | NCI (NR Cell Identity) | 36 bit | 68,719,476,735 | 11자리 |
 
-NSA(Non-Standalone) 모드에서는 LTE 앵커셀과 NR 셀이 동시에 `isRegistered = true`로 반환될 수 있다. 코드가 `allCellInfo`를 순회하면서 마지막으로 처리된 셀이 `servingCellId`를 overwrite하기 때문에, NR 셀이 마지막이면 서빙셀 ID는 NCI(더 긴 숫자)가 된다. 이웃 LTE 셀의 CI는 더 짧은 숫자이므로 자릿수가 달라 보임.
+5G NSA 환경에서 LTE 앵커셀과 NR 셀이 동시에 `isRegistered=true`로 반환될 수 있습니다. 코드가 `allCellInfo`를 순회하면서 마지막으로 처리된 셀이 `servingCellId`를 overwrite하면, NR 셀이 마지막이면 서빙셀 ID가 NCI(더 긴 숫자)로 기록됩니다.
 
-추가로, NCI가 `UNAVAILABLE_LONG = Long.MAX_VALUE = 9223372036854775807`(19자리)일 때 그대로 저장되는 버그도 있었음. 이것도 수정됨.
+**데이터 검증 결과 (2026-06-02 실측):**
 
-**PCI/EARFCN이 같은 이유:** DSS(Dynamic Spectrum Sharing) 환경에서는 LTE와 NR이 같은 주파수 대역을 공유하므로 ARFCN과 PCI가 동일하게 나올 수 있음. 정상.
+```
+서빙셀 ID 자릿수 분포:
+  8자리: 4,888건 (100%)
+  최대값: 52,560,931 (26-bit)
+```
+
+현재 수집 환경(LG U+ NSA)에서 **NR NCI가 서빙셀로 기록된 사례 없음.** NSA 모드에서 LTE가 항상 앵커(serving cell)이므로 이 버그가 발현되지 않았습니다. NR SA 환경에서는 발현될 수 있습니다.
+
+**추가 확인: DSS(Dynamic Spectrum Sharing)** — 서빙셀과 PCI/EARFCN이 동일한 이웃셀 케이스 500행 검사에서 0건. 현재 수집 환경에서 DSS 미사용.
 
 ---
 
 ### [이슈 5] `sinr_snr_db` 빈칸
 
-**원인:** 정상 동작.  
-- LTE: `RS-SNR`은 모뎀이 항상 보고하지 않음. 단말·기지국 조합에 따라 미제공이 일반적.  
-- NR: `SS-SINR`은 제공되는 경우가 더 많지만 역시 `UNAVAILABLE`일 수 있음.  
-`valid()` 확장함수가 `UNAVAILABLE` 값을 `null`로 변환하기 때문에 CSV에는 빈 칸으로 나옴.
+**원인:** 정상 동작. 모뎀이 RS-SNR(LTE) / SS-SINR(NR) 값을 항상 보고하지 않습니다.
 
-**대응:** 빈 칸은 "미측정"이지 "0"이 아님. 분석 시 결측값으로 처리 필요.
+**데이터 검증 결과 (2026-06-02 실측):**
+
+| 파일 | 결측률 |
+|------|--------|
+| walking (20260512) | **67%** |
+| car (20260524) | **66%** |
+| subway (20260512) | 51% |
+| subway (20260524~0526) | 13~14% |
+| walking (20260527) | 14% |
+| home (20260529) | **~0%** |
+
+파일별로 0~67%까지 크게 다릅니다. home(실내 고정)에서 결측이 거의 없고, walking 초기 파일에서 가장 높습니다. 이동 중 신호 변동이 클 때 모뎀 보고가 불안정해지는 것으로 보입니다.  
+유효 SINR 범위는 −9 ~ 30 dB이며, 값이 0인 행도 46건 존재하므로 **공백(NaN)과 0을 구분**해야 합니다.
 
 ---
 
 ### [이슈 3] 데이터레이트 급등 / 수신 세기 변화 없음
 
-**원인:** 정상 현상. 처리량(Throughput)과 신호 세기(RSRP)는 단순 비례 관계가 아님.
+**데이터 검증 결과 (2026-06-02 실측):**
 
-주요 원인:
-1. **CA(Carrier Aggregation) 활성화** — 스케줄러가 추가 캐리어를 할당하면 RSRP 변화 없이 처리량이 급등함
-2. **빔포밍 / 빔 스위칭** — NR에서 더 적합한 빔으로 전환되면 처리량 향상. RSRP는 전체 평균값이라 빔 스위칭에 민감하지 않음
-3. **스케줄러 우선순위** — 트래픽이 줄거나 셀 부하가 떨어지면 같은 신호 강도에서도 더 많은 RB(Resource Block) 할당 가능
+```
+Rx 5Mbps 이상 급등 이벤트: 258건
+급등 시점 RSRP 변화 중앙값: 0.00 dBm
+Rx-RSRP 피어슨 상관계수:   r = 0.055  (사실상 무상관)
+```
 
----
+**근본 원인: TrafficStats는 "수요(demand)" 측정이지 "용량(capacity)" 측정이 아님**
 
-### [이슈 8] 핸드오버 타겟 셀 선택 규칙
+수집 중 Wi-Fi를 끈 상태였으므로 `getTotalRxBytes()`는 셀룰러 트래픽만 기록합니다. Wi-Fi 오염 가설은 틀렸습니다.
 
-**원인:** UE(단말)가 선택하는 게 아니라 기지국(eNB/gNB)이 결정.
+진짜 이유는 더 구조적입니다. TrafficStats는 해당 5초 창에 기기가 **실제로 수신한 바이트**를 셉니다. 앱이 아무것도 안 받고 있으면 RSRP가 −60 dBm이든 −90 dBm이든 **Rx = 0**입니다. 반대로 푸시 알림·앱 업데이트·클라우드 싱크가 우연히 그 5초에 터지면, 신호 품질과 무관하게 Rx가 튑니다.
 
-핸드오버 결정 흐름:
-1. UE가 측정 보고(Measurement Report) 전송 — 이웃 셀 신호 포함
-2. 기지국이 **A3 이벤트** 기준으로 핸드오버 명령 결정
-   - A3 이벤트 조건: `이웃셀 RSRP > 서빙셀 RSRP + Offset + Hysteresis` 가 `Time-to-Trigger` 동안 유지
-3. 기지국이 UE에게 핸드오버 명령 전송
+```
+RSRP = 망이 "얼마나 좋은가" (용량)
+Rx   = 그 5초에 앱이 "얼마나 받았는가" (수요)
+→ 둘은 독립적
+```
 
-**이웃 리스트 1위가 아닌 셀로 가는 이유:**
-- A3 이벤트를 먼저 충족시킨 셀이 핸드오버 타겟. 가장 강한 셀이 아닐 수 있음
-- 오프셋(Offset)과 히스테리시스(Hysteresis) 파라미터가 셀마다 다르게 설정될 수 있음
+`override_network_type=LTE_CA` 구간의 평균 Rx(0.09 Mbps)가 `NONE`(0.085 Mbps)과 차이가 없는 것도 같은 이유입니다. LTE_CA가 셀룰러 용량을 높여도, 그 순간 앱이 대역폭을 쓰지 않으면 Rx는 0에 가깝습니다.
 
-**목록에 없던 셀로 가는 이유:**
-- 앱 수집 주기(5초)보다 핸드오버가 빠름. 핸드오버 직전 수집된 이웃 리스트가 실제 핸드오버 순간과 다를 수 있음
-- 이웃 리스트 자체가 modem report 기반으로 주기적으로 업데이트되며 항상 완전하지 않음
+**이론상 원인들 (이 데이터로는 검증 불가)**
+
+| 원인 | 이론 근거 | 이 데이터에서 검증 가능 여부 |
+|------|-----------|--------------------------|
+| CA 활성화 | 3GPP 표준, Primary carrier RSRP 유지하면서 Secondary carrier 추가 | 수요 기반 측정이라 용량 증가 효과가 Rx에 나타나지 않음 |
+| 셀 부하 감소 | 기지국 스케줄러 RB 할당 변화 | Android API로 기지국 부하 접근 불가 — 측정 자체 불가 |
+| 빔포밍 전환 | NR SA에서 CSI-RSRP 개선, SS-RSRP 유지 | 수집 데이터 전체가 NSA — `csi_rsrp` 전량 공백. 해당 없음 |
+
+**진짜 해결책:** RSRP↔처리량 상관관계를 제대로 측정하려면 수동 측정이 아닌 **능동 측정(active measurement)** 이 필요합니다. iperf3 서버를 띄우고 수집 중 지속적으로 다운로드를 돌리면, 그때의 Rx가 진짜 망 처리량입니다. TrafficStats 기반 수동 측정으로는 신호-처리량 상관분석을 신뢰하기 어렵습니다.
 
 ---
 
 ### [이슈 4] 집에서 상시 로깅 일관성
 
-`NetworkLoggingService`는 `START_STICKY`로 설정되어 있어 시스템이 강제 종료해도 재시작됨.  
-단, Android 배터리 최적화(Doze Mode)에 의해 포그라운드 서비스가 제한될 수 있음.
+`NetworkLoggingService`는 `START_STICKY`로 설정되어 있어 시스템 강제 종료 후 재시작됩니다.
 
-**권장 조치:** 설정 → 앱 → NetworkTrackerApp → 배터리 → "제한 없음" 으로 설정.  
-또는 앱 코드에서 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` Intent로 사용자에게 안내.
+**데이터 검증 결과 — home 파일 (20260529, 제자리 15.6분 수집):**
+
+```
+수집 간격 중앙값:    5.0초  (최대 갭: 6.0초)
+핸드오버 횟수:      0회
+RSRP 평균:         -80.9 dBm, 표준편차 3.48 dBm
+SINR 평균:         27.7 dB  (전체 파일 중 최고)
+```
+
+수집 주기가 안정적으로 유지되고 있습니다. SINR 27.7 dB는 이동 중인 다른 파일(subway 평균 14dB, car 평균 9dB)과 비교해 실내 고정 환경임을 명확히 확인할 수 있습니다.
+
+**권장 설정:** 설정 → 앱 → NetworkTrackerApp → 배터리 → "제한 없음"  
+설정하지 않으면 Doze Mode에서 Foreground Service 실행이 지연될 수 있습니다.
 
 ---
 
-## 3. 추가 구현 요청
+### [이슈 1] 핑퐁 핸드오버
 
-| 기능 | 설명 |
-|------|------|
-| 핸드오버/핑퐁 감지 | 샘플마다 서빙셀 ID 변화 감지 + 30초 이내 이전 셀 복귀 시 핑퐁 플래그 |
-| 가속도 센서 속도 측정 | `TYPE_LINEAR_ACCELERATION` 적분. GPS 속도로 drift 보정 |
+**데이터 검증 결과 (2026-06-02 실측):**
+
+```
+앱 감지 (ping_pong_detected=true): 45건
+분석 스크립트 기준 (30초 이내 복귀): 82건
+```
+
+두 수치의 차이 원인: 앱의 `cellHistory`는 최근 10개 항목만 유지하므로 10회 이상 핸드오버가 연속으로 발생하면 이전 셀 이력이 덮어써져 핑퐁 감지 누락이 발생합니다. 지하철 구간에서 핸드오버가 2.86회/분으로 집중되므로 이 현상이 자주 발생합니다.
+
+**RSRP와 핑퐁의 관계:** 핑퐁 핸드오버는 단순히 서빙셀 RSRP의 급락만으로 발생하는 것이 아니라, 이웃 셀과 서빙셀 간의 상대적인 품질 차이, A3 Offset, Hysteresis, Time-to-Trigger 등의 핸드오버 파라미터 조합에 의해 발생할 수 있다. 따라서 RSRP가 급격히 하락하지 않은 상황에서도 이웃 셀이 일정 기준 이상 우세하다고 판단되면 핸드오버가 발생할 수 있으며, 이동 속도가 빠른 지하철 환경에서는 이러한 조건이 짧은 시간 내 반복되어 핑퐁 현상으로 나타날 수 있다. // 용어정리 : LTE/5G에서 Event A3는 보통 “이웃 셀의 품질이 현재 서빙셀보다 일정 수준 이상 좋아졌을 때” 단말이 측정 보고를 올리고, 네트워크가 핸드오버를 판단하는 조건. 겨우 1 dB 좋은 정도라면 바로 넘어가지 않게 막는 것
 
 ---
 
-## 4. 코드 수정 내역
+### [이슈 8] 핸드오버 타겟 셀 선택 규칙
+
+**원인:** UE(단말)가 선택하는 것이 아니라 기지국(eNB/gNB)이 결정합니다.
+
+핸드오버 결정 흐름:
+1. UE가 측정 보고(Measurement Report) 전송
+2. 기지국이 **A3 이벤트** 기준으로 핸드오버 명령 결정
+   - A3 조건: `이웃셀 RSRP > 서빙셀 RSRP + Offset + Hysteresis` 가 `Time-to-Trigger` 동안 유지
+3. 기지국이 UE에게 핸드오버 명령 전송
+
+**이웃 1위가 아닌 셀로 가는 이유:**
+- A3 이벤트를 먼저 충족시킨 셀이 타겟. Offset/Hysteresis가 셀마다 다르게 설정될 수 있음
+
+**목록에 없던 셀로 가는 이유:**
+- 앱 수집 주기(5초)보다 핸드오버가 빠름. 핸드오버 직전 수집된 이웃 리스트와 실제 타겟 셀이 다를 수 있음
+- `allCellInfo`가 최신 상태가 아닐 수 있음 (→ `cell_info_age_ms` 컬럼으로 확인 가능)
+
+**검증 가능한 것과 불가능한 것:**
+
+| 질문 | 가능 여부 | 근거 |
+|------|-----------|------|
+| 핸드오버가 발생했는가 | ✅ 가능 | `handover_detected`, `prev_serving_cell_id` → `serving_cell_id` 변화 |
+| 핸드오버 직전 신호가 얼마였는가 | ✅ 가능 | `prev_rsrp_dbm`, `prev_rsrq_db` |
+| 핸드오버 직전 가장 강한 이웃셀 RSRP | ✅ 가능 | `best_nbr_rsrp_dbm` |
+| A3 조건이 충족됐는가 (best_nbr_rsrp > prev_rsrp) | ✅ 간접 가능 | 위 두 컬럼 비교 |
+| 이웃 1위 셀로 갔는지 여부 | ❌ 불가 | 이웃셀 CI 미제공(이슈 7) + PCI+EARFCN도 40% 충돌(이슈 9) |
+| 목록에 없던 셀로 간 이유 검증 | ❌ 불가 | 동일 이유 |
+
+**결론:** 핸드오버 발생 자체와 그 시점의 신호 상태 분석은 가능하지만, "어느 이웃셀로 이동했는가"는 현재 Android API 한계로 확인이 근본적으로 불가능합니다. 전문 드라이브 테스트 장비 없이는 해결되지 않는 문제입니다.
+
+---
+
+## 3. 코드 수정 내역 (전체)
 
 ### 수정된 파일
 
 - `app/src/main/java/com/networktracker/data/NetworkRecord.kt`
 - `app/src/main/java/com/networktracker/collector/NetworkDataCollector.kt`
+- `app/src/main/java/com/networktracker/logger/CsvLogger.kt`
 - `app/src/main/java/com/networktracker/service/NetworkLoggingService.kt`
 - `app/src/main/java/com/networktracker/ui/MainActivity.kt`
+- `app/src/main/res/layout/activity_main.xml`
 
 ---
 
-### NetworkRecord.kt — 신규 필드 추가
+### 버그 수정
+
+#### (1) 이웃셀 UNAVAILABLE 필터링
 
 ```kotlin
-val imuSpeedMs: Float? = null,           // 가속도 센서 적분 속도 (m/s) — GPS 불가 시 보조
-val handoverDetected: Boolean = false,   // 이전 샘플 대비 서빙셀 ID 변경(핸드오버 발생)
-val pingPongDetected: Boolean = false,   // 30초 내 이전 셀로 복귀(핑퐁 핸드오버)
-```
+// 수정 전: UNAVAILABLE 값 그대로 저장
+put("cell_id", cell.cellIdentity.ci.toString())   // → "2147483647"
 
-CSV 헤더에 `imu_speed_ms`, `handover_detected`, `ping_pong_detected` 컬럼 추가 (neighbors_json 직전).
-
----
-
-### NetworkDataCollector.kt — 주요 변경사항
-
-#### (1) UNAVAILABLE 필터링 수정 (버그 수정)
-
-```kotlin
-// 추가된 확장함수
-private fun Int.toJsonOrNull(): Any =
-    if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
+// 수정 후: null로 변환
+private fun Int?.toJsonOrNull(): Any =
+    if (this == null || this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
         JSONObject.NULL else this
 
-private fun Int.validToString(): String =
-    if (this == Int.MAX_VALUE || this == Int.MIN_VALUE || this == CellInfo.UNAVAILABLE)
-        "" else this.toString()
+put("cell_id", id.ifEmpty { null })  // UNAVAILABLE이면 null
+```
 
-// NR NCI (Long 타입) — UNAVAILABLE_LONG = Long.MAX_VALUE
+#### (2) NR NCI UNAVAILABLE_LONG 필터링
+
+```kotlin
 private fun Long.validToString(): String =
     if (this == Long.MAX_VALUE || this == Long.MIN_VALUE) "" else this.toString()
 ```
 
-이웃셀 JSON의 모든 Int/Long 필드에 `toJsonOrNull()` 적용.  
-서빙셀 CI/NCI 저장 시 `validToString()` 적용 → UNAVAILABLE 값 제거.
+#### (3) onCellChangeDetected 중복 수집 방지
 
-#### (2) 가속도 센서 기반 속도 추정
-
-```kotlin
-private val linearAccelSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
-
-// onSensorChanged: 수평 가속도(ax, ay) 적분 → imuVelocityMs
-// 0.3 m/s² 미만이면 정지로 판단, 감쇠(1.5×dt) 적용하여 drift 억제
-// GPS 속도가 가용하면 collect() 시점마다 GPS 속도로 리셋 → drift 보정
-```
-
-`startImuSensor()` / `stopImuSensor()` 메서드 추가.
-
-#### (3) 핸드오버 / 핑퐁 감지
+5초 timer와 핸드오버 콜백이 동시에 발화하면 거의 같은 타임스탬프의 레코드가 2개 생성됐습니다.
 
 ```kotlin
-private val cellHistory = ArrayDeque<Pair<String, Long>>()  // 최근 10회 서빙셀 이력
-private var lastCellId = ""
-
-private fun checkHandover(newCellId: String, nowMs: Long): Pair<Boolean, Boolean> {
-    // 셀 ID 변화 시 handover = true
-    // cellHistory에서 30초 이내 동일 셀 존재 시 pingPong = true
-    // 이력 유지: 최대 10건
+// 수정 후: 직전 수집으로부터 1초 이상 경과 시만 수집
+collector.onCellChangeDetected = {
+    val now = System.currentTimeMillis()
+    if (now - lastCollectMs >= 1_000L) {
+        lastCollectMs = now
+        collector.collectTrigger = "handover"
+        val record = collector.collect()
+        ...
+    }
 }
 ```
 
-`collect()` 반환 직전 `checkHandover(servingCellId, now)` 호출 후 결과를 `NetworkRecord`에 포함.
-
 ---
 
-### NetworkLoggingService.kt
+### 처리량 측정 개선
+
+기존 `getTotalRxBytes()`는 Wi-Fi + 셀룰러 합산이라 신호-처리량 상관분석이 불가능했습니다.
 
 ```kotlin
-// 서비스 시작 시
-collector.startImuSensor()
+// 셀룰러 전용 처리량 추가
+val curMobileRx = TrafficStats.getMobileRxBytes()
+val mobileRxSpeed = if (curMobileRx >= 0 && prevMobileRxBytes >= 0)
+    speedBps(prevMobileRxBytes, curMobileRx, elapsedMs) else 0L
+```
 
-// 서비스 종료 시
-collector.stopImuSensor()
+Wi-Fi 활성 여부도 함께 기록합니다:
+```kotlin
+private fun isWifiActive(): Boolean {
+    val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+    return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+}
 ```
 
 ---
 
-### MainActivity.kt
+### 이웃셀 개선
 
 ```kotlin
-// onResume / onPause에 IMU 시작·중지 추가
-previewCollector.startImuSensor()   // onResume
-previewCollector.stopImuSensor()    // onPause
+// RSRP 내림차순 정렬 후 JSONArray 구성
+nbrList.sortByDescending { it.rsrp }
+val neighbors = JSONArray().also { arr -> nbrList.forEach { arr.put(it.json) } }
 
-// 라이브 스탯 표시 추가
-"IMU속도   : X.X m/s  (X.X km/h)"
-"→ 핸드오버 감지"  또는  "⚠ 핑퐁 핸드오버 감지!"
+// 최강 이웃셀 요약 컬럼 (JSON 파싱 없이 ML 피처로 사용)
+if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
+    bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nEarfcn
+}
 ```
 
 ---
 
-## 5. CSV 컬럼 변경 요약
+### 핸드오버 정보 강화
 
-| 변경 | 컬럼명 | 설명 |
-|------|--------|------|
-| 추가 | `imu_speed_ms` | 가속도 센서 적분 속도 (m/s). GPS 가용 시 동기화됨 |
-| 추가 | `handover_detected` | true = 이 샘플에서 서빙셀 ID 변경 발생 |
-| 추가 | `ping_pong_detected` | true = 30초 이내 이전 셀로 복귀 (핑퐁) |
+핸드오버 직전 셀 정보를 저장해 A3 이벤트 분석이 가능합니다:
 
-> 위치: `lte_neighbor_count` 다음, `neighbors_json` 직전
+```kotlin
+private data class HandoverResult(
+    val handover: Boolean, val pingPong: Boolean,
+    val prevCellId: String,
+    val prevRsrp: Int?, val prevRsrq: Int?   // 직전 셀의 신호값
+)
+
+// 핸드오버 시 lastHandoverMs 기록 → cell_duration_s 계산에 사용
+lastHandoverMs = nowMs
+```
 
 ---
 
-## 6. 데이터 분석 시 주의사항
+### 파일 저장 방식 개선 (데이터 유실 방지)
 
-- **이웃셀 `cell_id` / `nci` = null** → 모뎀 미제공. 정상. 셀 구별은 `pci + earfcn` 조합 사용
-- **`sinr_snr_db` = 빈칸** → 미측정값. `0`으로 채우지 말고 결측(NaN)으로 처리
-- **`handover_detected = true`인 행** → 직전 행과 서빙셀이 다름. 핸드오버 이벤트 분석 기준점으로 사용
-- **`ping_pong_detected = true`인 행** → 핸드오버 이후 30초 내 이전 셀 복귀. 핑퐁 판정 기준은 논문 정의에 따라 조정 가능 (현재 30초)
-- **`imu_speed_ms`** → GPS 속도 가용 구간에서는 GPS 기준으로 리셋됨. GPS 불가 구간(실내 등)에서는 적분 오차 누적 가능성 있음. GPS 속도와 병행 활용 권장
+```
+수정 전: 세션 종료 시 전체 일괄 저장 → 강제 종료 시 전체 유실
+수정 후: 30레코드(약 2.5분)마다 append flush → 최대 2.5분치만 유실
+```
+
+```kotlin
+companion object {
+    private const val FLUSH_EVERY = 30
+}
+
+fun log(record: NetworkRecord) {
+    buffer.add(record)
+    if (buffer.size >= FLUSH_EVERY) flush()
+}
+```
+
+---
+
+### 신규 기능: Activity 태그 UI
+
+로깅 시작 전 Spinner에서 활동을 선택하면 파일명 접미사와 `activity` 컬럼에 동시 기록됩니다.
+
+| 선택지 | CSV 기록값 |
+|--------|-----------|
+| 선택 안 함 | `unknown` |
+| 도보 | `walking` |
+| 지하철 | `subway` |
+| 차량 | `car` |
+| 실내/정지 | `home` |
+| 기타 | `other` |
+
+---
+
+### 신규 기능: requestCellInfoUpdate()
+
+매 tick 후 모뎀에 셀 정보 갱신을 요청합니다. 비동기 호출이므로 응답이 캐시에 반영되면 다음 tick에서 더 신선한 `allCellInfo`를 읽게 됩니다.
+
+```kotlin
+fun refreshCellInfo() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && hasLocation()) {
+        tel.requestCellInfoUpdate(context.mainExecutor, ...)
+    }
+}
+// NetworkLoggingService tick에서 collect() 후 호출
+```
+
+---
+
+## 4. 신규 CSV 컬럼 전체 목록
+
+현재 포맷은 **61개 컬럼**입니다. 아래는 이번 수정에서 추가된 18개 컬럼입니다.
+
+| 컬럼명 | 분류 | 설명 |
+|--------|------|------|
+| `activity` | 레이블 | 수집 활동 태그 (ML 지도학습 레이블) |
+| `mobile_rx_speed_Bps` | 처리량 | 셀룰러 전용 수신 처리량 |
+| `mobile_tx_speed_Bps` | 처리량 | 셀룰러 전용 송신 처리량 |
+| `mobile_rx_bitrate_Mbps` | 처리량 | 셀룰러 Rx Mbps — 신호↔처리량 분석에 사용 |
+| `mobile_tx_bitrate_Mbps` | 처리량 | 셀룰러 Tx Mbps |
+| `wifi_active` | 처리량 | Wi-Fi 연결 여부 (total rx/tx 오염 판단) |
+| `best_nbr_rsrp_dbm` | 이웃셀 | 최강 이웃셀 RSRP — JSON 파싱 없이 ML 피처로 사용 |
+| `best_nbr_pci` | 이웃셀 | 최강 이웃셀 PCI |
+| `best_nbr_arfcn` | 이웃셀 | 최강 이웃셀 EARFCN/NR-ARFCN |
+| `collect_trigger` | 수집 컨텍스트 | `periodic`(5초) / `handover`(이벤트) |
+| `cell_duration_s` | HO 분석 | 현재 셀에 머문 시간 (초) — HO timing 예측 피처 |
+| `ho_count_30s` | HO 분석 | 최근 30초 핸드오버 횟수 — 이동성 지표 |
+| `rsrp_delta` | 추세 피처 | RSRP 변화량 (이전 샘플 대비, HO 직후 null) |
+| `sinr_delta` | 추세 피처 | SINR 변화량 (이전 샘플 대비, HO 직후 null) |
+| `cell_info_age_ms` | 데이터 품질 | allCellInfo 데이터 나이 (ms). 8000+ 이면 stale |
+| `prev_serving_cell_id` | HO 분석 | 핸드오버 직전 서빙셀 ID |
+| `prev_rsrp_dbm` | HO 분석 | 핸드오버 직전 RSRP — A3 이벤트 분석용 |
+| `prev_rsrq_db` | HO 분석 | 핸드오버 직전 RSRQ |
+
+---
+
+## 5. 데이터 분석 시 주의사항 (실측 기반)
+
+- **`mobile_rx_bitrate_Mbps` 사용 권장** — `rx_bitrate_Mbps`는 Wi-Fi 포함이므로 신호-처리량 분석에는 셀룰러 전용 컬럼을 사용해야 합니다.
+- **`sinr_snr_db` 결측 처리** — 0으로 채우지 말고 NaN으로 처리. 값 0은 유효한 측정값(0dB)입니다.
+- **`collect_trigger = "handover"` 행** — timer 기반 행과 별도로 분석하거나, 이벤트 주도 행을 HO 이벤트 레이블로 활용할 수 있습니다.
+- **`cell_info_age_ms > 8000ms` 행** — allCellInfo가 stale할 가능성이 있습니다. 이웃셀 분석 시 필터링 권장.
+- **`rsrp_delta` / `sinr_delta`** — 핸드오버 직후 행은 null입니다(셀이 달라지므로 비교 의미 없음). null을 0으로 채우지 마세요.
+- **이웃셀 구별** — `cell_id`/`nci`는 항상 null입니다. `pci + earfcn` 조합이 유일한 옵션이지만, 이는 단일 세션 로컬 범위에서만 유효합니다. 실측 결과 PCI+EARFCN 조합의 40%가 서로 다른 eNB에서 충돌합니다. 세션을 넘나드는 이웃셀 추적은 Android API 한계로 불가능합니다.
+- **`ping_pong_detected` 과소 계수** — 앱 내 `cellHistory`가 최근 10건만 유지하므로, 지하철처럼 핸드오버가 빈번한 구간에서는 실제 핑퐁보다 적게 감지될 수 있습니다. 분석 목적에서는 `collect_trigger="handover"` 행의 `prev_serving_cell_id`를 기반으로 별도 계산하는 것을 권장합니다.
+- **구버전 파일 (20260506)** — `activity`, `mobile_rx_*`, `wifi_active`, `handover_detected` 등 신규 컬럼이 없습니다. 혼합 학습 시 컬럼 불일치에 주의하세요.

@@ -14,9 +14,10 @@ import java.io.File
 class NetworkLoggingService : Service() {
 
     companion object {
-        const val ACTION_STOP      = "com.networktracker.STOP"
-        const val EXTRA_INTERVAL   = "interval_ms"
-        const val DEFAULT_INTERVAL = 5_000L
+        const val ACTION_STOP        = "com.networktracker.STOP"
+        const val EXTRA_INTERVAL     = "interval_ms"
+        const val EXTRA_ACTIVITY_TAG = "activity_tag"
+        const val DEFAULT_INTERVAL   = 5_000L
         private const val CHANNEL_ID = "nt_channel"
         private const val NOTIF_ID   = 1001
 
@@ -30,12 +31,18 @@ class NetworkLoggingService : Service() {
     private lateinit var csvLogger: CsvLogger
     private var intervalMs = DEFAULT_INTERVAL
 
+    // 중복 수집 방지: 마지막 collect() 시각 추적 (timer tick과 핸드오버 콜백 동시 발화 대응)
+    private var lastCollectMs = 0L
+
     private val tick = object : Runnable {
         override fun run() {
+            lastCollectMs = System.currentTimeMillis()
+            collector.collectTrigger = "periodic"
             val record = collector.collect()
             csvLogger.log(record)
             recordCount = csvLogger.recordCount()
             updateNotification()
+            collector.refreshCellInfo()   // 다음 tick 전에 모뎀 셀 정보 갱신 요청
             handler.postDelayed(this, intervalMs)
         }
     }
@@ -51,8 +58,10 @@ class NetworkLoggingService : Service() {
         if (intent?.action == ACTION_STOP) { stopSelf(); return START_NOT_STICKY }
 
         intervalMs = intent?.getLongExtra(EXTRA_INTERVAL, DEFAULT_INTERVAL) ?: DEFAULT_INTERVAL
+        val activityTag = intent?.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
 
-        activeFile  = csvLogger.startSession()
+        collector.activityTag = activityTag
+        activeFile  = csvLogger.startSession(activityTag)
         recordCount = 0
 
         startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
@@ -60,17 +69,22 @@ class NetworkLoggingService : Service() {
         collector.startTelephonyListener()
         collector.startImuSensor()
 
-        // API 31+: 서빙셀 변경 이벤트 발생 시 즉시 추가 수집 (기존 주기 수집과 병행)
+        // 핸드오버 감지 시 즉시 추가 수집 (API 31+)
+        // timer와 동시 발화 시 중복 방지: 마지막 수집으로부터 1초 미만이면 skip
         collector.onCellChangeDetected = {
-            val record = collector.collect()
-            csvLogger.log(record)
-            recordCount = csvLogger.recordCount()
-            updateNotification()
+            val now = System.currentTimeMillis()
+            if (now - lastCollectMs >= 1_000L) {
+                lastCollectMs = now
+                collector.collectTrigger = "handover"
+                val record = collector.collect()
+                csvLogger.log(record)
+                recordCount = csvLogger.recordCount()
+                updateNotification()
+            }
         }
 
         handler.post(tick)
         isRunning = true
-
         return START_STICKY
     }
 
@@ -81,7 +95,6 @@ class NetworkLoggingService : Service() {
         collector.stopLocationUpdates()
         collector.stopTelephonyListener()
         collector.stopImuSensor()
-        // 중지 시 누적된 레코드를 한번에 CSV로 저장
         activeFile = csvLogger.saveAndClose()
         super.onDestroy()
     }
@@ -110,7 +123,7 @@ class NetworkLoggingService : Service() {
 
     private fun updateNotification() {
         val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개 (중지 시 CSV 저장)"))
+        mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개"))
     }
 
     private fun createNotificationChannel() {

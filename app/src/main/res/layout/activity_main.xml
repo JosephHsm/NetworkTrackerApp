@@ -16,6 +16,28 @@
         android:textStyle="bold"
         android:paddingBottom="12dp" />
 
+    <!-- 활동 태그 선택 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="활동:"
+            android:textSize="14sp"
+            android:paddingEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/spinner_activity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+    </LinearLayout>
+
     <!-- 시작/중지 버튼 -->
     <Button
         android:id="@+id/btn_start_stop"

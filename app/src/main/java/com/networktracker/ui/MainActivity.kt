@@ -24,11 +24,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvLiveStats: TextView
     private lateinit var tvFilePath: TextView
     private lateinit var lvFiles: ListView
+    private lateinit var spinnerActivity: Spinner
 
     private lateinit var previewCollector: NetworkDataCollector
     private lateinit var csvLogger: CsvLogger
 
     private val handler = Handler(Looper.getMainLooper())
+
+    // 활동 태그 옵션 (표시명 → CSV 저장값)
+    private val activityOptions = listOf(
+        "선택 안 함" to "unknown",
+        "도보"       to "walking",
+        "지하철"     to "subway",
+        "차량"       to "car",
+        "실내/정지"  to "home",
+        "기타"       to "other"
+    )
 
     private val uiTick = object : Runnable {
         override fun run() {
@@ -51,11 +62,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        btnStartStop = findViewById(R.id.btn_start_stop)
-        tvStatus     = findViewById(R.id.tv_status)
-        tvLiveStats  = findViewById(R.id.tv_live_stats)
-        tvFilePath   = findViewById(R.id.tv_file_path)
-        lvFiles      = findViewById(R.id.lv_files)
+        btnStartStop    = findViewById(R.id.btn_start_stop)
+        tvStatus        = findViewById(R.id.tv_status)
+        tvLiveStats     = findViewById(R.id.tv_live_stats)
+        tvFilePath      = findViewById(R.id.tv_file_path)
+        lvFiles         = findViewById(R.id.lv_files)
+        spinnerActivity = findViewById(R.id.spinner_activity)
+
+        spinnerActivity.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            activityOptions.map { it.first }
+        )
 
         previewCollector = NetworkDataCollector(this)
         csvLogger        = CsvLogger(this)
@@ -73,7 +91,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 미리보기 UI용 별도 리스너 시작 (5G NSA 감지 포함)
         previewCollector.startLocationUpdates()
         previewCollector.startTelephonyListener()
         previewCollector.startImuSensor()
@@ -99,6 +116,7 @@ class MainActivity : AppCompatActivity() {
             if (running) getColor(android.R.color.holo_red_dark)
             else         getColor(android.R.color.holo_green_dark)
         )
+        spinnerActivity.isEnabled = !running  // 로깅 중 태그 변경 방지
 
         if (running) {
             tvStatus.text   = "● 로깅 중 | 기록 수: ${NetworkLoggingService.recordCount}"
@@ -108,12 +126,10 @@ class MainActivity : AppCompatActivity() {
                 runCatching {
                     val r = previewCollector.collect()
                     tvLiveStats.text = buildString {
-                        // 세대/망 정보
                         appendLine("세대/종류  : ${r.generation} (${r.networkType})")
                         appendLine("오버라이드 : ${r.overrideNetworkType}")
                         appendLine("5G 감지   : SA=${r.is5GActual}  NSA=${r.is5GDisplay}  NR셀=${r.nrCellSeen}  서빙NR=${r.nrServingCellSeen}")
 
-                        // 위치
                         appendLine("위  도    : ${r.latitude?.let  { "%.6f".format(it) } ?: "취득 중..."}")
                         appendLine("경  도    : ${r.longitude?.let { "%.6f".format(it) } ?: "취득 중..."}")
                         appendLine("GPS정확도 : ${r.gpsAccuracyM?.let { "%.1f m".format(it) } ?: "-"}")
@@ -126,43 +142,40 @@ class MainActivity : AppCompatActivity() {
                         if (r.gpsAltitude != null)
                             appendLine("고  도    : ${"%.0f".format(r.gpsAltitude)} m")
 
-                        // 셀 식별
                         appendLine("셀 ID     : ${r.servingCellId.ifEmpty { "-" }}")
-                        if (r.servingPci != null)       appendLine("PCI       : ${r.servingPci}")
-                        if (r.servingFreqArfcn != null) appendLine("ARFCN     : ${r.servingFreqArfcn}")
+                        if (r.servingPci != null)          appendLine("PCI       : ${r.servingPci}")
+                        if (r.servingFreqArfcn != null)    appendLine("ARFCN     : ${r.servingFreqArfcn}")
                         if (r.servingBandStr.isNotEmpty()) appendLine("Band      : ${r.servingBandStr}")
-                        if (r.servingTac != null)       appendLine("TAC       : ${r.servingTac}")
-                        if (r.mcc.isNotEmpty())         appendLine("MCC/MNC   : ${r.mcc}/${r.mnc}")
+                        if (r.servingTac != null)          appendLine("TAC       : ${r.servingTac}")
+                        if (r.mcc.isNotEmpty())            appendLine("MCC/MNC   : ${r.mcc}/${r.mnc}")
 
-                        // LTE/NR 공통 신호
                         appendLine("RSRP      : ${r.rsrp?.let    { "$it dBm" } ?: "-"}")
                         appendLine("RSRQ      : ${r.rsrq?.let    { "$it dB"  } ?: "-"}")
                         appendLine("RSSI      : ${r.rssi?.let    { "$it dBm" } ?: "-"}")
                         appendLine("SINR/SNR  : ${r.sinrSnr?.let { "$it dB"  } ?: "-"}")
                         appendLine("신호레벨  : ${r.signalLevel?.let { "$it / 4" } ?: "-"}")
 
-                        // LTE 전용
                         if (r.timingAdvanceLte != null)
                             appendLine("TA(거리)  : ${r.timingAdvanceLte}  (~${"%.0f".format(r.timingAdvanceLte * 78.0)} m)")
 
-                        // 5G CSI 측정값
                         if (r.csiRsrp != null) {
                             appendLine("CSI-RSRP  : ${r.csiRsrp} dBm")
                             appendLine("CSI-RSRQ  : ${r.csiRsrq?.let { "$it dB" } ?: "-"}")
                             appendLine("CSI-SINR  : ${r.csiSinr?.let { "$it dB" } ?: "-"}")
                         }
 
-                        // 처리량
-                        val rxMbps = r.rxSpeedBps * 8.0 / 1_000_000.0
-                        val txMbps = r.txSpeedBps * 8.0 / 1_000_000.0
-                        appendLine("수신속도  : ${formatBps(r.rxSpeedBps)}  (${"%.2f".format(rxMbps)} Mbps)")
-                        appendLine("송신속도  : ${formatBps(r.txSpeedBps)}  (${"%.2f".format(txMbps)} Mbps)")
+                        val rxMbps       = r.rxSpeedBps       * 8.0 / 1_000_000.0
+                        val mobileRxMbps = r.mobileRxSpeedBps * 8.0 / 1_000_000.0
+                        appendLine("수신(전체): ${formatBps(r.rxSpeedBps)}  (${"%.2f".format(rxMbps)} Mbps)${if (r.wifiActive) "  [Wi-Fi포함]" else ""}")
+                        appendLine("수신(셀룰): ${formatBps(r.mobileRxSpeedBps)}  (${"%.2f".format(mobileRxMbps)} Mbps)")
 
-                        // 핸드오버
+                        if (r.bestNbrRsrp != null)
+                            appendLine("최강이웃  : RSRP=${r.bestNbrRsrp}dBm  PCI=${r.bestNbrPci ?: "-"}  ARFCN=${r.bestNbrArfcn ?: "-"}")
+
                         if (r.handoverDetected)
-                            appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버 감지!" else "→ 핸드오버 감지")
+                            appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버! 이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm"
+                                       else "→ 핸드오버  이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm")
 
-                        // 이웃 셀
                         append("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
                     }
                 }
@@ -188,18 +201,18 @@ class MainActivity : AppCompatActivity() {
         if (!hasLocationPermission() || !hasPhoneStatePermission()) {
             requestNeededPermissions(); return
         }
+        val tag = activityOptions.getOrNull(spinnerActivity.selectedItemPosition)?.second ?: "unknown"
         val intent = Intent(this, NetworkLoggingService::class.java).apply {
-            putExtra(NetworkLoggingService.EXTRA_INTERVAL, 5_000L)
+            putExtra(NetworkLoggingService.EXTRA_INTERVAL,     5_000L)
+            putExtra(NetworkLoggingService.EXTRA_ACTIVITY_TAG, tag)
         }
         startForegroundService(intent)
     }
 
     private fun stopLogging() {
-        startService(
-            Intent(this, NetworkLoggingService::class.java).apply {
-                action = NetworkLoggingService.ACTION_STOP
-            }
-        )
+        startService(Intent(this, NetworkLoggingService::class.java).apply {
+            action = NetworkLoggingService.ACTION_STOP
+        })
         handler.postDelayed({ refreshFileList() }, 2000)
     }
 
