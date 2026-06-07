@@ -18,7 +18,9 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(gh repo *)",
-      "PowerShell(gh repo *)"
+      "PowerShell(gh repo *)",
+      "Bash(gradlew.bat assembleDebug --build-cache)",
+      "PowerShell($gradle = \"C:\\\\Users\\\\admin\\\\.gradle\\\\wrapper\\\\dists\\\\gradle-9.3.1-bin\\\\23ovyewtku6u96viwx3xl3oks\\\\gradle-9.3.1\\\\bin\\\\gradle.bat\"; & $gradle assembleDebug --build-cache --project-dir \"C:\\\\Users\\\\admin\\\\NetworkTrackerApp\" 2>&1)"
     ]
   }
 }

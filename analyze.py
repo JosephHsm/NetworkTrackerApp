@@ -171,8 +171,11 @@ print("\n" + "="*70)
 print("【3】 데이터레이트 (Rx/Tx) 시각화")
 print("="*70)
 
-rx_col = "rx_bitrate_Mbps" if "rx_bitrate_Mbps" in all_df.columns else "rx_speed_Bps"
-tx_col = "tx_bitrate_Mbps" if "tx_bitrate_Mbps" in all_df.columns else "tx_speed_Bps"
+# 신호-처리량 분석에는 셀룰러 전용 컬럼 사용 (ISSUE_ANALYSIS 이슈 3 / 주의사항 참고)
+rx_col = "mobile_rx_bitrate_Mbps" if "mobile_rx_bitrate_Mbps" in all_df.columns else \
+         ("rx_bitrate_Mbps" if "rx_bitrate_Mbps" in all_df.columns else "rx_speed_Bps")
+tx_col = "mobile_tx_bitrate_Mbps" if "mobile_tx_bitrate_Mbps" in all_df.columns else \
+         ("tx_bitrate_Mbps" if "tx_bitrate_Mbps" in all_df.columns else "tx_speed_Bps")
 
 files = sorted(all_df["_file"].unique())
 n_files = len(files)

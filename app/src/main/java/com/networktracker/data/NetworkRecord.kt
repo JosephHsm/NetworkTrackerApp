@@ -14,6 +14,11 @@ data class NetworkRecord(
     val gpsSpeedMs: Float? = null,
     val gpsBearing: Float? = null,
     val gpsAltitude: Double? = null,
+    // 위치 소스 및 신선도 — 지하 구간 필터링에 사용
+    // fused: GMS 융합(GPS+WiFi+기지국), gps/network: 폴백 LocationManager
+    // stale_*: 60초 이상 갱신 없음 (GPS가 얼어붙은 상태)
+    val locationSource: String = "none",
+    val locationAgeS: Int? = null,
 
     val networkType: String = "UNKNOWN",
     val overrideNetworkType: String = "NONE",
@@ -91,6 +96,8 @@ data class NetworkRecord(
             append(gpsSpeedMs        ?: "");              append(',')
             append(gpsBearing        ?: "");              append(',')
             append(gpsAltitude       ?: "");              append(',')
+            append(locationSource);                       append(',')
+            append(locationAgeS      ?: "");              append(',')
             append(networkType);                          append(',')
             append(overrideNetworkType);                  append(',')
             append(generation);                           append(',')
@@ -150,6 +157,7 @@ data class NetworkRecord(
         const val CSV_HEADER =
             "timestamp,datetime,activity," +
             "latitude,longitude,gps_accuracy_m,gps_speed_ms,gps_bearing_deg,gps_altitude_m," +
+            "location_source,location_age_s," +
             "network_type,override_network_type,generation," +
             "is_5g,is_5g_actual,is_5g_display,nr_cell_seen,nr_serving_cell_seen," +
             "serving_cell_id,serving_pci,serving_freq_arfcn,serving_band,serving_tac,mcc,mnc," +

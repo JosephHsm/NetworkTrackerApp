@@ -11,6 +11,13 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Looper
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.TrafficStats
@@ -44,6 +51,12 @@ class NetworkDataCollector(private val context: Context) {
     private var prevTimeMs        = System.currentTimeMillis()
 
     @Volatile private var lastLocation: Location? = null
+    @Volatile private var locationProvider = "none"  // 마지막 위치를 준 provider 이름
+    @Volatile private var locationTimeMs   = 0L      // 마지막 위치 수신 시각
+
+    private val fusedClient: FusedLocationProviderClient =
+        LocationServices.getFusedLocationProviderClient(context)
+    @Volatile private var usingFused = false
 
     // ── 가속도 센서 기반 속도 추정 ────────────────────────────────────────────
     private val linearAccelSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
@@ -107,17 +120,34 @@ class NetworkDataCollector(private val context: Context) {
         }
         val pingPong = cellHistory.any { (id, ts) -> id == newCellId && (nowMs - ts) < 30_000L }
         cellHistory.addFirst(Pair(lastCellId, nowMs))
-        if (cellHistory.size > 10) cellHistory.removeLast()
+        // 개수 제한 대신 30초 이상 지난 항목 제거 — 지하철 고빈도 HO에서 핑퐁 누락 방지
+        while (cellHistory.isNotEmpty() && (nowMs - cellHistory.last().second) > 30_000L)
+            cellHistory.removeLast()
         lastHandoverMs = nowMs
         val result = HandoverResult(true, pingPong, lastCellId, lastRsrp, lastRsrq)
         lastCellId = newCellId; lastRsrp = curRsrp; lastRsrq = curRsrq
         return result
     }
 
-    private val gpsListener = LocationListener { loc -> lastLocation = loc }
+    private val gpsListener = LocationListener { loc ->
+        lastLocation = loc
+        locationProvider = "gps"
+        locationTimeMs   = System.currentTimeMillis()
+    }
     private val netListener = LocationListener { loc ->
-        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))
+        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE)) {
             lastLocation = loc
+            locationProvider = "network"
+            locationTimeMs   = System.currentTimeMillis()
+        }
+    }
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            val loc = result.lastLocation ?: return
+            lastLocation = loc
+            locationProvider = "fused"
+            locationTimeMs   = System.currentTimeMillis()
+        }
     }
 
     @Volatile private var displayOverrideType = "NONE"
@@ -132,23 +162,51 @@ class NetworkDataCollector(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
         if (!hasLocation()) return
+
+        // 시작 직후 쓸 마지막 알려진 위치를 미리 채워 둠
         runCatching {
             listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER).forEach { p ->
                 if (lm.isProviderEnabled(p))
                     lm.getLastKnownLocation(p)?.let { loc ->
-                        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))
-                            lastLocation = loc
+                        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE)) {
+                            lastLocation     = loc
+                            locationProvider = p
+                            locationTimeMs   = System.currentTimeMillis()
+                        }
                     }
             }
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000L, 1f, gpsListener)
-            if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
-                lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 1f, netListener)
+        }
+
+        // FusedLocationProviderClient (GPS + Wi-Fi + 기지국 융합, OS가 자동 선택)
+        runCatching {
+            val req = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+                .setMinUpdateIntervalMillis(1000L)
+                .build()
+            fusedClient.requestLocationUpdates(req, locationCallback, Looper.getMainLooper())
+            fusedClient.lastLocation.addOnSuccessListener { loc ->
+                if (loc != null && (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))) {
+                    lastLocation     = loc
+                    locationProvider = "fused"
+                    locationTimeMs   = System.currentTimeMillis()
+                }
+            }
+            usingFused = true
+        }.onFailure {
+            // Google Play Services 없는 기기 — 구형 LocationManager로 폴백
+            usingFused = false
+            runCatching {
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000L, 1f, gpsListener)
+                if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
+                    lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 1f, netListener)
+            }
         }
     }
 
     fun stopLocationUpdates() {
+        if (usingFused) runCatching { fusedClient.removeLocationUpdates(locationCallback) }
         runCatching { lm.removeUpdates(gpsListener) }
         runCatching { lm.removeUpdates(netListener) }
+        usingFused = false
     }
 
     // ── 5G NSA 감지 리스너 ────────────────────────────────────────────────────
@@ -266,12 +324,16 @@ class NetworkDataCollector(private val context: Context) {
 
         val wifiActive = isWifiActive()
 
-        val location: Location? = lastLocation ?: runCatching {
-            if (hasLocation())
-                lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            else null
-        }.getOrNull()
+        // location_source / location_age_s 계산
+        val locationAgeMs   = if (locationTimeMs > 0L) now - locationTimeMs else null
+        val effectiveSource = when {
+            lastLocation == null                               -> "none"
+            locationAgeMs != null && locationAgeMs > 60_000L  -> "stale_$locationProvider"
+            else                                               -> locationProvider
+        }
+        val locationAgeSec  = locationAgeMs?.let { (it / 1000L).toInt() }
+
+        val location: Location? = lastLocation
 
         location?.takeIf { it.hasSpeed() && it.speed > 0.1f }?.let { loc ->
             imuVelocityMs = loc.speed
@@ -475,6 +537,8 @@ class NetworkDataCollector(private val context: Context) {
             gpsSpeedMs          = location?.takeIf { it.hasSpeed() }?.speed,
             gpsBearing          = location?.takeIf { it.hasBearing() }?.bearing,
             gpsAltitude         = location?.takeIf { it.hasAltitude() }?.altitude,
+            locationSource      = effectiveSource,
+            locationAgeS        = locationAgeSec,
             networkType         = networkType,
             overrideNetworkType = overrideNetworkType,
             generation          = generation,
