@@ -20,7 +20,9 @@
       "Bash(gh repo *)",
       "PowerShell(gh repo *)",
       "Bash(gradlew.bat assembleDebug --build-cache)",
-      "PowerShell($gradle = \"C:\\\\Users\\\\admin\\\\.gradle\\\\wrapper\\\\dists\\\\gradle-9.3.1-bin\\\\23ovyewtku6u96viwx3xl3oks\\\\gradle-9.3.1\\\\bin\\\\gradle.bat\"; & $gradle assembleDebug --build-cache --project-dir \"C:\\\\Users\\\\admin\\\\NetworkTrackerApp\" 2>&1)"
+      "PowerShell($gradle = \"C:\\\\Users\\\\admin\\\\.gradle\\\\wrapper\\\\dists\\\\gradle-9.3.1-bin\\\\23ovyewtku6u96viwx3xl3oks\\\\gradle-9.3.1\\\\bin\\\\gradle.bat\"; & $gradle assembleDebug --build-cache --project-dir \"C:\\\\Users\\\\admin\\\\NetworkTrackerApp\" 2>&1)",
+      "PowerShell(python --version; python3 --version)",
+      "PowerShell(python --version; python -m pip --version)"
     ]
   }
 }

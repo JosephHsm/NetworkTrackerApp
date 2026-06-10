@@ -1,105 +1,162 @@
-# GPS 보완 개선 내역
+# GPS 위치 품질 개선 및 지하 구간 위치 복원 방안
 
-> 작성일: 2026-06-07
-
----
-
-## 배경
-
-지하철 진입 시 GPS 위성 신호가 차단되면서 `latitude` / `longitude` 값이 진입 직전 지점에 동결되는 문제가 있었다.
-이웃셀 CI 미제공 문제(ISSUE_ANALYSIS.md 이슈 7·9)는 Android 모뎀 한계로 소프트웨어 해결이 불가능하므로,
-위치 정보 품질을 높이고 stale 여부를 데이터로 추적하는 방향으로 개선했다.
+> 최초 작성: 2026-06-07 / 실측 검증 및 방안 추가: 2026-06-10
+>
+> **기준 데이터셋: 2026-06-07 ~ 06-09 실측 (61개 컬럼 포맷)**
 
 ---
 
-## 변경 파일
+## 0. 요약 (3줄)
+
+1. 지하철 진입 시 GPS가 끊기면 좌표·정확도·속도가 직전 값에 **동결(freeze)** 되는 문제가 있어, 1차로 `FusedLocationProviderClient`(GPS+Wi-Fi+기지국 융합)를 도입했다.
+2. **실측 검증 결과, 깊은 터널 구간에서는 Fused로도 위치가 갱신되지 않고 여전히 동결된다.** 다만 지상 구간·역사 부근에서는 정상 복원된다. 즉 1차 개선은 부분적으로만 유효하다.
+3. 연구 데이터로서의 최종 해법은 **(a) 동결 구간을 데이터 자체로 식별**(`gps_speed_ms` 공백 여부)하고, **(b) 알려진 이동 경로에 사후 맵매칭(map-matching)** 하는 후처리다. 새 컬럼 추가 없이 현재 61컬럼 CSV만으로 가능하다.
+
+---
+
+## 1. 배경: 지하 구간 GPS 동결 문제
+
+지하철·터널·건물 내부로 진입해 GPS 위성 신호가 차단되면, OS는 마지막으로 확보한 위치(fix)를 계속 반환한다. 그 결과:
+
+- `latitude` / `longitude` 가 진입 직전 좌표에 고정됨
+- `gps_accuracy_m` 도 마지막 값에 고정됨 (불확실성이 커지지 않음)
+- `gps_speed_ms` / `gps_bearing_deg` 는 **빈 값**이 됨 (새 fix가 없으므로 속도·방위 산출 불가)
+
+이 동결된 좌표를 실제 위치로 오인하면, 신호↔위치 상관 분석에서 지하 구간 위치 레이블이 오염된다.
+
+> 참고: 이웃셀 CI 미제공(ISSUE_ANALYSIS.md 이슈 7·9)은 Android 모뎀 한계로 별개 문제이며 본 개선과 무관하다.
+
+---
+
+## 2. 1차 개선: FusedLocationProviderClient 도입 (코드)
+
+### 변경 파일
 
 | 파일 | 변경 내용 |
 |------|-----------|
 | `app/build.gradle` | `play-services-location:21.3.0` 의존성 추가 |
-| `app/.../collector/NetworkDataCollector.kt` | FusedLocationProviderClient 도입, 위치 소스·나이 추적 |
-| `app/.../data/NetworkRecord.kt` | `locationSource`, `locationAgeS` 필드 및 CSV 컬럼 추가 |
+| `app/.../collector/NetworkDataCollector.kt` | `FusedLocationProviderClient` 도입, GMS 부재 시 `LocationManager` 폴백 |
 
----
+### 이전 → 이후
 
-## 핵심 변경: FusedLocationProviderClient 도입
-
-### 이전
-
-`LocationManager`에 `GPS_PROVIDER`와 `NETWORK_PROVIDER`를 직접 등록했다.
-GPS 신호가 끊기면 OS가 대안 소스로 전환하는 로직이 없어서 좌표가 동결됐다.
-
-### 이후
-
-Google Play Services의 `FusedLocationProviderClient`를 주 소스로 사용한다.
-OS가 GPS·Wi-Fi 포지셔닝·기지국 위치를 자동으로 융합해 가장 정확한 위치를 제공한다.
-지하 역사 내 Wi-Fi AP 신호가 잡히면 GPS 없이도 위치가 계속 갱신된다.
+- **이전:** `LocationManager`에 `GPS_PROVIDER` / `NETWORK_PROVIDER`를 직접 등록. GPS가 끊기면 대안 소스로 자동 전환하는 로직이 없어 좌표가 동결됨.
+- **이후:** Google Play Services의 `FusedLocationProviderClient`를 주 소스로 사용. OS가 GPS·Wi-Fi 포지셔닝·기지국 위치를 자동 융합한다.
 
 ```
-GPS 신호 있음  → GPS 좌표 (정밀도 ~5–20 m)
-GPS 없음, WiFi → WiFi 포지셔닝 (정밀도 ~50–200 m)
-GPS·WiFi 없음  → 기지국 삼각측량 (정밀도 ~300–1000 m)
+GPS 신호 있음   → GPS 좌표            (정밀도 ~5–20 m)
+GPS 없음, WiFi  → Wi-Fi 포지셔닝       (정밀도 ~50–200 m)
+GPS·WiFi 없음   → 기지국 위치          (정밀도 ~300–1000 m)
 ```
 
 GMS가 없는 기기에서는 기존 `LocationManager` 방식으로 자동 폴백한다.
 
-### 코드 구조
-
-```kotlin
-// startLocationUpdates() 흐름
-1. getLastKnownLocation()으로 시작 직후 좌표 즉시 확보
-2. fusedClient.requestLocationUpdates() 시작 (성공 시 usingFused = true)
-   └─ onFailure → LocationManager GPS/NETWORK 폴백
-3. locationCallback.onLocationResult() 콜백마다
-   lastLocation, locationProvider("fused"), locationTimeMs 갱신
-
-// stopLocationUpdates() 흐름
-usingFused == true → fusedClient.removeLocationUpdates()
-항상             → lm.removeUpdates() (폴백 리스너 정리)
-```
+> **중요 — 컬럼 관련:** 코드에는 `location_source` / `location_age_s` 두 컬럼이 함께 추가되어 있으나,
+> **2026-06-07 ~ 06-09 실측 데이터는 이 컬럼이 반영되기 이전 빌드로 수집되어 61컬럼 포맷이다.**
+> 따라서 **본 데이터셋 분석에서는 두 컬럼을 사용하지 않으며**, 아래 §4의 `gps_speed_ms` 휴리스틱으로 동결 구간을 판별한다.
+> (전체 컬럼 정의는 `README.md` §데이터 필드 설명을 단일 기준으로 참조할 것.)
 
 ---
 
-## 신규 CSV 컬럼 (2개 추가 → 총 63개)
+## 3. 실측 검증: Fused 도입 후에도 깊은 터널은 동결된다
 
-컬럼 위치: `gps_altitude_m` 바로 뒤, `network_type` 앞
+`trackingcsv/network_log_20260609_185650_subway.csv` (지하철, 200행 / 14분) 분석 결과.
 
-| 컬럼명 | 타입 | 값 예시 | 설명 |
-|--------|------|---------|------|
-| `location_source` | string | `fused` | 위치를 어떻게 얻었는지 (아래 참고) |
-| `location_age_s` | int / 공백 | `3` | 수집 시점 기준 위치 정보 나이 (초) |
+### 3.1 세션 전체 통계
 
-### `location_source` 값 정의
+| 지표 | 값 |
+|------|---|
+| 평균 `gps_accuracy_m` | 26.7 m |
+| 좌표 동결(직전 행과 lat/lon 동일) 비율 | 46.5 % |
+| 최장 동결 구간 | **47 샘플 ≈ 3.3 분** (좌표·정확도 41.4 m 고정, 속도·방위 공백) |
 
-| 값 | 의미 |
-|----|------|
-| `fused` | FusedLocationProviderClient가 60초 이내 갱신한 위치 (GPS·WiFi·기지국 융합) |
-| `gps` | LocationManager GPS_PROVIDER 폴백 (60초 이내) |
-| `network` | LocationManager NETWORK_PROVIDER 폴백 (60초 이내) |
-| `stale_fused` | Fused 위치이나 60초 이상 갱신 없음 — 지하 GPS 동결 구간 |
-| `stale_gps` | GPS 위치이나 60초 이상 갱신 없음 |
-| `stale_network` | Network 위치이나 60초 이상 갱신 없음 |
-| `none` | 위치 정보 없음 |
+최장 동결 구간에서 좌표(`37.5110921,127.0740099`)와 정확도(`41.424 m`)가 47개 행 전부 **바이트 단위로 동일**했고 `gps_speed_ms`·`gps_bearing_deg`는 전부 공백이었다. 이는 새 fix 없이 캐시된 위치를 반복 반환하는 동결 패턴이며, Fused가 지하 깊은 구간에서는 Wi-Fi/기지국으로도 위치를 갱신하지 못함을 의미한다.
+
+### 3.2 지하(전반부) vs 지상(후반부) 비교
+
+| 구간 | `gps_speed_ms` 채워진 비율 | 평균 정확도 | 좌표 거동 |
+|------|--------------------------|------------|-----------|
+| 0–79행 (지하 구간) | 20 / 80 | 44.6 m | 역 부근에서 1–2 km 점프 후 정지 (불연속) |
+| 90행 이후 (지상 구간) | 113 / 120 | **14.8 m** | 매 샘플 자연스럽게 이동 (연속 궤적) |
+
+후반부(잠실철교~강변~구의~건대입구의 **2호선 지상 구간**)에서는 고도가 4 m→40~58 m로 변하고 속도 14~22 m/s(약 50~80 km/h), 방위가 332°→287°→219°로 회전까지 잡히는 **정상 연속 GPS**였다. 즉 지상으로 올라오는 순간 위치가 완전히 복원된다.
+
+**결론:** 1차 개선은 *지상·역사 부근*에서는 유효하나 *역간 깊은 터널*에서는 한계가 있다. 위성·Wi-Fi·기지국 신호가 모두 닿지 않는 구간은 어떤 실시간 측위로도 메울 수 없다.
 
 ---
 
-## 데이터 분석 시 활용 방법
+## 4. 동결 구간을 데이터로 식별하는 법 (컬럼 추가 불필요)
+
+현재 61컬럼 데이터만으로 신뢰 구간과 동결 구간을 구분할 수 있다. **핵심 판별자는 `gps_speed_ms`다.**
+
+| 조건 | 의미 | 위치 신뢰도 |
+|------|------|------------|
+| `gps_speed_ms` 값 있음 | 새 fix 수신 (이동/정지 무관) | ✅ 실측 위치 |
+| `gps_speed_ms` 공백 | 새 fix 없음 → 직전 좌표 홀딩 | ❌ 동결 (위치 신뢰 불가) |
+
+> 보조 지표: `gps_accuracy_m`이 비정상적으로 크고(>30 m) 여러 행에 걸쳐 정확히 동일한 값이면 동결 신호다. 단 Wi-Fi 기반 fused도 정확도가 낮게 나올 수 있으므로 `gps_speed_ms`와 함께 판단한다.
 
 ```python
-# 지하 GPS 동결 구간 필터링
-df_valid = df[~df['location_source'].str.startswith('stale')]
+# 동결(홀딩) 구간 = gps_speed_ms 공백
+df["gps_held"] = df["gps_speed_ms"].isna()
 
-# 위치 소스별 정밀도 분포 확인
-df.groupby('location_source')['gps_accuracy_m'].describe()
-
-# Fused가 WiFi 수준으로 떨어진 구간 (지하 진입 추정)
-df_underground = df[(df['location_source'] == 'fused') & (df['gps_accuracy_m'] > 100)]
+# 신호 분석은 전 구간 사용 가능 (rsrp/cell 등은 지하에서도 정상 수집됨),
+# 단 위치 레이블이 필요한 분석에서는 동결 구간을 제외하거나 §6 맵매칭으로 복원
+df_pos_trusted = df[~df["gps_held"]]
 ```
+
+지하 구간에서도 `rsrp_dbm`·`serving_cell_id` 등 **신호 컬럼은 결측 없이 정상 수집**된다(검증: subway 6/9 파일 해당 컬럼 결측 0건). 오염되는 것은 위치 레이블뿐이다.
 
 ---
 
-## 주의사항
+## 5. 네이버 지도는 지하에서 어떻게 위치를 잡는가
 
-- `location_age_s`가 크고 `location_source`가 `stale_*`인 행은 위치 신뢰도가 낮다. 이웃셀·핸드오버 분석에서 지상/지하 구간을 분리할 때 이 컬럼을 기준으로 사용할 수 있다.
-- `gps_accuracy_m`이 크다고 반드시 stale은 아니다 (Wi-Fi 기반 fused도 accuracy가 낮게 나옴). 두 컬럼을 함께 봐야 한다.
-- 이웃셀 CI 미제공 문제는 이번 개선과 무관하며 Android API 한계로 해결 불가하다 (ISSUE_ANALYSIS.md 이슈 7·9 참고).
+네이버/카카오 지도가 지하에서도 위치를 표시하는 것은 GPS가 아닌 **3가지 보조 측위**를 쓰기 때문이다.
+
+| 기술 | 원리 | 개인이 재현 가능한가 |
+|------|------|--------------------|
+| **Wi-Fi 핑거프린팅(WPS)** | 주변 Wi-Fi AP의 BSSID(MAC)+신호세기를 사전 구축한 *AP→위치 DB*와 대조해 위치 역추정. 지하철역의 촘촘한 AP 덕분에 GPS 0개여도 동작 | DB 자체는 개인 구축 불가. 단 Google Geolocation API로 대행 가능 |
+| **노선 맵매칭** | 지하철 선로 좌표 + 열차 운행시각표를 알고, 승차역·경과시간으로 선로 위에 위치를 보간 | ✅ 가능 (공개 노선 데이터 + 본인이 탄 경로) |
+| **센서 추측항법(PDR)** | 가속도계·자이로·기압계로 마지막 fix 이후 이동량 추정 | △ 부분 가능, drift 누적 |
+
+핵심은 네이버의 지하 위치도 **실측이 아니라 추정값**이라는 점이다. 따라서 연구 데이터에서는 추정 위치를 실시간으로 끼워 넣기보다, 아래 사후 맵매칭이 더 정확하고 투명하다.
+
+---
+
+## 6. 권장 해법: 사후 노선 맵매칭 (연구용 최선)
+
+실시간 앱이 아니라 **이미 수집된 데이터셋**을 다루므로, 끊긴 구간을 사후에 복원하는 것이 정확도·재현성 모두 유리하다.
+
+### 원리
+
+수집자는 이동 경로를 알고 있다(예: 잠실→건대, 2호선). 그러면:
+
+1. 해당 노선의 선로 polyline을 공개 데이터로 확보
+   - 서울 지하철 좌표/GTFS: 서울열린데이터광장, 국가대중교통DB 등
+2. 동결 구간(`gps_speed_ms` 공백) 양 끝의 **신뢰 가능한 실측 fix** 두 개를 앵커로 잡음
+3. 두 앵커 사이의 각 행 `timestamp`를, 노선 polyline 위에서 **시간 비례로 보간**해 위치를 재할당
+   - 보조 정보로 `serving_cell_id` 변화·역 도착 시각을 쓰면 정거장 단위로 더 정밀하게 스냅 가능
+
+### 장점
+
+- 앱 수정·재수집 불필요, **현재 61컬럼 CSV만으로 수행**
+- 새 컬럼 추가 없음 (원본은 보존하고 별도 `latitude_mapmatched` 산출 컬럼을 분석 단계에서만 생성)
+- "가짜 실시간 위치"가 아니라 "알려진 경로 기반 추정"임이 방법론적으로 명확 → 논문에서 방어 가능
+
+### 대안 (필요 시)
+
+| 방법 | 특징 |
+|------|------|
+| Google Geolocation API 후처리 | 수집된 Wi-Fi/셀 관측값을 API에 보내 위치 회신. 네이버 WPS를 빌려 쓰는 셈. 소량 무료·이후 유료 |
+| Fused 고정밀 모드 + Wi-Fi 스캔 ON | 실시간 정밀도 소폭 향상. 깊은 터널 한계는 동일 |
+
+연구 목적에는 **사후 맵매칭을 1순위로 권장**한다.
+
+---
+
+## 7. 분석 시 체크리스트 (이 데이터셋 기준)
+
+- 위치가 필요한 분석에서는 먼저 `gps_speed_ms` 공백 행을 동결로 표시하고 제외하거나 §6으로 복원한다.
+- `gps_accuracy_m` 가 크다고 곧바로 동결은 아니다(Wi-Fi fused도 큼). `gps_speed_ms`와 함께 본다.
+- 신호 컬럼(`rsrp_dbm` 등)은 지하에서도 정상이므로, 위치가 불필요한 신호 분석은 전 구간 사용 가능하다.
+- 지상 구간(예: subway 6/9의 90행 이후)은 정밀도 ~15 m의 연속 GPS로 그대로 사용 가능하다.
+- `location_source` / `location_age_s` 컬럼은 본 데이터셋(61컬럼)에 **없다**. 코드 상으로만 존재하며, 향후 수집분부터 반영된다.
