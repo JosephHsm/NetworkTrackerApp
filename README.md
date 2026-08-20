@@ -38,7 +38,7 @@ GPS 위치, 기지국 신호 지표, 이웃 셀 정보, 처리량을 5초 주기
 |--------|------|----------------------|
 | 주기 수집 | 설정 주기(2/5/10초)마다 | `periodic` |
 | 핸드오버 이벤트 | 서빙셀 ID 변경 감지 시 즉시 (API 31+, 직전 수집으로부터 1초 이상 경과 시) | `handover` |
-| 수동 역 태그 | 지하 구간에서 "역 태그" 버튼 탭 시 (카카오 Local API로 역 좌표 조회 후 기록) | `anchor` |
+| 수동 역 태그 | 지하 구간에서 "역 태그" 버튼 탭 시. 이름 입력 시 카카오 Local API로 좌표 조회, 미입력 시 순번(`stop_N`)만 즉시 기록 | `anchor` |
 
 ### v1.1 확장 기능 (2026-08)
 
@@ -187,7 +187,7 @@ GPS 속도가 들어올 때마다 GPS 값으로 리셋해서 drift를 억제한�
 | 66 | `probe_dl_mbps` | 다운로드 버스트 처리량(Mbps). 버스트 완료 직후 행에만 기록 |
 | 67 | `wifi_ap_count` | 스캔된 주변 Wi-Fi AP 수 |
 | 68 | `wifi_scan_age_s` | Wi-Fi 스캔 결과 나이(초). 클수록 stale |
-| 69 | `anchor_station` | 수동 태그한 역 이름 (`collect_trigger="anchor"` 행에만) |
+| 69 | `anchor_station` | 수동 태그한 역 이름. 이름 없이 버튼만 누르면 `stop_1`, `stop_2`, … 순번 기록 (`collect_trigger="anchor"` 행에만) |
 | 70 | `anchor_lat` | 카카오 Local API로 조회한 역 위도 (조회 실패 시 공백) |
 | 71 | `anchor_lon` | 역 경도 |
 | 72 | `wifi_scan_json` | AP 상세 JSON `[{b:BSSID, s:SSID, r:RSSI, f:MHz}]`, RSSI 내림차순 상위 15개 |

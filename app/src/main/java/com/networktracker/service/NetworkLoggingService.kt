@@ -39,6 +39,8 @@ class NetworkLoggingService : Service() {
 
     // 중복 수집 방지: 마지막 collect() 시각 추적 (timer tick과 핸드오버 콜백 동시 발화 대응)
     private var lastCollectMs = 0L
+    // 익명 앵커 순번 — 세션 내 "stop_1", "stop_2", ... 로 기록
+    private var anchorSeq = 0
 
     /** 프로브 결과를 collector에 주입하고 수집·기록한다. 모든 수집 경로가 이 함수를 거친다. */
     private fun doCollect(trigger: String) {
@@ -72,14 +74,24 @@ class NetworkLoggingService : Service() {
         when (intent?.action) {
             ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
             ACTION_TAG_STATION -> {
-                // 지하 구간 수동 역 태그 — 카카오 Local API로 좌표 조회 후 anchor 행 기록
+                // 지하 구간 수동 역 태그.
+                // 이름 있음 → 카카오 Local API로 좌표 조회 후 anchor 행 기록.
+                // 이름 없음 → 즉시 타임스탬프만 있는 익명 앵커 기록 (역명은 분석 때 순번 매칭).
                 val name = intent.getStringExtra(EXTRA_STATION_NAME)?.trim().orEmpty()
-                if (isRunning && name.isNotEmpty()) {
-                    KakaoStationResolver.resolve(name) { result ->
-                        if (isRunning) {
-                            collector.pendingAnchor = result
-                            lastCollectMs = System.currentTimeMillis()
-                            doCollect("anchor")
+                if (isRunning) {
+                    if (name.isEmpty()) {
+                        anchorSeq++
+                        collector.pendingAnchor =
+                            KakaoStationResolver.StationResult("stop_$anchorSeq", null, null)
+                        lastCollectMs = System.currentTimeMillis()
+                        doCollect("anchor")
+                    } else {
+                        KakaoStationResolver.resolve(name) { result ->
+                            if (isRunning) {
+                                collector.pendingAnchor = result
+                                lastCollectMs = System.currentTimeMillis()
+                                doCollect("anchor")
+                            }
                         }
                     }
                 }
@@ -94,6 +106,7 @@ class NetworkLoggingService : Service() {
         collector.activityTag = activityTag
         activeFile  = csvLogger.startSession(activityTag)
         recordCount = 0
+        anchorSeq   = 0
 
         startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
         collector.startLocationUpdates()

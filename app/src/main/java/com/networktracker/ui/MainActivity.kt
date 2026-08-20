@@ -109,18 +109,20 @@ class MainActivity : AppCompatActivity() {
             csvLogger.listFiles().getOrNull(pos)?.let { shareFile(it) }
         }
 
-        // 지하 구간 수동 역 태그 — 카카오 Local API로 좌표를 붙여 anchor 행 기록
+        // 지하 구간 수동 역 태그 — 이름 없이 눌러도 타임스탬프 앵커가 기록된다.
+        // 이름을 넣으면 카카오 Local API로 좌표까지 붙는다 (승차/환승/하차역 정도만 권장).
         btnTagStation.setOnClickListener {
             val name = etStation.text.toString().trim()
-            if (name.isEmpty()) {
-                Toast.makeText(this, "역 이름을 입력해 주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
             startService(Intent(this, NetworkLoggingService::class.java).apply {
                 action = NetworkLoggingService.ACTION_TAG_STATION
                 putExtra(NetworkLoggingService.EXTRA_STATION_NAME, name)
             })
-            Toast.makeText(this, "역 태그 기록: $name", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                if (name.isEmpty()) "역 도착 앵커 기록 (이름 없음 — 분석 때 순번 매칭)"
+                else "역 태그 기록: $name",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
