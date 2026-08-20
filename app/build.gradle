@@ -21,8 +21,10 @@ android {
         versionCode 2
         versionName "1.1"
 
-        buildConfigField "String", "KAKAO_REST_API_KEY",
-                "\"${localProps.getProperty('kakao.rest.api.key', '')}\""
+        // 따옴표를 감싸 넣어도 동작하도록 앞뒤 따옴표/공백 제거
+        def kakaoKey = localProps.getProperty('kakao.rest.api.key', '')
+                .trim().replaceAll(/^["']|["']$/, '')
+        buildConfigField "String", "KAKAO_REST_API_KEY", "\"${kakaoKey}\""
     }
 
     buildFeatures {
