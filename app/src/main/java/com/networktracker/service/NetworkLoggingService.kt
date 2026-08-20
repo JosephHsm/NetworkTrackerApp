@@ -108,7 +108,14 @@ class NetworkLoggingService : Service() {
         recordCount = 0
         anchorSeq   = 0
 
-        startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
+        // Android 14+: 위치형 FGS는 위치 권한이 없으면 startForeground가 SecurityException을 던진다.
+        // 앱이 죽지 않도록 잡아서 서비스를 정상 종료한다.
+        try {
+            startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
+        } catch (e: Exception) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         collector.startLocationUpdates()
         collector.startTelephonyListener()
         collector.startSensors()

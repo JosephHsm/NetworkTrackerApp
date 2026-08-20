@@ -10,6 +10,7 @@ import android.os.Looper
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.networktracker.R
@@ -26,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var lvFiles: ListView
     private lateinit var spinnerActivity: Spinner
     private lateinit var spinnerInterval: Spinner
-    private lateinit var switchProbeDl: Switch
+    private lateinit var switchProbeDl: SwitchCompat
     private lateinit var etStation: EditText
     private lateinit var btnTagStation: Button
 

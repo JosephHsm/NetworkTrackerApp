@@ -52,7 +52,10 @@
     </LinearLayout>
 
     <!-- 능동 프로브 (다운로드 버스트) 토글 -->
-    <Switch
+    <!-- AppCompat 테마에서 <Switch>는 SwitchCompat으로 치환되는데 SwitchCompat은
+         android.widget.Switch의 하위 클래스가 아니라 findViewById에서 CCE가 난다.
+         그래서 처음부터 SwitchCompat으로 명시한다. -->
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/switch_probe_dl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
