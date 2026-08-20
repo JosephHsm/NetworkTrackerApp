@@ -25,6 +25,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvFilePath: TextView
     private lateinit var lvFiles: ListView
     private lateinit var spinnerActivity: Spinner
+    private lateinit var spinnerInterval: Spinner
+    private lateinit var switchProbeDl: Switch
+    private lateinit var etStation: EditText
+    private lateinit var btnTagStation: Button
 
     private lateinit var previewCollector: NetworkDataCollector
     private lateinit var csvLogger: CsvLogger
@@ -39,6 +43,13 @@ class MainActivity : AppCompatActivity() {
         "차량"       to "car",
         "실내/정지"  to "home",
         "기타"       to "other"
+    )
+
+    // 수집 주기 옵션 (표시명 → ms)
+    private val intervalOptions = listOf(
+        "2초"  to 2_000L,
+        "5초"  to 5_000L,
+        "10초" to 10_000L
     )
 
     private val uiTick = object : Runnable {
@@ -68,12 +79,22 @@ class MainActivity : AppCompatActivity() {
         tvFilePath      = findViewById(R.id.tv_file_path)
         lvFiles         = findViewById(R.id.lv_files)
         spinnerActivity = findViewById(R.id.spinner_activity)
+        spinnerInterval = findViewById(R.id.spinner_interval)
+        switchProbeDl   = findViewById(R.id.switch_probe_dl)
+        etStation       = findViewById(R.id.et_station)
+        btnTagStation   = findViewById(R.id.btn_tag_station)
 
         spinnerActivity.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_dropdown_item,
             activityOptions.map { it.first }
         )
+        spinnerInterval.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            intervalOptions.map { it.first }
+        )
+        spinnerInterval.setSelection(1)   // 기본 5초
 
         previewCollector = NetworkDataCollector(this)
         csvLogger        = CsvLogger(this)
@@ -87,13 +108,27 @@ class MainActivity : AppCompatActivity() {
         lvFiles.setOnItemClickListener { _, _, pos, _ ->
             csvLogger.listFiles().getOrNull(pos)?.let { shareFile(it) }
         }
+
+        // 지하 구간 수동 역 태그 — 카카오 Local API로 좌표를 붙여 anchor 행 기록
+        btnTagStation.setOnClickListener {
+            val name = etStation.text.toString().trim()
+            if (name.isEmpty()) {
+                Toast.makeText(this, "역 이름을 입력해 주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            startService(Intent(this, NetworkLoggingService::class.java).apply {
+                action = NetworkLoggingService.ACTION_TAG_STATION
+                putExtra(NetworkLoggingService.EXTRA_STATION_NAME, name)
+            })
+            Toast.makeText(this, "역 태그 기록: $name", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onResume() {
         super.onResume()
         previewCollector.startLocationUpdates()
         previewCollector.startTelephonyListener()
-        previewCollector.startImuSensor()
+        previewCollector.startSensors()
         handler.post(uiTick)
         refreshFileList()
     }
@@ -103,7 +138,7 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(uiTick)
         previewCollector.stopLocationUpdates()
         previewCollector.stopTelephonyListener()
-        previewCollector.stopImuSensor()
+        previewCollector.stopSensors()
     }
 
     // ── UI 갱신 ───────────────────────────────────────────────────────────────
@@ -117,6 +152,9 @@ class MainActivity : AppCompatActivity() {
             else         getColor(android.R.color.holo_green_dark)
         )
         spinnerActivity.isEnabled = !running  // 로깅 중 태그 변경 방지
+        spinnerInterval.isEnabled = !running
+        switchProbeDl.isEnabled   = !running
+        btnTagStation.isEnabled   = running   // 역 태그는 로깅 중에만 의미 있음
 
         if (running) {
             tvStatus.text   = "● 로깅 중 | 기록 수: ${NetworkLoggingService.recordCount}"
@@ -176,7 +214,11 @@ class MainActivity : AppCompatActivity() {
                             appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버! 이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm"
                                        else "→ 핸드오버  이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm")
 
-                        append("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
+                        appendLine("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
+
+                        if (r.pressureHpa != null)
+                            appendLine("기  압    : ${"%.1f".format(r.pressureHpa)} hPa")
+                        append("WiFi 스캔 : ${r.wifiApCount?.let { "AP ${it}개 (${r.wifiScanAgeS ?: "?"}초 전)" } ?: "-"}")
                     }
                 }
             }
@@ -202,9 +244,12 @@ class MainActivity : AppCompatActivity() {
             requestNeededPermissions(); return
         }
         val tag = activityOptions.getOrNull(spinnerActivity.selectedItemPosition)?.second ?: "unknown"
+        val interval = intervalOptions.getOrNull(spinnerInterval.selectedItemPosition)?.second
+            ?: NetworkLoggingService.DEFAULT_INTERVAL
         val intent = Intent(this, NetworkLoggingService::class.java).apply {
-            putExtra(NetworkLoggingService.EXTRA_INTERVAL,     5_000L)
+            putExtra(NetworkLoggingService.EXTRA_INTERVAL,     interval)
             putExtra(NetworkLoggingService.EXTRA_ACTIVITY_TAG, tag)
+            putExtra(NetworkLoggingService.EXTRA_PROBE_DL,     switchProbeDl.isChecked)
         }
         startForegroundService(intent)
     }

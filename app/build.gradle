@@ -3,6 +3,13 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// 카카오 REST API 키 — local.properties의 kakao.rest.api.key (git에 올라가지 않음)
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+
 android {
     namespace 'com.networktracker'
     compileSdk 34
@@ -11,8 +18,15 @@ android {
         applicationId "com.networktracker"
         minSdk 29          // Android 10+ — CellInfoNr, foregroundServiceType
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
+
+        buildConfigField "String", "KAKAO_REST_API_KEY",
+                "\"${localProps.getProperty('kakao.rest.api.key', '')}\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {

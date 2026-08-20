@@ -77,7 +77,26 @@ data class NetworkRecord(
     val prevRsrp: Int? = null,
     val prevRsrq: Int? = null,
 
-    val neighborsJson: String = "[]"         // RSRP 내림차순 정렬됨
+    val neighborsJson: String = "[]",        // RSRP 내림차순 정렬됨
+
+    // ── v1.1 확장 컬럼 ──────────────────────────────────────────────────────
+    // 기압계 — 지하 진입/역간 이동 감지 (센서 없는 단말은 공백)
+    val pressureHpa: Float? = null,
+    // 능동 프로브: TCP connect RTT (8.8.8.8:53, 셀룰러 바인딩) — HO 순간 지연 스파이크 관찰
+    val rttMs: Int? = null,
+    // 능동 프로브: 다운로드 버스트 처리량 (버스트 완료 직후 행에만 기록, 나머지 공백)
+    val probeDlMbps: Double? = null,
+    // Wi-Fi 스캔 — 지하철역 AP 핑거프린트 (사후 위치 복원용)
+    val wifiApCount: Int? = null,
+    val wifiScanAgeS: Int? = null,           // 스캔 결과 나이(초). 클수록 stale
+    // 수동 역 태그 앵커 — collect_trigger="anchor" 행에만 기록
+    val anchorStation: String = "",
+    val anchorLat: Double? = null,
+    val anchorLon: Double? = null,
+    // Wi-Fi AP 상세 (RSSI 내림차순 상위 15개, JSON)
+    val wifiScanJson: String = "",
+    // 핸드오버 행에만: 직전 tick의 이웃셀 리스트 — A3 분석을 한 행으로
+    val prevNeighborsJson: String = ""
 ) {
     fun toCsvRow(): String {
         val dt           = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
@@ -86,6 +105,8 @@ data class NetworkRecord(
         val mobileRxMbps = mobileRxSpeedBps * 8.0 / 1_000_000.0
         val mobileTxMbps = mobileTxSpeedBps * 8.0 / 1_000_000.0
         val escapedNbr   = neighborsJson.replace("\"", "\"\"")
+        val escapedWifi  = wifiScanJson.replace("\"", "\"\"")
+        val escapedPrvNb = prevNeighborsJson.replace("\"", "\"\"")
         return buildString {
             append(timestamp);                            append(',')
             append(dt);                                   append(',')
@@ -149,7 +170,17 @@ data class NetworkRecord(
             append(prevServingCellId);                    append(',')
             append(prevRsrp           ?: "");             append(',')
             append(prevRsrq           ?: "");             append(',')
-            append('"'); append(escapedNbr); append('"')
+            append('"'); append(escapedNbr); append('"'); append(',')
+            append(pressureHpa       ?: "");              append(',')
+            append(rttMs             ?: "");              append(',')
+            append(probeDlMbps?.let { "%.3f".format(it) } ?: ""); append(',')
+            append(wifiApCount       ?: "");              append(',')
+            append(wifiScanAgeS      ?: "");              append(',')
+            append(anchorStation.replace(',', ' '));      append(',')
+            append(anchorLat         ?: "");              append(',')
+            append(anchorLon         ?: "");              append(',')
+            append('"'); append(escapedWifi); append('"'); append(',')
+            append('"'); append(escapedPrvNb); append('"')
         }
     }
 
@@ -171,6 +202,10 @@ data class NetworkRecord(
             "imu_speed_ms,handover_detected,ping_pong_detected," +
             "collect_trigger,cell_duration_s,ho_count_30s,rsrp_delta,sinr_delta,cell_info_age_ms," +
             "prev_serving_cell_id,prev_rsrp_dbm,prev_rsrq_db," +
-            "neighbors_json"
+            "neighbors_json," +
+            "pressure_hpa,rtt_ms,probe_dl_mbps," +
+            "wifi_ap_count,wifi_scan_age_s," +
+            "anchor_station,anchor_lat,anchor_lon," +
+            "wifi_scan_json,prev_neighbors_json"
     }
 }

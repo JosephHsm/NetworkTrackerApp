@@ -42,6 +42,17 @@ class NetworkDataCollector(private val context: Context) {
     var activityTag: String = ""
     var collectTrigger: String = "periodic"   // 서비스가 collect() 호출 전에 설정
 
+    // ── v1.1 확장: 외부 주입 값 ──────────────────────────────────────────────
+    // Wi-Fi AP 핑거프린트 (지하 구간 사후 위치 복원용) — startSensors()에서 함께 시작
+    private val wifiScanner = WifiScanner(context)
+    // ActiveProbe 결과 — 서비스가 채워 넣음. RTT는 매 행, DL은 1회성(consume)
+    @Volatile var externalRttMs: Int? = null
+    @Volatile var externalDlMbps: Double? = null
+    // 수동 역 태그 앵커 — collect() 1회 소비 후 클리어
+    @Volatile var pendingAnchor: KakaoStationResolver.StationResult? = null
+    // 직전 tick의 이웃셀 JSON — 핸드오버 행에 pre-HO 이웃 리스트로 기록
+    private var lastNeighborsJson = "[]"
+
     // 전체 Rx/Tx (Wi-Fi + 셀룰러)
     private var prevRxBytes       = TrafficStats.getTotalRxBytes()
     private var prevTxBytes       = TrafficStats.getTotalTxBytes()
@@ -80,13 +91,27 @@ class NetworkDataCollector(private val context: Context) {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
     }
 
-    fun startImuSensor() {
-        linearAccelSensor?.let { sensorMgr.registerListener(imuListener, it, SensorManager.SENSOR_DELAY_GAME) }
+    // ── 기압계 — 지하 진입/역간 이동 감지 (센서 없는 단말은 null 유지) ─────────
+    private val pressureSensor = sensorMgr.getDefaultSensor(Sensor.TYPE_PRESSURE)
+    @Volatile private var lastPressureHpa: Float? = null
+
+    private val pressureListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) { lastPressureHpa = event.values[0] }
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
     }
 
-    fun stopImuSensor() {
+    fun startSensors() {
+        linearAccelSensor?.let { sensorMgr.registerListener(imuListener, it, SensorManager.SENSOR_DELAY_GAME) }
+        pressureSensor?.let { sensorMgr.registerListener(pressureListener, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        wifiScanner.start()
+    }
+
+    fun stopSensors() {
         sensorMgr.unregisterListener(imuListener)
+        sensorMgr.unregisterListener(pressureListener)
+        wifiScanner.stop()
         imuVelocityMs = 0f; imuLastTimeNs = 0L
+        lastPressureHpa = null
     }
 
     // ── 핸드오버 / 핑퐁 감지 ─────────────────────────────────────────────────
@@ -528,6 +553,22 @@ class NetworkDataCollector(private val context: Context) {
         val cellDurationS = if (lastHandoverMs > 0L) (now - lastHandoverMs) / 1000L else 0L
         val hoCount30s    = cellHistory.count { (_, ts) -> (now - ts) < 30_000L }
 
+        // 핸드오버 행에는 직전 tick의 이웃 리스트(pre-HO 스냅샷)를 함께 기록
+        val neighborsStr    = neighbors.toString()
+        val prevNbrJson     = if (ho.handover) lastNeighborsJson else ""
+        lastNeighborsJson   = neighborsStr
+
+        // Wi-Fi 핑거프린트 스냅샷
+        val wifiSnap = wifiScanner.snapshot()
+
+        // 앵커 소비 (역 태그 시 1회)
+        val anchor = pendingAnchor
+        pendingAnchor = null
+
+        // DL 버스트 결과 소비 (버스트 완료 직후 1개 행에만)
+        val dlMbps = externalDlMbps
+        externalDlMbps = null
+
         return NetworkRecord(
             timestamp           = now,
             activity            = activityTag,
@@ -586,7 +627,17 @@ class NetworkDataCollector(private val context: Context) {
             prevServingCellId   = ho.prevCellId,
             prevRsrp            = ho.prevRsrp,
             prevRsrq            = ho.prevRsrq,
-            neighborsJson       = neighbors.toString()
+            neighborsJson       = neighborsStr,
+            pressureHpa         = lastPressureHpa,
+            rttMs               = externalRttMs,
+            probeDlMbps         = dlMbps,
+            wifiApCount         = wifiSnap?.apCount,
+            wifiScanAgeS        = wifiSnap?.ageS,
+            anchorStation       = anchor?.name ?: "",
+            anchorLat           = anchor?.lat,
+            anchorLon           = anchor?.lon,
+            wifiScanJson        = wifiSnap?.json ?: "",
+            prevNeighborsJson   = prevNbrJson
         )
     }
 

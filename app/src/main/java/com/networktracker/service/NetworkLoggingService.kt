@@ -6,6 +6,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.networktracker.collector.ActiveProbe
+import com.networktracker.collector.KakaoStationResolver
 import com.networktracker.collector.NetworkDataCollector
 import com.networktracker.logger.CsvLogger
 import com.networktracker.ui.MainActivity
@@ -15,8 +17,11 @@ class NetworkLoggingService : Service() {
 
     companion object {
         const val ACTION_STOP        = "com.networktracker.STOP"
+        const val ACTION_TAG_STATION = "com.networktracker.TAG_STATION"
         const val EXTRA_INTERVAL     = "interval_ms"
         const val EXTRA_ACTIVITY_TAG = "activity_tag"
+        const val EXTRA_PROBE_DL     = "probe_dl_enabled"
+        const val EXTRA_STATION_NAME = "station_name"
         const val DEFAULT_INTERVAL   = 5_000L
         private const val CHANNEL_ID = "nt_channel"
         private const val NOTIF_ID   = 1001
@@ -29,19 +34,27 @@ class NetworkLoggingService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var collector: NetworkDataCollector
     private lateinit var csvLogger: CsvLogger
+    private lateinit var probe: ActiveProbe
     private var intervalMs = DEFAULT_INTERVAL
 
     // 중복 수집 방지: 마지막 collect() 시각 추적 (timer tick과 핸드오버 콜백 동시 발화 대응)
     private var lastCollectMs = 0L
 
+    /** 프로브 결과를 collector에 주입하고 수집·기록한다. 모든 수집 경로가 이 함수를 거친다. */
+    private fun doCollect(trigger: String) {
+        collector.collectTrigger = trigger
+        collector.externalRttMs  = probe.lastRttMs
+        probe.consumeDlResult()?.let { collector.externalDlMbps = it }
+        val record = collector.collect()
+        csvLogger.log(record)
+        recordCount = csvLogger.recordCount()
+        updateNotification()
+    }
+
     private val tick = object : Runnable {
         override fun run() {
             lastCollectMs = System.currentTimeMillis()
-            collector.collectTrigger = "periodic"
-            val record = collector.collect()
-            csvLogger.log(record)
-            recordCount = csvLogger.recordCount()
-            updateNotification()
+            doCollect("periodic")
             collector.refreshCellInfo()   // 다음 tick 전에 모뎀 셀 정보 갱신 요청
             handler.postDelayed(this, intervalMs)
         }
@@ -51,14 +64,32 @@ class NetworkLoggingService : Service() {
         super.onCreate()
         collector = NetworkDataCollector(this)
         csvLogger = CsvLogger(this)
+        probe     = ActiveProbe(this)
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) { stopSelf(); return START_NOT_STICKY }
+        when (intent?.action) {
+            ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_TAG_STATION -> {
+                // 지하 구간 수동 역 태그 — 카카오 Local API로 좌표 조회 후 anchor 행 기록
+                val name = intent.getStringExtra(EXTRA_STATION_NAME)?.trim().orEmpty()
+                if (isRunning && name.isNotEmpty()) {
+                    KakaoStationResolver.resolve(name) { result ->
+                        if (isRunning) {
+                            collector.pendingAnchor = result
+                            lastCollectMs = System.currentTimeMillis()
+                            doCollect("anchor")
+                        }
+                    }
+                }
+                return START_STICKY
+            }
+        }
 
         intervalMs = intent?.getLongExtra(EXTRA_INTERVAL, DEFAULT_INTERVAL) ?: DEFAULT_INTERVAL
-        val activityTag = intent?.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
+        val activityTag    = intent?.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
+        val probeDlEnabled = intent?.getBooleanExtra(EXTRA_PROBE_DL, false) ?: false
 
         collector.activityTag = activityTag
         activeFile  = csvLogger.startSession(activityTag)
@@ -67,7 +98,9 @@ class NetworkLoggingService : Service() {
         startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
         collector.startLocationUpdates()
         collector.startTelephonyListener()
-        collector.startImuSensor()
+        collector.startSensors()
+        // RTT는 항상 측정(무시 가능한 트래픽), 다운로드 버스트는 토글로 결정
+        probe.start(intervalMs, probeDlEnabled)
 
         // 핸드오버 감지 시 즉시 추가 수집 (API 31+)
         // timer와 동시 발화 시 중복 방지: 마지막 수집으로부터 1초 미만이면 skip
@@ -75,11 +108,7 @@ class NetworkLoggingService : Service() {
             val now = System.currentTimeMillis()
             if (now - lastCollectMs >= 1_000L) {
                 lastCollectMs = now
-                collector.collectTrigger = "handover"
-                val record = collector.collect()
-                csvLogger.log(record)
-                recordCount = csvLogger.recordCount()
-                updateNotification()
+                doCollect("handover")
             }
         }
 
@@ -92,9 +121,10 @@ class NetworkLoggingService : Service() {
         isRunning = false
         handler.removeCallbacks(tick)
         collector.onCellChangeDetected = null
+        probe.stop()
         collector.stopLocationUpdates()
         collector.stopTelephonyListener()
-        collector.stopImuSensor()
+        collector.stopSensors()
         activeFile = csvLogger.saveAndClose()
         super.onDestroy()
     }
@@ -123,7 +153,9 @@ class NetworkLoggingService : Service() {
 
     private fun updateNotification() {
         val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개"))
+        val probeInfo = if (probe.probeBytesUsed > 0)
+            " | 프로브 ${probe.probeBytesUsed / 1_048_576}MB" else ""
+        mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개$probeInfo"))
     }
 
     private fun createNotificationChannel() {

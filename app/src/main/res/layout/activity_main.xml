@@ -36,6 +36,55 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="주기:"
+            android:textSize="14sp"
+            android:paddingStart="8dp"
+            android:paddingEnd="4dp" />
+
+        <Spinner
+            android:id="@+id/spinner_interval"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- 능동 프로브 (다운로드 버스트) 토글 -->
+    <Switch
+        android:id="@+id/switch_probe_dl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="능동 다운로드 프로브 (2MB/30초, 세션당 최대 500MB 소모)"
+        android:textSize="13sp"
+        android:paddingBottom="8dp" />
+
+    <!-- 지하 구간 수동 역 태그 (로깅 중에만 활성) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <EditText
+            android:id="@+id/et_station"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="역 이름 (예: 강남)"
+            android:inputType="text"
+            android:textSize="14sp"
+            android:maxLines="1" />
+
+        <Button
+            android:id="@+id/btn_tag_station"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="역 태그"
+            android:textSize="13sp"
+            android:enabled="false" />
     </LinearLayout>
 
     <!-- 시작/중지 버튼 -->

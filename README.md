@@ -23,7 +23,7 @@ GPS 위치, 기지국 신호 지표, 이웃 셀 정보, 처리량을 5초 주기
 
 | 항목 | 내용 |
 |------|------|
-| 수집 주기 | 5초 주기 + 핸드오버 감지 시 즉시 추가 수집 (API 31+) |
+| 수집 주기 | 2/5/10초 선택 (기본 5초) + 핸드오버 감지 시 즉시 추가 수집 (API 31+) |
 | 저장 위치 | `Android/data/com.networktracker/files/Documents/network_log_YYYYMMDD_HHmmss_<activity>.csv` |
 | 지원 RAT | GSM / UMTS(3G) / LTE(4G) / NR(5G SA) / NR-NSA |
 | 최소 Android | API 29 (Android 10) |
@@ -36,8 +36,23 @@ GPS 위치, 기지국 신호 지표, 이웃 셀 정보, 처리량을 5초 주기
 
 | 트리거 | 조건 | `collect_trigger` 값 |
 |--------|------|----------------------|
-| 주기 수집 | 5초마다 | `periodic` |
+| 주기 수집 | 설정 주기(2/5/10초)마다 | `periodic` |
 | 핸드오버 이벤트 | 서빙셀 ID 변경 감지 시 즉시 (API 31+, 직전 수집으로부터 1초 이상 경과 시) | `handover` |
+| 수동 역 태그 | 지하 구간에서 "역 태그" 버튼 탭 시 (카카오 Local API로 역 좌표 조회 후 기록) | `anchor` |
+
+### v1.1 확장 기능 (2026-08)
+
+| 기능 | 설명 | 관련 컬럼 |
+|------|------|-----------|
+| 능동 RTT 프로브 | 매 tick마다 셀룰러 바인딩 TCP connect(8.8.8.8:53) 소요시간 측정. 핸드오버 순간의 지연 스파이크(제어평면 중단)가 드러난다. Wi-Fi가 켜져 있어도 셀룰러 경로를 측정 | `rtt_ms` |
+| 능동 다운로드 프로브 | 30초마다 2MB HTTP 다운로드(Cloudflare)로 순간 가용 처리량 측정. UI 토글로 ON/OFF, 세션당 500MB 상한 자동 중지. TrafficStats 수동 측정의 한계(이슈 3) 보완 | `probe_dl_mbps` |
+| Wi-Fi AP 핑거프린트 | 주변 AP(BSSID/SSID/RSSI) 상위 15개를 매 행에 기록. 지하철역 AP로 사후 위치 복원·역 식별 가능 (Google Geolocation API 후처리 입력으로도 사용 가능) | `wifi_ap_count`, `wifi_scan_age_s`, `wifi_scan_json` |
+| 기압계 | 지하 진입/역간 이동·고도 변화 감지 보조 지표 | `pressure_hpa` |
+| 수동 역 태그 앵커 | 로깅 중 역 이름 입력 후 "역 태그" 탭 → 카카오 Local API(SW8 카테고리)로 좌표를 받아 `collect_trigger="anchor"` 행 기록. 사후 맵매칭(`CHANGES_GPS_IMPROVEMENT.md` §6)의 보간 기준점 | `anchor_station`, `anchor_lat`, `anchor_lon` |
+| 핸드오버 직전 이웃 스냅샷 | HO 행에 직전 tick의 이웃셀 JSON을 함께 기록 — 행 조인 없이 A3 분석 가능 | `prev_neighbors_json` |
+
+> 카카오맵 API는 측위(현재 위치 추정) 기능이 없으므로 지하 GPS를 실시간 대체하지는 못한다.
+> 역 태그 앵커 + Wi-Fi 핑거프린트 + 기압계 + 사후 맵매칭 조합이 지하 구간 위치 문제의 해법이다.
 
 ---
 
@@ -157,11 +172,30 @@ GPS 속도가 들어올 때마다 GPS 값으로 리셋해서 drift를 억제한�
 
 ## 데이터 필드 설명
 
-현재 CSV 포맷은 61개 컬럼이다. `*` 표시는 이번 버전에서 추가된 컬럼이다.
+현재 CSV 포맷(v1.1)은 73개 컬럼이다. `*` 표시는 v1.0에서 추가된 컬럼이다.
+
+> 아래 표는 v1.0 61컬럼 기준이다. v1.1에서는 여기에 더해
+> (a) `location_source`, `location_age_s`가 `gps_altitude_m` 바로 뒤(10–11번 위치)에 삽입되고,
+> (b) 아래 v1.1 신규 컬럼 10개가 `neighbors_json` 뒤에 추가되어 총 73컬럼이 된다.
+
+### v1.1 신규 컬럼 (neighbors_json 뒤, CSV 순서)
+
+| # | 컬럼명 | 한 줄 설명 |
+|---|--------|-----------|
+| 64 | `pressure_hpa` | 기압(hPa). 지하 진입/고도 변화 감지. 센서 없는 단말은 공백 |
+| 65 | `rtt_ms` | 셀룰러 바인딩 TCP connect RTT(ms). 실패/타임아웃 시 공백 |
+| 66 | `probe_dl_mbps` | 다운로드 버스트 처리량(Mbps). 버스트 완료 직후 행에만 기록 |
+| 67 | `wifi_ap_count` | 스캔된 주변 Wi-Fi AP 수 |
+| 68 | `wifi_scan_age_s` | Wi-Fi 스캔 결과 나이(초). 클수록 stale |
+| 69 | `anchor_station` | 수동 태그한 역 이름 (`collect_trigger="anchor"` 행에만) |
+| 70 | `anchor_lat` | 카카오 Local API로 조회한 역 위도 (조회 실패 시 공백) |
+| 71 | `anchor_lon` | 역 경도 |
+| 72 | `wifi_scan_json` | AP 상세 JSON `[{b:BSSID, s:SSID, r:RSSI, f:MHz}]`, RSSI 내림차순 상위 15개 |
+| 73 | `prev_neighbors_json` | 핸드오버 행에만: 직전 tick의 이웃셀 JSON (pre-HO 스냅샷) |
 
 > 컬럼 정의는 이 문서를 기준으로 삼는다. 다른 문서(ISSUE_ANALYSIS.md, CHANGES_GPS_IMPROVEMENT.md)는 분석·개선 맥락만 다루므로, 컬럼 수가 다르게 보이면 이 표를 우선한다.
 
-### 전체 컬럼 한눈에 보기 (CSV 순서, 61개)
+### 전체 컬럼 한눈에 보기 (v1.0 기준 61개)
 
 | # | 컬럼명 | 그룹 | 한 줄 설명 |
 |---|--------|------|-----------|
@@ -506,6 +540,8 @@ app/src/main/java/com/networktracker/
 | `FOREGROUND_SERVICE` | 백그라운드 지속 수집을 위한 Foreground Service 실행 |
 | `FOREGROUND_SERVICE_LOCATION` | Foreground Service에서 위치 접근 (API 29+) |
 | `POST_NOTIFICATIONS` | 상태 알림 표시 (Android 13+, API 33+) |
+| `INTERNET` | v1.1: 능동 프로브(RTT/다운로드) + 카카오 Local API 호출 |
+| `ACCESS_WIFI_STATE` / `CHANGE_WIFI_STATE` | v1.1: 주변 AP 스캔 (지하 핑거프린트) |
 
 ---
 
@@ -518,6 +554,23 @@ app/src/main/java/com/networktracker/
 # 기기에 설치
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
+
+### 카카오 REST API 키 설정 (역 태그 기능, 선택)
+
+`local.properties`(git에 올라가지 않음)에 한 줄 추가:
+
+```properties
+kakao.rest.api.key=발급받은_REST_API_키
+```
+
+키가 없어도 앱은 동작한다 — 역 태그 시 좌표 없이 역명만 기록되고, 좌표는 분석 단계에서 보완하면 된다.
+키 종류 주의: 카카오 개발자 콘솔의 **REST API 키**를 써야 한다 (JavaScript/네이티브 키 아님).
+
+### Wi-Fi 스캔 주의
+
+Wi-Fi 핑거프린트를 수집하려면 단말의 Wi-Fi가 켜져 있거나
+설정 → 위치 → "Wi-Fi 검색 항상 허용"이 켜져 있어야 한다.
+Wi-Fi에 **연결**할 필요는 없다 (연결하면 `wifi_active=true`로 total rx/tx가 오염되니 연결은 피할 것).
 
 요구 환경:
 - Android Studio Hedgehog 이상
