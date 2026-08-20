@@ -8,7 +8,9 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.networktracker.collector.ActiveProbe
 import com.networktracker.collector.KakaoStationResolver
+import android.widget.Toast
 import com.networktracker.collector.NetworkDataCollector
+import com.networktracker.data.NetworkRecord
 import com.networktracker.logger.CsvLogger
 import com.networktracker.ui.MainActivity
 import java.io.File
@@ -29,6 +31,8 @@ class NetworkLoggingService : Service() {
         @Volatile var isRunning   = false
         @Volatile var recordCount = 0
         @Volatile var activeFile: File? = null
+        /** 마지막으로 수집한 레코드 — UI가 자체 수집 없이 읽어 쓰는 미리보기 소스. */
+        @Volatile var lastRecord: NetworkRecord? = null
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -50,6 +54,7 @@ class NetworkLoggingService : Service() {
         val record = collector.collect()
         csvLogger.log(record)
         recordCount = csvLogger.recordCount()
+        lastRecord  = record
         updateNotification()
     }
 
@@ -70,52 +75,75 @@ class NetworkLoggingService : Service() {
         createNotificationChannel()
     }
 
+    /**
+     * 모든 경로가 START_NOT_STICKY를 반환한다. 프로세스가 죽으면 세션 상태(수집기·CSV 파일)가
+     * 함께 사라져 이어받을 수 없으므로, 시스템이 기본값으로 엉뚱한 새 세션을 시작하는 것보다
+     * 조용히 멈추는 편이 데이터 무결성에 안전하다.
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        // 시스템 재시작 등으로 intent가 없으면 세션 설정도 없다 — 임의 세션을 만들지 않는다.
+        if (intent == null) {
+            if (!isRunning) stopSelf()
+            return START_NOT_STICKY
+        }
+
+        when (intent.action) {
             ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
             ACTION_TAG_STATION -> {
                 // 지하 구간 수동 역 태그.
                 // 이름 있음 → 카카오 Local API로 좌표 조회 후 anchor 행 기록.
                 // 이름 없음 → 즉시 타임스탬프만 있는 익명 앵커 기록 (역명은 분석 때 순번 매칭).
+                // 로깅 중이 아니면 태그할 세션이 없다 — 빈 서비스가 남지 않도록 종료한다.
+                if (!isRunning) { stopSelf(); return START_NOT_STICKY }
+
                 val name = intent.getStringExtra(EXTRA_STATION_NAME)?.trim().orEmpty()
-                if (isRunning) {
-                    if (name.isEmpty()) {
-                        anchorSeq++
-                        collector.pendingAnchor =
-                            KakaoStationResolver.StationResult("stop_$anchorSeq", null, null)
-                        lastCollectMs = System.currentTimeMillis()
-                        doCollect("anchor")
-                    } else {
-                        KakaoStationResolver.resolve(name) { result ->
-                            if (isRunning) {
-                                collector.pendingAnchor = result
-                                lastCollectMs = System.currentTimeMillis()
-                                doCollect("anchor")
-                            }
+                if (name.isEmpty()) {
+                    anchorSeq++
+                    collector.pendingAnchor =
+                        KakaoStationResolver.StationResult("stop_$anchorSeq", null, null)
+                    lastCollectMs = System.currentTimeMillis()
+                    doCollect("anchor")
+                } else {
+                    KakaoStationResolver.resolve(name) { result ->
+                        if (isRunning) {
+                            collector.pendingAnchor = result
+                            lastCollectMs = System.currentTimeMillis()
+                            doCollect("anchor")
                         }
                     }
                 }
-                return START_STICKY
+                return START_NOT_STICKY
             }
         }
 
-        intervalMs = intent?.getLongExtra(EXTRA_INTERVAL, DEFAULT_INTERVAL) ?: DEFAULT_INTERVAL
-        val activityTag    = intent?.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
-        val probeDlEnabled = intent?.getBooleanExtra(EXTRA_PROBE_DL, false) ?: false
+        // 이미 로깅 중이면 중복 시작 요청을 무시한다 — tick 중복 등록과 세션 파일 교체 방지.
+        if (isRunning) return START_NOT_STICKY
+
+        intervalMs = intent.getLongExtra(EXTRA_INTERVAL, DEFAULT_INTERVAL)
+        val activityTag    = intent.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
+        val probeDlEnabled = intent.getBooleanExtra(EXTRA_PROBE_DL, false)
+
+        // Android 14+: 위치형 FGS는 위치 권한이 없으면 startForeground가 SecurityException을 던진다.
+        // 앱이 죽지 않도록 잡아서 서비스를 정상 종료하되, 조용히 실패하면 사용자는 버튼이
+        // 먹지 않는 것으로만 보이므로 이유를 알린다. 빈 CSV가 남지 않게 세션보다 먼저 시도한다.
+        try {
+            startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
+        } catch (e: Exception) {
+            Toast.makeText(
+                this,
+                "로깅을 시작할 수 없습니다 (위치 권한을 '항상 허용'으로 설정해 주세요): ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         collector.activityTag = activityTag
         activeFile  = csvLogger.startSession(activityTag)
         recordCount = 0
         anchorSeq   = 0
+        lastRecord  = null
 
-        // Android 14+: 위치형 FGS는 위치 권한이 없으면 startForeground가 SecurityException을 던진다.
-        // 앱이 죽지 않도록 잡아서 서비스를 정상 종료한다.
-        try {
-            startForeground(NOTIF_ID, buildNotification("로깅 시작..."))
-        } catch (e: Exception) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
         collector.startLocationUpdates()
         collector.startTelephonyListener()
         collector.startSensors()
@@ -134,11 +162,12 @@ class NetworkLoggingService : Service() {
 
         handler.post(tick)
         isRunning = true
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         isRunning = false
+        lastRecord = null
         handler.removeCallbacks(tick)
         collector.onCellChangeDetected = null
         probe.stop()

@@ -393,19 +393,21 @@ class NetworkDataCollector(private val context: Context) {
         // 이웃셀 최강 RSRP 추적
         var bestNbrRsrp: Int? = null; var bestNbrPci: Int? = null; var bestNbrArfcn: Int? = null
 
+        // allCellInfo는 비용 있는 binder 호출이라 한 행에서 한 번만 읽고 재사용한다.
+        // (두 번 읽으면 신선도 계산과 셀 파싱이 서로 다른 시점의 스냅샷을 볼 수 있다)
+        val cellInfoList: List<CellInfo>? =
+            if (hasLocation()) runCatching { tel.allCellInfo }.getOrNull() else null
+
         // allCellInfo 데이터 신선도 — 클수록 stale (정상: <5000ms)
         // API 30+: timestampMillis(ms), API 29: getTimeStamp()(ns, deprecated)
-        val cellInfoAgeMs: Long? = if (hasLocation()) runCatching {
-            val firstCell = tel.allCellInfo?.firstOrNull()
-            if (firstCell != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    SystemClock.elapsedRealtime() - firstCell.timestampMillis
-                } else {
-                    @Suppress("DEPRECATION")
-                    (SystemClock.elapsedRealtimeNanos() - firstCell.timeStamp) / 1_000_000L
-                }
-            } else null
-        }.getOrNull() else null
+        val cellInfoAgeMs: Long? = cellInfoList?.firstOrNull()?.let { firstCell ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                SystemClock.elapsedRealtime() - firstCell.timestampMillis
+            } else {
+                @Suppress("DEPRECATION")
+                (SystemClock.elapsedRealtimeNanos() - firstCell.timeStamp) / 1_000_000L
+            }
+        }
 
         runCatching {
             networkType = resolveNetworkType()
@@ -413,124 +415,122 @@ class NetworkDataCollector(private val context: Context) {
             overrideNetworkType = displayOverrideType
             is5GDisplay         = displayIs5G
 
-            if (hasLocation()) {
-                tel.allCellInfo?.forEach { cell ->
-                    val serving = cell.isRegistered
-                    when (cell) {
-                        is CellInfoLte -> {
-                            val sig = cell.cellSignalStrength
-                            val id  = cell.cellIdentity.ci.validToString()
-                            if (serving) {
-                                servingCellId    = id
-                                rsrp             = sig.rsrp.valid()
-                                rsrq             = sig.rsrq.valid()
-                                rssi             = sig.rssi.valid()
-                                sinrSnr          = sig.rssnr.valid()
-                                signalLevel      = sig.level
-                                timingAdvanceLte = sig.timingAdvance.valid()
-                                servingPci       = cell.cellIdentity.pci.valid()
-                                servingFreqArfcn = cell.cellIdentity.earfcn.valid()
-                                servingTac       = cell.cellIdentity.tac.valid()
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    servingBandStr = cell.cellIdentity.bands.joinToString(",")
-                                cell.cellIdentity.mccString?.let { mcc = it }
-                                cell.cellIdentity.mncString?.let { mnc = it }
-                            } else {
-                                val nRsrp   = sig.rsrp.valid()
-                                val nPci    = cell.cellIdentity.pci.valid()
-                                val nEarfcn = cell.cellIdentity.earfcn.valid()
-                                // 최강 이웃셀 갱신
-                                if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
-                                    bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nEarfcn
-                                }
-                                val json = JSONObject().apply {
-                                    put("type",   "LTE")
-                                    putOpt("cell_id", id.ifEmpty { null })
-                                    put("pci",    nPci.toJsonOrNull())
-                                    put("earfcn", nEarfcn.toJsonOrNull())
-                                    put("tac",    cell.cellIdentity.tac.toJsonOrNull())
-                                    put("rsrp",   sig.rsrp.toJsonOrNull())
-                                    put("rsrq",   sig.rsrq.toJsonOrNull())
-                                    put("rssi",   sig.rssi.toJsonOrNull())
-                                    put("snr",    sig.rssnr.toJsonOrNull())
-                                    put("ta",     sig.timingAdvance.toJsonOrNull())
-                                    put("level",  sig.level)
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                        put("bands", cell.cellIdentity.bands.joinToString(","))
-                                }
-                                nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
-                                lteNeighborCount++; neighborCount++
+            cellInfoList?.forEach { cell ->
+                val serving = cell.isRegistered
+                when (cell) {
+                    is CellInfoLte -> {
+                        val sig = cell.cellSignalStrength
+                        val id  = cell.cellIdentity.ci.validToString()
+                        if (serving) {
+                            servingCellId    = id
+                            rsrp             = sig.rsrp.valid()
+                            rsrq             = sig.rsrq.valid()
+                            rssi             = sig.rssi.valid()
+                            sinrSnr          = sig.rssnr.valid()
+                            signalLevel      = sig.level
+                            timingAdvanceLte = sig.timingAdvance.valid()
+                            servingPci       = cell.cellIdentity.pci.valid()
+                            servingFreqArfcn = cell.cellIdentity.earfcn.valid()
+                            servingTac       = cell.cellIdentity.tac.valid()
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                servingBandStr = cell.cellIdentity.bands.joinToString(",")
+                            cell.cellIdentity.mccString?.let { mcc = it }
+                            cell.cellIdentity.mncString?.let { mnc = it }
+                        } else {
+                            val nRsrp   = sig.rsrp.valid()
+                            val nPci    = cell.cellIdentity.pci.valid()
+                            val nEarfcn = cell.cellIdentity.earfcn.valid()
+                            // 최강 이웃셀 갱신
+                            if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
+                                bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nEarfcn
                             }
-                        }
-                        is CellInfoNr -> {
-                            nrCellSeen = true
-                            val sig      = cell.cellSignalStrength as CellSignalStrengthNr
-                            val identity = cell.cellIdentity      as CellIdentityNr
-                            val nci = identity.nci.validToString()
-                            if (serving) {
-                                nrServingCellSeen = true
-                                servingCellId    = nci
-                                rsrp             = sig.ssRsrp.valid()
-                                rsrq             = sig.ssRsrq.valid()
-                                sinrSnr          = sig.ssSinr.valid()
-                                signalLevel      = sig.level
-                                csiRsrp          = sig.csiRsrp.valid()
-                                csiRsrq          = sig.csiRsrq.valid()
-                                csiSinr          = sig.csiSinr.valid()
-                                servingPci       = identity.pci.valid()
-                                servingFreqArfcn = identity.nrarfcn.valid()
-                                servingTac       = identity.tac.valid()
+                            val json = JSONObject().apply {
+                                put("type",   "LTE")
+                                putOpt("cell_id", id.ifEmpty { null })
+                                put("pci",    nPci.toJsonOrNull())
+                                put("earfcn", nEarfcn.toJsonOrNull())
+                                put("tac",    cell.cellIdentity.tac.toJsonOrNull())
+                                put("rsrp",   sig.rsrp.toJsonOrNull())
+                                put("rsrq",   sig.rsrq.toJsonOrNull())
+                                put("rssi",   sig.rssi.toJsonOrNull())
+                                put("snr",    sig.rssnr.toJsonOrNull())
+                                put("ta",     sig.timingAdvance.toJsonOrNull())
+                                put("level",  sig.level)
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    servingBandStr = identity.bands.joinToString(",")
-                                identity.mccString?.let { mcc = it }
-                                identity.mncString?.let { mnc = it }
-                            } else {
-                                val nRsrp   = sig.ssRsrp.valid()
-                                val nPci    = identity.pci.valid()
-                                val nArfcn  = identity.nrarfcn.valid()
-                                if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
-                                    bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nArfcn
-                                }
-                                val json = JSONObject().apply {
-                                    put("type",     "NR(5G)")
-                                    putOpt("nci",      nci.ifEmpty { null })
-                                    put("pci",      nPci.toJsonOrNull())
-                                    put("arfcn",    nArfcn.toJsonOrNull())
-                                    put("tac",      identity.tac.toJsonOrNull())
-                                    put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
-                                    put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
-                                    put("ss_sinr",  sig.ssSinr.toJsonOrNull())
-                                    put("csi_rsrp", sig.csiRsrp.toJsonOrNull())
-                                    put("csi_rsrq", sig.csiRsrq.toJsonOrNull())
-                                    put("csi_sinr", sig.csiSinr.toJsonOrNull())
-                                    put("level",    sig.level)
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                        put("bands", identity.bands.joinToString(","))
-                                }
-                                nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
-                                nrNeighborCount++; neighborCount++
+                                    put("bands", cell.cellIdentity.bands.joinToString(","))
                             }
+                            nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                            lteNeighborCount++; neighborCount++
                         }
-                        is CellInfoWcdma -> if (!serving) {
-                            nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
-                                put("type",   "WCDMA")
-                                put("cid",    cell.cellIdentity.cid)
-                                put("psc",    cell.cellIdentity.psc)
-                                put("uarfcn", cell.cellIdentity.uarfcn)
-                                put("dbm",    cell.cellSignalStrength.dbm)
-                                put("level",  cell.cellSignalStrength.level)
-                            })); neighborCount++
+                    }
+                    is CellInfoNr -> {
+                        nrCellSeen = true
+                        val sig      = cell.cellSignalStrength as CellSignalStrengthNr
+                        val identity = cell.cellIdentity      as CellIdentityNr
+                        val nci = identity.nci.validToString()
+                        if (serving) {
+                            nrServingCellSeen = true
+                            servingCellId    = nci
+                            rsrp             = sig.ssRsrp.valid()
+                            rsrq             = sig.ssRsrq.valid()
+                            sinrSnr          = sig.ssSinr.valid()
+                            signalLevel      = sig.level
+                            csiRsrp          = sig.csiRsrp.valid()
+                            csiRsrq          = sig.csiRsrq.valid()
+                            csiSinr          = sig.csiSinr.valid()
+                            servingPci       = identity.pci.valid()
+                            servingFreqArfcn = identity.nrarfcn.valid()
+                            servingTac       = identity.tac.valid()
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                servingBandStr = identity.bands.joinToString(",")
+                            identity.mccString?.let { mcc = it }
+                            identity.mncString?.let { mnc = it }
+                        } else {
+                            val nRsrp   = sig.ssRsrp.valid()
+                            val nPci    = identity.pci.valid()
+                            val nArfcn  = identity.nrarfcn.valid()
+                            if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
+                                bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nArfcn
+                            }
+                            val json = JSONObject().apply {
+                                put("type",     "NR(5G)")
+                                putOpt("nci",      nci.ifEmpty { null })
+                                put("pci",      nPci.toJsonOrNull())
+                                put("arfcn",    nArfcn.toJsonOrNull())
+                                put("tac",      identity.tac.toJsonOrNull())
+                                put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
+                                put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
+                                put("ss_sinr",  sig.ssSinr.toJsonOrNull())
+                                put("csi_rsrp", sig.csiRsrp.toJsonOrNull())
+                                put("csi_rsrq", sig.csiRsrq.toJsonOrNull())
+                                put("csi_sinr", sig.csiSinr.toJsonOrNull())
+                                put("level",    sig.level)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                    put("bands", identity.bands.joinToString(","))
+                            }
+                            nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                            nrNeighborCount++; neighborCount++
                         }
-                        is CellInfoGsm -> if (!serving) {
-                            nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
-                                put("type",  "GSM")
-                                put("cid",   cell.cellIdentity.cid)
-                                put("arfcn", cell.cellIdentity.arfcn)
-                                put("bsic",  cell.cellIdentity.bsic)
-                                put("dbm",   cell.cellSignalStrength.dbm)
-                                put("level", cell.cellSignalStrength.level)
-                            })); neighborCount++
-                        }
+                    }
+                    is CellInfoWcdma -> if (!serving) {
+                        nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
+                            put("type",   "WCDMA")
+                            put("cid",    cell.cellIdentity.cid)
+                            put("psc",    cell.cellIdentity.psc)
+                            put("uarfcn", cell.cellIdentity.uarfcn)
+                            put("dbm",    cell.cellSignalStrength.dbm)
+                            put("level",  cell.cellSignalStrength.level)
+                        })); neighborCount++
+                    }
+                    is CellInfoGsm -> if (!serving) {
+                        nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
+                            put("type",  "GSM")
+                            put("cid",   cell.cellIdentity.cid)
+                            put("arfcn", cell.cellIdentity.arfcn)
+                            put("bsic",  cell.cellIdentity.bsic)
+                            put("dbm",   cell.cellSignalStrength.dbm)
+                            put("level", cell.cellSignalStrength.level)
+                        })); neighborCount++
                     }
                 }
             }

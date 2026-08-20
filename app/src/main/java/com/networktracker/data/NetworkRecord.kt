@@ -99,7 +99,7 @@ data class NetworkRecord(
     val prevNeighborsJson: String = ""
 ) {
     fun toCsvRow(): String {
-        val dt           = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
+        val dt           = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(timestamp))
         val rxMbps       = rxSpeedBps       * 8.0 / 1_000_000.0
         val txMbps       = txSpeedBps       * 8.0 / 1_000_000.0
         val mobileRxMbps = mobileRxSpeedBps * 8.0 / 1_000_000.0
@@ -145,12 +145,12 @@ data class NetworkRecord(
             append(csiSinr           ?: "");              append(',')
             append(rxSpeedBps);                           append(',')
             append(txSpeedBps);                           append(',')
-            append("%.4f".format(rxMbps));                append(',')
-            append("%.4f".format(txMbps));                append(',')
+            append(fmt("%.4f", rxMbps));                  append(',')
+            append(fmt("%.4f", txMbps));                  append(',')
             append(mobileRxSpeedBps);                     append(',')
             append(mobileTxSpeedBps);                     append(',')
-            append("%.4f".format(mobileRxMbps));          append(',')
-            append("%.4f".format(mobileTxMbps));          append(',')
+            append(fmt("%.4f", mobileRxMbps));            append(',')
+            append(fmt("%.4f", mobileTxMbps));            append(',')
             append(wifiActive);                           append(',')
             append(neighborCount);                        append(',')
             append(nrNeighborCount);                      append(',')
@@ -173,7 +173,7 @@ data class NetworkRecord(
             append('"'); append(escapedNbr); append('"'); append(',')
             append(pressureHpa       ?: "");              append(',')
             append(rttMs             ?: "");              append(',')
-            append(probeDlMbps?.let { "%.3f".format(it) } ?: ""); append(',')
+            append(probeDlMbps?.let { fmt("%.3f", it) } ?: ""); append(',')
             append(wifiApCount       ?: "");              append(',')
             append(wifiScanAgeS      ?: "");              append(',')
             append(anchorStation.replace(',', ' '));      append(',')
@@ -183,6 +183,9 @@ data class NetworkRecord(
             append('"'); append(escapedPrvNb); append('"')
         }
     }
+
+    /** CSV 숫자는 항상 Locale.US — 기기 로케일이 소수점을 ','로 쓰면 컬럼이 밀린다. */
+    private fun fmt(pattern: String, value: Double) = String.format(Locale.US, pattern, value)
 
     companion object {
         const val CSV_HEADER =

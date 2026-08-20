@@ -14,7 +14,6 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.networktracker.R
-import com.networktracker.collector.NetworkDataCollector
 import com.networktracker.logger.CsvLogger
 import com.networktracker.service.NetworkLoggingService
 
@@ -31,7 +30,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etStation: EditText
     private lateinit var btnTagStation: Button
 
-    private lateinit var previewCollector: NetworkDataCollector
     private lateinit var csvLogger: CsvLogger
 
     private val handler = Handler(Looper.getMainLooper())
@@ -97,8 +95,7 @@ class MainActivity : AppCompatActivity() {
         )
         spinnerInterval.setSelection(1)   // 기본 5초
 
-        previewCollector = NetworkDataCollector(this)
-        csvLogger        = CsvLogger(this)
+        csvLogger = CsvLogger(this)
 
         requestNeededPermissions()
 
@@ -129,9 +126,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        previewCollector.startLocationUpdates()
-        previewCollector.startTelephonyListener()
-        previewCollector.startSensors()
         handler.post(uiTick)
         refreshFileList()
     }
@@ -139,9 +133,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(uiTick)
-        previewCollector.stopLocationUpdates()
-        previewCollector.stopTelephonyListener()
-        previewCollector.stopSensors()
     }
 
     // ── UI 갱신 ───────────────────────────────────────────────────────────────
@@ -163,66 +154,68 @@ class MainActivity : AppCompatActivity() {
             tvStatus.text   = "● 로깅 중 | 기록 수: ${NetworkLoggingService.recordCount}"
             tvFilePath.text = "파일: ${NetworkLoggingService.activeFile?.name ?: "-"}"
 
-            if (hasLocationPermission()) {
-                runCatching {
-                    val r = previewCollector.collect()
-                    tvLiveStats.text = buildString {
-                        appendLine("세대/종류  : ${r.generation} (${r.networkType})")
-                        appendLine("오버라이드 : ${r.overrideNetworkType}")
-                        appendLine("5G 감지   : SA=${r.is5GActual}  NSA=${r.is5GDisplay}  NR셀=${r.nrCellSeen}  서빙NR=${r.nrServingCellSeen}")
+            // 서비스가 방금 기록한 레코드를 그대로 보여준다. UI가 직접 collect()하면
+            // 메인 스레드에서 allCellInfo binder 호출이 일어나고 수집도 이중으로 돈다.
+            val r = NetworkLoggingService.lastRecord
+            if (r == null) {
+                tvLiveStats.text = "첫 수집 대기 중..."
+            } else {
+                tvLiveStats.text = buildString {
+                    appendLine("세대/종류  : ${r.generation} (${r.networkType})")
+                    appendLine("오버라이드 : ${r.overrideNetworkType}")
+                    appendLine("5G 감지   : SA=${r.is5GActual}  NSA=${r.is5GDisplay}  NR셀=${r.nrCellSeen}  서빙NR=${r.nrServingCellSeen}")
 
-                        appendLine("위  도    : ${r.latitude?.let  { "%.6f".format(it) } ?: "취득 중..."}")
-                        appendLine("경  도    : ${r.longitude?.let { "%.6f".format(it) } ?: "취득 중..."}")
-                        appendLine("GPS정확도 : ${r.gpsAccuracyM?.let { "%.1f m".format(it) } ?: "-"}")
-                        if (r.gpsSpeedMs != null)
-                            appendLine("GPS속도   : ${"%.1f".format(r.gpsSpeedMs)} m/s  (${"%.1f".format(r.gpsSpeedMs * 3.6)} km/h)")
-                        if (r.imuSpeedMs != null)
-                            appendLine("IMU속도   : ${"%.1f".format(r.imuSpeedMs)} m/s  (${"%.1f".format(r.imuSpeedMs * 3.6)} km/h)")
-                        if (r.gpsBearing != null)
-                            appendLine("방  향    : ${"%.0f".format(r.gpsBearing)}°")
-                        if (r.gpsAltitude != null)
-                            appendLine("고  도    : ${"%.0f".format(r.gpsAltitude)} m")
+                    appendLine("위  도    : ${r.latitude?.let  { "%.6f".format(it) } ?: "취득 중..."}")
+                    appendLine("경  도    : ${r.longitude?.let { "%.6f".format(it) } ?: "취득 중..."}")
+                    appendLine("GPS정확도 : ${r.gpsAccuracyM?.let { "%.1f m".format(it) } ?: "-"}")
+                    if (r.gpsSpeedMs != null)
+                        appendLine("GPS속도   : ${"%.1f".format(r.gpsSpeedMs)} m/s  (${"%.1f".format(r.gpsSpeedMs * 3.6)} km/h)")
+                    if (r.imuSpeedMs != null)
+                        appendLine("IMU속도   : ${"%.1f".format(r.imuSpeedMs)} m/s  (${"%.1f".format(r.imuSpeedMs * 3.6)} km/h)")
+                    if (r.gpsBearing != null)
+                        appendLine("방  향    : ${"%.0f".format(r.gpsBearing)}°")
+                    if (r.gpsAltitude != null)
+                        appendLine("고  도    : ${"%.0f".format(r.gpsAltitude)} m")
 
-                        appendLine("셀 ID     : ${r.servingCellId.ifEmpty { "-" }}")
-                        if (r.servingPci != null)          appendLine("PCI       : ${r.servingPci}")
-                        if (r.servingFreqArfcn != null)    appendLine("ARFCN     : ${r.servingFreqArfcn}")
-                        if (r.servingBandStr.isNotEmpty()) appendLine("Band      : ${r.servingBandStr}")
-                        if (r.servingTac != null)          appendLine("TAC       : ${r.servingTac}")
-                        if (r.mcc.isNotEmpty())            appendLine("MCC/MNC   : ${r.mcc}/${r.mnc}")
+                    appendLine("셀 ID     : ${r.servingCellId.ifEmpty { "-" }}")
+                    if (r.servingPci != null)          appendLine("PCI       : ${r.servingPci}")
+                    if (r.servingFreqArfcn != null)    appendLine("ARFCN     : ${r.servingFreqArfcn}")
+                    if (r.servingBandStr.isNotEmpty()) appendLine("Band      : ${r.servingBandStr}")
+                    if (r.servingTac != null)          appendLine("TAC       : ${r.servingTac}")
+                    if (r.mcc.isNotEmpty())            appendLine("MCC/MNC   : ${r.mcc}/${r.mnc}")
 
-                        appendLine("RSRP      : ${r.rsrp?.let    { "$it dBm" } ?: "-"}")
-                        appendLine("RSRQ      : ${r.rsrq?.let    { "$it dB"  } ?: "-"}")
-                        appendLine("RSSI      : ${r.rssi?.let    { "$it dBm" } ?: "-"}")
-                        appendLine("SINR/SNR  : ${r.sinrSnr?.let { "$it dB"  } ?: "-"}")
-                        appendLine("신호레벨  : ${r.signalLevel?.let { "$it / 4" } ?: "-"}")
+                    appendLine("RSRP      : ${r.rsrp?.let    { "$it dBm" } ?: "-"}")
+                    appendLine("RSRQ      : ${r.rsrq?.let    { "$it dB"  } ?: "-"}")
+                    appendLine("RSSI      : ${r.rssi?.let    { "$it dBm" } ?: "-"}")
+                    appendLine("SINR/SNR  : ${r.sinrSnr?.let { "$it dB"  } ?: "-"}")
+                    appendLine("신호레벨  : ${r.signalLevel?.let { "$it / 4" } ?: "-"}")
 
-                        if (r.timingAdvanceLte != null)
-                            appendLine("TA(거리)  : ${r.timingAdvanceLte}  (~${"%.0f".format(r.timingAdvanceLte * 78.0)} m)")
+                    if (r.timingAdvanceLte != null)
+                        appendLine("TA(거리)  : ${r.timingAdvanceLte}  (~${"%.0f".format(r.timingAdvanceLte * 78.0)} m)")
 
-                        if (r.csiRsrp != null) {
-                            appendLine("CSI-RSRP  : ${r.csiRsrp} dBm")
-                            appendLine("CSI-RSRQ  : ${r.csiRsrq?.let { "$it dB" } ?: "-"}")
-                            appendLine("CSI-SINR  : ${r.csiSinr?.let { "$it dB" } ?: "-"}")
-                        }
-
-                        val rxMbps       = r.rxSpeedBps       * 8.0 / 1_000_000.0
-                        val mobileRxMbps = r.mobileRxSpeedBps * 8.0 / 1_000_000.0
-                        appendLine("수신(전체): ${formatBps(r.rxSpeedBps)}  (${"%.2f".format(rxMbps)} Mbps)${if (r.wifiActive) "  [Wi-Fi포함]" else ""}")
-                        appendLine("수신(셀룰): ${formatBps(r.mobileRxSpeedBps)}  (${"%.2f".format(mobileRxMbps)} Mbps)")
-
-                        if (r.bestNbrRsrp != null)
-                            appendLine("최강이웃  : RSRP=${r.bestNbrRsrp}dBm  PCI=${r.bestNbrPci ?: "-"}  ARFCN=${r.bestNbrArfcn ?: "-"}")
-
-                        if (r.handoverDetected)
-                            appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버! 이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm"
-                                       else "→ 핸드오버  이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm")
-
-                        appendLine("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
-
-                        if (r.pressureHpa != null)
-                            appendLine("기  압    : ${"%.1f".format(r.pressureHpa)} hPa")
-                        append("WiFi 스캔 : ${r.wifiApCount?.let { "AP ${it}개 (${r.wifiScanAgeS ?: "?"}초 전)" } ?: "-"}")
+                    if (r.csiRsrp != null) {
+                        appendLine("CSI-RSRP  : ${r.csiRsrp} dBm")
+                        appendLine("CSI-RSRQ  : ${r.csiRsrq?.let { "$it dB" } ?: "-"}")
+                        appendLine("CSI-SINR  : ${r.csiSinr?.let { "$it dB" } ?: "-"}")
                     }
+
+                    val rxMbps       = r.rxSpeedBps       * 8.0 / 1_000_000.0
+                    val mobileRxMbps = r.mobileRxSpeedBps * 8.0 / 1_000_000.0
+                    appendLine("수신(전체): ${formatBps(r.rxSpeedBps)}  (${"%.2f".format(rxMbps)} Mbps)${if (r.wifiActive) "  [Wi-Fi포함]" else ""}")
+                    appendLine("수신(셀룰): ${formatBps(r.mobileRxSpeedBps)}  (${"%.2f".format(mobileRxMbps)} Mbps)")
+
+                    if (r.bestNbrRsrp != null)
+                        appendLine("최강이웃  : RSRP=${r.bestNbrRsrp}dBm  PCI=${r.bestNbrPci ?: "-"}  ARFCN=${r.bestNbrArfcn ?: "-"}")
+
+                    if (r.handoverDetected)
+                        appendLine(if (r.pingPongDetected) "⚠ 핑퐁 핸드오버! 이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm"
+                                   else "→ 핸드오버  이전=${r.prevServingCellId}  RSRP=${r.prevRsrp}dBm")
+
+                    appendLine("이웃기지국: 전체=${r.neighborCount}  NR=${r.nrNeighborCount}  LTE=${r.lteNeighborCount}")
+
+                    if (r.pressureHpa != null)
+                        appendLine("기  압    : ${"%.1f".format(r.pressureHpa)} hPa")
+                    append("WiFi 스캔 : ${r.wifiApCount?.let { "AP ${it}개 (${r.wifiScanAgeS ?: "?"}초 전)" } ?: "-"}")
                 }
             }
         } else {

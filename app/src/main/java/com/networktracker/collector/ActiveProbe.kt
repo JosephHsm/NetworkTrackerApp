@@ -55,8 +55,12 @@ class ActiveProbe(context: Context) {
     // 버스트 결과는 "완료 직후 1개 행"에만 기록하도록 consume 방식으로 전달
     @Volatile private var pendingDlMbps: Double? = null
 
-    private var thread: HandlerThread? = null
-    private var handler: Handler? = null
+    // RTT와 다운로드 버스트는 서로 다른 스레드에서 돈다. 한 스레드를 공유하면 최대 15초짜리
+    // 버스트가 RTT tick을 막아, 하필 "부하가 걸린 순간"의 지연이 측정에서 빠진다.
+    private var rttThread: HandlerThread? = null
+    private var rttHandler: Handler? = null
+    private var dlThread: HandlerThread? = null
+    private var dlHandler: Handler? = null
     private var intervalMs = 5_000L
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -70,7 +74,7 @@ class ActiveProbe(context: Context) {
         override fun run() {
             if (!running) return
             measureRtt()
-            handler?.postDelayed(this, intervalMs)
+            rttHandler?.postDelayed(this, intervalMs)
         }
     }
 
@@ -78,7 +82,7 @@ class ActiveProbe(context: Context) {
         override fun run() {
             if (!running) return
             if (probeBytesUsed < SESSION_BYTE_CAP) measureDownload()
-            handler?.postDelayed(this, DL_INTERVAL_MS)
+            dlHandler?.postDelayed(this, DL_INTERVAL_MS)
         }
     }
 
@@ -100,10 +104,14 @@ class ActiveProbe(context: Context) {
             )
         }
 
-        thread = HandlerThread("ActiveProbe").also { it.start() }
-        handler = Handler(thread!!.looper).also {
-            it.post(rttTick)
-            if (downloadEnabled) it.postDelayed(dlTick, 5_000L)  // 시작 5초 후 첫 버스트
+        rttThread = HandlerThread("ActiveProbe-RTT").also { it.start() }
+        rttHandler = Handler(rttThread!!.looper).also { it.post(rttTick) }
+
+        if (downloadEnabled) {
+            dlThread = HandlerThread("ActiveProbe-DL").also { it.start() }
+            dlHandler = Handler(dlThread!!.looper).also {
+                it.postDelayed(dlTick, 5_000L)   // 시작 5초 후 첫 버스트
+            }
         }
     }
 
@@ -111,9 +119,12 @@ class ActiveProbe(context: Context) {
         running = false
         runCatching { cm.unregisterNetworkCallback(networkCallback) }
         cellularNetwork = null
-        handler?.removeCallbacksAndMessages(null)
-        thread?.quitSafely()
-        thread = null; handler = null
+        rttHandler?.removeCallbacksAndMessages(null)
+        dlHandler?.removeCallbacksAndMessages(null)
+        rttThread?.quitSafely()
+        dlThread?.quitSafely()
+        rttThread = null; rttHandler = null
+        dlThread  = null; dlHandler  = null
     }
 
     /** 완료된 버스트 결과를 1회만 반환하고 비운다 (없으면 null). */
