@@ -9,8 +9,8 @@ import glob, os, re
 import pandas as pd
 
 OUT = "CI_PATTERN_ANALYSIS.md"
-files = sorted(glob.glob("trackingcsv/network_log_2026060[789]*.csv") +
-               glob.glob("trackingcsv/network_log_2026061*.csv"))
+files = sorted(glob.glob("trackingcsv/legacy/network_log_2026060[789]*.csv") +
+               glob.glob("trackingcsv/legacy/network_log_2026061*.csv"))
 
 
 def activity(name):
@@ -81,7 +81,7 @@ for csv in files:
 
 # 검산용 워크드 예제 (car 0609)
 ex = {}
-car = "trackingcsv/network_log_20260609_164800_car.csv"
+car = "trackingcsv/legacy/network_log_20260609_164800_car.csv"
 if os.path.exists(car):
     for cid in (52540707, 52540687, 52115212, 52114959):
         ex[cid] = cid // 256

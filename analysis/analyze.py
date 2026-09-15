@@ -6,7 +6,7 @@ NetworkTrackerApp 분석 스크립트
 - 경로 지도 (folium, RSRP 색칠)
 
 사용법:
-    python analysis/analyze.py trackingcsv/network_log_20260609_164800_car.csv
+    python analysis/analyze.py trackingcsv/legacy/network_log_20260609_164800_car.csv
     python analysis/analyze.py            # 인자 없으면 6/7 이후 전 파일 일괄
 출력: analysis_output/
 """
@@ -130,8 +130,8 @@ def analyze(csv):
 
 
 def main():
-    files = sys.argv[1:] or sorted(glob.glob("trackingcsv/network_log_2026060[789]*.csv") +
-                                   glob.glob("trackingcsv/network_log_2026061*.csv"))
+    files = sys.argv[1:] or sorted(glob.glob("trackingcsv/legacy/network_log_2026060[789]*.csv") +
+                                   glob.glob("trackingcsv/legacy/network_log_2026061*.csv"))
     for csv in files:
         r = analyze(csv)
         print(f"{r['file']:42s} rows={r['rows']:4d} cells={r['cells']:3d} eNB={r['enbs']:3d} "

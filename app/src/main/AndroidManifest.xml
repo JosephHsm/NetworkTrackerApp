@@ -13,6 +13,9 @@
 
     <!-- v1.1: Active probe (RTT + download burst) + Kakao Local API -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ActiveProbe의 ConnectivityManager.requestNetwork(셀룰러 바인딩)에 필요. 없으면 SecurityException으로
+         셀룰러 망을 못 얻어 rtt_ms / probe_dl_mbps가 전부 공백이 된다. 설치 시 자동 허용되는 normal 권한. -->
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
 
     <!-- v1.1: Wi-Fi AP fingerprint scan (지하 구간 사후 위치 복원용) -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />

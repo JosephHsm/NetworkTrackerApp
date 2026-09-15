@@ -215,7 +215,9 @@ class MainActivity : AppCompatActivity() {
 
                     if (r.pressureHpa != null)
                         appendLine("기  압    : ${"%.1f".format(r.pressureHpa)} hPa")
-                    append("WiFi 스캔 : ${r.wifiApCount?.let { "AP ${it}개 (${r.wifiScanAgeS ?: "?"}초 전)" } ?: "-"}")
+                    appendLine("WiFi 스캔 : ${r.wifiApCount?.let { "AP ${it}개 (${r.wifiScanAgeS ?: "?"}초 전)" } ?: "-"}")
+                    // 능동 프로브가 실제로 도는지 여기서 바로 확인 — 실패하면 이유가 나온다
+                    append("[프로브]\n${NetworkLoggingService.probeStatus.ifEmpty { "대기 중..." }}")
                 }
             }
         } else {

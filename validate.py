@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-CSV_DIR = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv")
+CSV_DIR = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv\legacy")
 frames = []
 for f in sorted(CSV_DIR.glob("*.csv")):
     df = pd.read_csv(f, low_memory=False)

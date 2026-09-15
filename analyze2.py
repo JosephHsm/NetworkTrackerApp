@@ -18,7 +18,7 @@ from collections import defaultdict
 
 warnings.filterwarnings("ignore")
 
-CSV_DIR = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv")
+CSV_DIR = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv\legacy")
 OUT_DIR = Path(r"C:\Users\admin\NetworkTrackerApp\analysis_output")
 OUT_DIR.mkdir(exist_ok=True)
 

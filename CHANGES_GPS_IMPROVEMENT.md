@@ -58,7 +58,7 @@ GMS가 없는 기기에서는 기존 `LocationManager` 방식으로 자동 폴�
 
 ## 3. 실측 검증: Fused 도입 후에도 깊은 터널은 동결된다
 
-`trackingcsv/network_log_20260609_185650_subway.csv` (지하철, 200행 / 14분)를 분석한 결과다.
+`trackingcsv/legacy/network_log_20260609_185650_subway.csv` (지하철, 200행 / 14분)를 분석한 결과다.
 
 ### 3.1 세션 전체 통계
 

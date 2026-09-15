@@ -33,6 +33,8 @@ class NetworkLoggingService : Service() {
         @Volatile var activeFile: File? = null
         /** 마지막으로 수집한 레코드 — UI가 자체 수집 없이 읽어 쓰는 미리보기 소스. */
         @Volatile var lastRecord: NetworkRecord? = null
+        /** 능동 프로브 상태(RTT/DL 두 줄) — 화면에 그대로 표시해 프로브가 도는지 바로 확인한다. */
+        @Volatile var probeStatus: String = ""
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -55,6 +57,7 @@ class NetworkLoggingService : Service() {
         csvLogger.log(record)
         recordCount = csvLogger.recordCount()
         lastRecord  = record
+        probeStatus = probe.statusText()
         updateNotification()
     }
 
@@ -168,6 +171,7 @@ class NetworkLoggingService : Service() {
     override fun onDestroy() {
         isRunning = false
         lastRecord = null
+        probeStatus = ""
         handler.removeCallbacks(tick)
         collector.onCellChangeDetected = null
         probe.stop()
@@ -202,8 +206,10 @@ class NetworkLoggingService : Service() {
 
     private fun updateNotification() {
         val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val probeInfo = if (probe.probeBytesUsed > 0)
-            " | 프로브 ${probe.probeBytesUsed / 1_048_576}MB" else ""
+        val rtt = probe.lastRttMs?.let { " | RTT ${it}ms" } ?: " | RTT 실패"
+        val dl  = probe.lastDlMbps?.let { " | DL ${"%.1f".format(java.util.Locale.US, it)}Mbps" } ?: ""
+        val used = if (probe.probeBytesUsed > 0) " (${probe.probeBytesUsed / 1_048_576}MB)" else ""
+        val probeInfo = rtt + dl + used
         mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개$probeInfo"))
     }
 

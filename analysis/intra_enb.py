@@ -43,8 +43,8 @@ def analyze(csv):
     }
 
 
-files = sys.argv[1:] or sorted(glob.glob("trackingcsv/network_log_2026060[789]*.csv") +
-                               glob.glob("trackingcsv/network_log_2026061*.csv"))
+files = sys.argv[1:] or sorted(glob.glob("trackingcsv/legacy/network_log_2026060[789]*.csv") +
+                               glob.glob("trackingcsv/legacy/network_log_2026061*.csv"))
 res = [analyze(f) for f in files]
 
 print("intra-eNB 핸드오버 분해 + 같은 eNB 내 같은 셀 왕복\n")

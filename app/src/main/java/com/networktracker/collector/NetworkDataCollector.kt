@@ -63,7 +63,7 @@ class NetworkDataCollector(private val context: Context) {
 
     @Volatile private var lastLocation: Location? = null
     @Volatile private var locationProvider = "none"  // 마지막 위치를 준 provider 이름
-    @Volatile private var locationTimeMs   = 0L      // 마지막 위치 수신 시각
+    @Volatile private var locationRealtimeNs = 0L    // 마지막 위치 fix의 측정 시각 (elapsedRealtime 기준)
 
     private val fusedClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
@@ -154,24 +154,23 @@ class NetworkDataCollector(private val context: Context) {
         return result
     }
 
-    private val gpsListener = LocationListener { loc ->
-        lastLocation = loc
-        locationProvider = "gps"
-        locationTimeMs   = System.currentTimeMillis()
+    // 위치를 받은 시각이 아니라 fix가 실제로 측정된 시각을 기록한다.
+    // getLastKnownLocation()은 몇 분~몇 시간 전 위치를 줄 수 있어서, 받은 시각으로 두면
+    // 옛날 위치가 location_age_s=0 으로 찍힌다.
+    private fun setLocation(loc: Location, provider: String) {
+        lastLocation       = loc
+        locationProvider   = provider
+        locationRealtimeNs = loc.elapsedRealtimeNanos
     }
+
+    private val gpsListener = LocationListener { loc -> setLocation(loc, "gps") }
     private val netListener = LocationListener { loc ->
-        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE)) {
-            lastLocation = loc
-            locationProvider = "network"
-            locationTimeMs   = System.currentTimeMillis()
-        }
+        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))
+            setLocation(loc, "network")
     }
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
-            val loc = result.lastLocation ?: return
-            lastLocation = loc
-            locationProvider = "fused"
-            locationTimeMs   = System.currentTimeMillis()
+            setLocation(result.lastLocation ?: return, "fused")
         }
     }
 
@@ -193,11 +192,8 @@ class NetworkDataCollector(private val context: Context) {
             listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER).forEach { p ->
                 if (lm.isProviderEnabled(p))
                     lm.getLastKnownLocation(p)?.let { loc ->
-                        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE)) {
-                            lastLocation     = loc
-                            locationProvider = p
-                            locationTimeMs   = System.currentTimeMillis()
-                        }
+                        if (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))
+                            setLocation(loc, p)
                     }
             }
         }
@@ -209,11 +205,8 @@ class NetworkDataCollector(private val context: Context) {
                 .build()
             fusedClient.requestLocationUpdates(req, locationCallback, Looper.getMainLooper())
             fusedClient.lastLocation.addOnSuccessListener { loc ->
-                if (loc != null && (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE))) {
-                    lastLocation     = loc
-                    locationProvider = "fused"
-                    locationTimeMs   = System.currentTimeMillis()
-                }
+                if (loc != null && (lastLocation == null || loc.accuracy < (lastLocation?.accuracy ?: Float.MAX_VALUE)))
+                    setLocation(loc, "fused")
             }
             usingFused = true
         }.onFailure {
@@ -350,7 +343,8 @@ class NetworkDataCollector(private val context: Context) {
         val wifiActive = isWifiActive()
 
         // location_source / location_age_s 계산
-        val locationAgeMs   = if (locationTimeMs > 0L) now - locationTimeMs else null
+        val locationAgeMs   = if (locationRealtimeNs > 0L)
+            (SystemClock.elapsedRealtimeNanos() - locationRealtimeNs) / 1_000_000L else null
         val effectiveSource = when {
             lastLocation == null                               -> "none"
             locationAgeMs != null && locationAgeMs > 60_000L  -> "stale_$locationProvider"

@@ -60,6 +60,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="능동 다운로드 프로브 (2MB/30초, 세션당 최대 500MB 소모)"
+        android:checked="true"
         android:textSize="13sp"
         android:paddingBottom="8dp" />
 

@@ -22,7 +22,7 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 
 # ── 경로 설정 ──────────────────────────────────────────────────
-CSV_DIR   = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv")
+CSV_DIR   = Path(r"C:\Users\admin\NetworkTrackerApp\trackingcsv\legacy")
 OUT_DIR   = Path(r"C:\Users\admin\NetworkTrackerApp\analysis_output")
 OUT_DIR.mkdir(exist_ok=True)
 

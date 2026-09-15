@@ -82,7 +82,7 @@ data class NetworkRecord(
     // ── v1.1 확장 컬럼 ──────────────────────────────────────────────────────
     // 기압계 — 지하 진입/역간 이동 감지 (센서 없는 단말은 공백)
     val pressureHpa: Float? = null,
-    // 능동 프로브: TCP connect RTT (8.8.8.8:53, 셀룰러 바인딩) — HO 순간 지연 스파이크 관찰
+    // 능동 프로브: TCP connect RTT (8.8.8.8:53 → 1.1.1.1:443 → speed.cloudflare.com:443 중 처음 되는 대상, 셀룰러 바인딩) — HO 순간 지연 스파이크 관찰
     val rttMs: Int? = null,
     // 능동 프로브: 다운로드 버스트 처리량 (버스트 완료 직후 행에만 기록, 나머지 공백)
     val probeDlMbps: Double? = null,
