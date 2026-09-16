@@ -1,0 +1,9 @@
+# 사후 수동 앵커 — 측정 중 태그를 놓친 역을 분석 단계에서 보충한다.
+# 원본 측정 CSV는 절대 수정하지 않는다(측정 무결성 유지). station_mapmatch.py가 여기서 읽어 합친다.
+#
+# session  : trackingcsv 파일명(확장자 제외)
+# datetime : KST, 원본 CSV의 datetime 컬럼과 같은 형식 (YYYY-MM-DD HH:MM:SS)
+# station  : 역명 (reference/seoul_station_master_tdata.csv 기준, '역' 접미사 있어도 됨)
+# note     : 근거 (자유 기술)
+session,datetime,station,note
+network_log_20260915_165206_subway,2026-09-15 16:54:00,성수,"세션 시작 승강장. 기압 정차 1·2구간(16:53:36, 16:54:06)의 GPS 위치가 성수역에서 78m/71m, 정확도 11m"

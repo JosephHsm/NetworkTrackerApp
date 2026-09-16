@@ -21,3 +21,7 @@ app/build/
 
 # Gradle wrapper jar는 예외 (래퍼 완전성)
 !gradle/wrapper/gradle-wrapper.jar
+
+# Python (analysis/ 분석 스크립트)
+__pycache__/
+*.pyc

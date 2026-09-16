@@ -24,6 +24,11 @@
 
 역 좌표: reference/seoul_station_master_tdata.csv
   (서울교통빅데이터플랫폼 T-Data "지하철역_GEOM (역사마스터)", CC BY — 출처 표시 필요)
+  사이 역은 이 파일의 역 순번(code)으로 뽑고, 순번이 실제 선로 순서와 어긋나는 노선
+  (예: 일산선 1948 원흥 / 1949 지축 / 1950 삼송)을 대비해 기하 검증 후 직선 근사로 폴백한다.
+
+수동 앵커: reference/manual_anchors.csv
+  측정 중 태그를 놓친 역을 사후에 보충한다. 원본 측정 CSV는 절대 수정하지 않는다.
 
 사용법:
     python analysis/station_mapmatch.py trackingcsv/new/network_log_20260909_165646_subway.csv
@@ -49,6 +54,25 @@ MOVING_SPEED_MS = 3.0    # 이보다 빠르면 정차 아님
 MAX_TRAIN_SPEED_MS = 30  # GPS와 역 위치 모순 판정용 (약 108 km/h)
 BETWEEN_MAX_OFF_M = 400  # 두 역을 잇는 직선에서 이만큼(또는 구간 길이의 25%) 안이면 사이 역
 BETWEEN_MAX_SPAN_M = 4000  # 두 역이 이보다 멀면 사이 역 추정 안 함 (태그는 3~4역마다 한 번 권장)
+
+# 역 순번(code) 기반 사이 역 추정의 안전장치.
+# T-Data의 code는 2호선(201~243)·3호선 본선(309~342)에서는 실제 선로 순서와 일치하지만,
+# 일산선(1948 원흥, 1949 지축, 1950 삼송)처럼 어긋나는 노선도 있다. 그래서 순번으로 뽑은
+# 경로를 기하로 검증하고, 통과하지 못하면 아래 직선 근사로 폴백한다.
+SEQ_MAX_HOP_M = 3000     # 순번상 이웃한 두 역이 이보다 멀면 순번을 못 믿음
+SEQ_MAX_DETOUR = 2.5     # 순번 경로 길이가 직선의 이 배를 넘으면 순번을 못 믿음
+CIRCULAR_LINES = {"2호선"}   # 순환선: 순번이 끝에서 처음으로 되돌아감
+
+MANUAL_ANCHOR_CSV = "reference/manual_anchors.csv"   # 사후 수동 앵커 (원본 CSV 불변)
+
+# 정차 개수가 사이 역 개수와 안 맞을 때, 긴 정차만 골라 근사 배정할지 여부.
+# 기본 꺼짐 — 2026-09-15 지하철 세션(성수→홍대입구)으로 검증한 결과:
+#   · 커버리지 이득 0 (ON/OFF 모두 98.5%. 끄면 같은 행이 between 시간비례로 채워진다)
+#   · leave-one-out 오차는 29 m → 772 m 로 악화 (한 역씩 밀린다)
+# 이 경로는 "개수가 안 맞을 때"만 발동하는데 그때가 곧 정차 검출을 믿을 수 없는 상황이라
+# 구조적으로 불리하다. 개수가 맞을 때 쓰는 strict 경로(stop_inferred)는 0909 세션에서
+# leave-one-out 오차 0 m 로 유지되므로 그대로 둔다.
+APPROX_STOP_ASSIGN = False
 
 # 운영 구간명 → 승객이 부르는 노선명 (같은 열차가 이어 달리는 구간끼리 묶음)
 LINE_GROUPS = {
@@ -150,6 +174,39 @@ def _station(key, line, st):
     return dict(key=key, lat=r["lat"], lon=r["lon"], line=line)
 
 
+def seq_between(A, B, st, branch_only):
+    """공식 역 순번(code)으로 A→B 사이 역. 순번을 믿을 수 없으면 None (호출부가 폴백)."""
+    line = A["line"]
+    g = st[(st["line"] == line) & ~st["key"].isin(sorted(branch_only))]
+    ra, rb = g[g["key"] == A["key"]], g[g["key"] == B["key"]]
+    if len(ra) != 1 or len(rb) != 1:
+        return None
+    ra, rb = ra.iloc[0], rb.iloc[0]
+    # 병합 노선(3호선=본선+일산선 등)은 구간이 다르면 순번이 이어지지 않는다
+    if ra["line_raw"] != rb["line_raw"]:
+        return None
+    g = g[g["line_raw"] == ra["line_raw"]].sort_values("code").reset_index(drop=True)
+    ia = int(g.index[g["key"] == A["key"]][0])
+    ib = int(g.index[g["key"] == B["key"]][0])
+    n = len(g)
+    if line in CIRCULAR_LINES:
+        fwd, bwd = (ib - ia) % n, (ia - ib) % n
+        idx = ([(ia + k) % n for k in range(1, fwd)] if fwd <= bwd
+               else [(ia - k) % n for k in range(1, bwd)])
+    else:
+        idx = list(range(ia + 1, ib)) if ia < ib else list(range(ia - 1, ib, -1))
+
+    path = [g.loc[i] for i in idx]
+    pts = ([(ra["lat"], ra["lon"])] + [(r["lat"], r["lon"]) for r in path]
+           + [(rb["lat"], rb["lon"])])
+    hops = [haversine_m(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1])
+            for i in range(len(pts) - 1)]
+    direct = haversine_m(ra["lat"], ra["lon"], rb["lat"], rb["lon"])
+    if max(hops) > SEQ_MAX_HOP_M or (direct > 0 and sum(hops) > SEQ_MAX_DETOUR * direct):
+        return None
+    return [dict(key=r["key"], lat=r["lat"], lon=r["lon"], line=line) for r in path]
+
+
 def between_stations(A, B, st):
     """같은 호선에서 A→B 사이 역들 (A, B 제외, 진행 순서)."""
     if A["line"] is None or A["line"] != B["line"]:
@@ -171,8 +228,12 @@ def between_stations(A, B, st):
         down = [_station(k, line, st) for k in rb[1:rb.index(B["key"])]]
         return ([] if A["key"] == J["key"] else between_stations(A, J, st) + [J]) + down
 
-    # 본선: 두 역을 잇는 직선 가까이 있는 역 (지선 전용 역은 제외)
+    # 본선: 공식 역 순번을 먼저 쓰고(먼 구간도 처리됨), 못 믿을 때만 직선 근사로 폴백
     branch_only = {k for r in BRANCH_ROUTES.get(line, []) for k in r[1:]}
+    seq = seq_between(A, B, st, branch_only)
+    if seq is not None:
+        return seq
+
     ky = 110540.0
     kx = 111320.0 * np.cos(np.radians((A["lat"] + B["lat"]) / 2))
     ax, ay, bx, by = A["lon"] * kx, A["lat"] * ky, B["lon"] * kx, B["lat"] * ky
@@ -205,8 +266,35 @@ def interp_on_path(path, frac):
     return lat[i] + f * (lat[i + 1] - lat[i]), lon[i] + f * (lon[i + 1] - lon[i])
 
 
-def build_anchors(df, st):
-    a = df[df["collect_trigger"] == "anchor"].sort_values("timestamp").reset_index(drop=True)
+def load_manual_anchors(name):
+    """사이드카 수동 앵커 — 측정 중 놓친 역을 사후에 보충한다 (원본 측정 CSV는 건드리지 않는다).
+
+    컬럼: session, datetime(KST), station, note. '#'로 시작하는 줄은 주석.
+    """
+    if not name or not os.path.exists(MANUAL_ANCHOR_CSV):
+        return None
+    m = pd.read_csv(MANUAL_ANCHOR_CSV, encoding="utf-8-sig", comment="#")
+    m = m[m["session"].astype(str).str.strip() == name]
+    if not len(m):
+        return None
+    t = pd.to_datetime(m["datetime"]).dt.tz_localize("Asia/Seoul")
+    return pd.DataFrame({
+        "timestamp": (t - pd.Timestamp("1970-01-01", tz="UTC")) // pd.Timedelta("1ms"),
+        "datetime": m["datetime"].astype(str).to_numpy(),
+        "anchor_station": m["station"].astype(str).to_numpy(),
+        "anchor_lat": np.nan,
+        "anchor_lon": np.nan,
+    })
+
+
+def build_anchors(df, st, name=None):
+    cols = ["timestamp", "datetime", "anchor_station", "anchor_lat", "anchor_lon"]
+    a = df[df["collect_trigger"] == "anchor"][cols]
+    man = load_manual_anchors(name)
+    if man is not None:
+        print(f"  수동 앵커 {len(man)}개 추가: " + ", ".join(man['anchor_station']))
+        a = pd.concat([a, man[cols]], ignore_index=True)
+    a = a.sort_values("timestamp").reset_index(drop=True)
     a["key"] = a["anchor_station"].map(norm_name)
     a["line"] = assign_lines(a["key"].tolist(), st)
     lat, lon, src = [], [], []
@@ -294,9 +382,20 @@ def build_events(anchors, stops, st):
         mids = between_stations(A, B, st)
         free = [s for j, s in enumerate(stops)
                 if j not in used and A["t_dep"] < s[0] and s[1] < B["t_arr"]]
-        if mids and len(free) == len(mids):
-            for m, (s0, s1) in zip(mids, free):
-                extra.append(dict(m, t_arr=s0, t_dep=s1, src="stop_inferred"))
+        if not mids or not free:
+            continue
+        if len(free) == len(mids):
+            sel, src = free, "stop_inferred"
+        elif APPROX_STOP_ASSIGN and len(free) > len(mids):
+            # 정차 과검출 구간(지상·저난류)에서는 오래 선 정차일수록 실제 역일 가능성이 높다.
+            # 개수가 안 맞아도 버리지 않고 긴 정차만 골라 시간 순서대로 배정하되, 출처를 구분한다.
+            keep = sorted(sorted(range(len(free)), key=lambda i: free[i][1] - free[i][0],
+                                 reverse=True)[:len(mids)])
+            sel, src = [free[i] for i in keep], "stop_inferred_approx"
+        else:
+            continue                      # 정차가 역보다 적으면 어느 역인지 특정 불가
+        for m, (s0, s1) in zip(mids, sel):
+            extra.append(dict(m, t_arr=s0, t_dep=s1, src=src))
     return sorted(ev + extra, key=lambda e: e["t_arr"])
 
 
@@ -308,7 +407,9 @@ def positions(ts, ev, st):
     prev_s = np.array([""] * n, dtype=object); next_s = np.array([""] * n, dtype=object)
     for e in ev:
         m = (ts >= e["t_arr"]) & (ts <= e["t_dep"])
-        lat[m], lon[m], method[m] = e["lat"], e["lon"], "station"
+        lat[m], lon[m] = e["lat"], e["lon"]
+        # 개수가 안 맞아 추정으로 배정한 역은 신뢰도를 구분해 남긴다
+        method[m] = "station_approx" if e.get("src") == "stop_inferred_approx" else "station"
         prev_s[m], next_s[m] = e["key"], e["key"]
     for A, B in zip(ev[:-1], ev[1:]):
         path = [A] + between_stations(A, B, st) + [B]
@@ -361,13 +462,14 @@ def run(csv, st):
     name = os.path.splitext(os.path.basename(csv))[0]
     df = pd.read_csv(csv, low_memory=False)
     print(f"\n== {name}  ({len(df)} rows)")
-    if "anchor_station" not in df.columns or (df["collect_trigger"] == "anchor").sum() < 2:
-        print("  앵커 2개 미만 → 보간 불가, 건너뜀")
+    if "anchor_station" not in df.columns:
+        print("  anchor_station 컬럼 없음 → 건너뜀")
         return
 
-    anchors = build_anchors(df, st)
+    # 수동 앵커까지 합친 뒤에 개수를 센다 (태그를 놓친 세션도 사후 보충으로 살릴 수 있다)
+    anchors = build_anchors(df, st, name)
     if len(anchors) < 2:
-        print("  유효 앵커 2개 미만 → 건너뜀")
+        print("  유효 앵커 2개 미만 → 보간 불가, 건너뜀")
         return
     print("  앵커 호선: " + " → ".join(f"{r.key}({r.line or '?'})" for r in anchors.itertuples()))
 
@@ -397,7 +499,8 @@ def run(csv, st):
 
     covered = df["lat_mm"].notna()
     cnt = Counter(method)
-    print("  위치 할당: " + ", ".join(f"{k} {cnt[k]}행" for k in ["gps", "station", "between", "transfer", "none"] if cnt[k])
+    print("  위치 할당: " + ", ".join(f"{k} {cnt[k]}행" for k in
+                                   ["gps", "station", "station_approx", "between", "transfer", "none"] if cnt[k])
           + f" / {len(df)}")
     print(f"  할당 위치 ↔ 원래 GPS 거리: 중앙값 {df.loc[covered, 'mm_vs_gps_m'].median():.0f} m, "
           f"90% {df.loc[covered, 'mm_vs_gps_m'].quantile(0.9):.0f} m, 최대 {df.loc[covered, 'mm_vs_gps_m'].max():.0f} m")

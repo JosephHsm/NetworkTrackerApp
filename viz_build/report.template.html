@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>차량 이동 네트워크 지도</title>
+<title>이동 네트워크 측정 리포트</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -72,6 +72,11 @@ h1{font-size:clamp(26px,4.2vw,40px);line-height:1.18;font-weight:600;letter-spac
 svg{display:block}
 .read{margin:16px 26px 20px;padding:14px 16px;background:var(--surface-2);border-radius:8px;font-size:14px;color:var(--ink-2)}
 .read b{color:var(--ink);font-weight:600}
+.plain{margin:12px 0 0;padding:11px 14px;background:var(--surface-2);border-left:3px solid var(--s1);border-radius:0 8px 8px 0;
+  font-size:14px;color:var(--ink-2);max-width:74ch;font-weight:300}
+.plain b{color:var(--ink);font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:20px;margin-left:6px;vertical-align:2px;
+  border:1px solid var(--line-2);color:var(--ink-3);background:var(--surface-2);font-weight:400}
 .verdict{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:3px;font-weight:500;
   border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface-2)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;padding:10px 26px 0;font-size:13px;color:var(--ink-2)}
@@ -132,8 +137,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 
 <div class="wrap">
   <header class="masthead">
-    <div class="eyebrow">NetworkTrackerApp · 차량 세션</div>
-    <h1>차로 달리는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가</h1>
+    <div class="eyebrow" id="eyebrow">NetworkTrackerApp</div>
+    <h1 id="title">이동하는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가</h1>
     <p class="dek" id="dek"></p>
     <div class="stats" id="stats"></div>
   </header>
@@ -148,6 +153,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <h2>이동 경로 위에서 본 신호 세기와 접속한 셀</h2>
       <p class="sub">점 하나가 측정 1회다. <b>신호 세기</b> 보기는 RSRP를 진하기로, <b>접속 셀</b> 보기는 셀이 바뀔 때마다 회색 톤을 번갈아 칠한다.
         점을 누르면 같은 셀(파랑)과 같은 기지국의 다른 섹터(청록)에 붙어 있던 위치가 모두 표시된다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 지나온 길 위에 신호가 좋았던 곳과 나빴던 곳을 색으로 칠한 지도다. 색이 진할수록 신호가 약한 곳이다.
+        지하철 세션은 땅속이라 GPS가 안 잡히므로, 역 위치를 기준으로 되짚어 계산한 좌표를 쓴다 — 그래서 차량 세션보다 위치가 거칠다.</p>
     </div>
     <div class="map-tools">
       <div class="seg" role="group" aria-label="지도 색상">
@@ -169,6 +176,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <p class="sub">위 선은 접속 중인 셀의 RSRP, 아래 띠 한 칸은 한 셀에 머문 구간이다. 칸이 바뀌는 곳이 핸드오버이고,
         칸의 색은 <b>어디로 옮겨갔는지</b>를 나타낸다 — 같은 기지국의 다른 섹터인지, 아예 다른 기지국인지. 검은 삼각형은 핑퐁(30초 안에 직전 셀로 복귀)이다.
         그래프 위에 마우스를 올리면 그 순간의 값이 나오고, 지도에도 위치가 표시된다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 시간이 흐르는 동안 신호가 오르내린 모양과, 그때 폰이 어느 기지국에 붙어 있었는지를 위아래로 나란히 놓은 것이다.
+        아래 띠의 칸이 바뀌는 순간이 다른 기지국으로 갈아탄 때다. 칸이 자주 바뀌면 그만큼 자주 갈아탔다는 뜻이다.</p>
     </div>
     <div class="legend" id="lg2"></div>
     <div class="fig-body"><div id="c2"></div></div>
@@ -182,6 +191,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <h2>핸드오버 직전에 신호는 나빠지고, 옆 셀은 좋아지는가<span class="verdict" id="v3"></span></h2>
       <p class="sub">모든 핸드오버를 발생 시점(0초)에 맞춰 겹친 뒤 5초 간격으로 평균을 냈다. 파랑은 그 순간 접속 중인 셀, 주황은 가장 센 이웃 셀이다.
         0초를 지나면 접속 셀이 바뀌므로 파랑 선은 새 셀의 값이다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — "신호가 나빠져서 갈아탄 게 맞는지" 확인하는 그림이다. 세션에서 일어난 갈아타기를 전부
+        <b>갈아탄 순간이 0초가 되도록</b> 포개 놓고 평균을 냈다. 0초 직전에 파랑(붙어 있던 셀)이 내려가고 주황(옆 셀)이 올라가면, 나빠져서 옮겼다는 뜻이다.</p>
     </div>
     <div class="legend" id="lg3"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c3"></svg></div></div>
@@ -194,6 +205,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <div class="fig-num">그림 4 · 가설 2</div>
       <h2>핸드오버를 하면 신호가 좋아지는가<span class="verdict" id="v4"></span></h2>
       <p class="sub">핸드오버 순간, 새 셀 RSRP에서 직전 셀 RSRP를 뺀 값의 분포다. 더 좋은 셀로 옮겨준다면 막대가 오른쪽(파랑)에 몰려야 한다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 갈아탄 게 이득이었는지 본다. 갈아탄 뒤 신호에서 갈아타기 전 신호를 뺀 값이라,
+        <b>막대가 오른쪽에 몰리면 좋아진 것</b>이고 왼쪽에 몰리면 오히려 나빠진 것이다. 0 근처면 갈아타도 별 차이가 없었다는 뜻이다.</p>
     </div>
     <div class="legend" id="lg4"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c4"></svg></div></div>
@@ -207,6 +220,9 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <h2>신호가 좋으면 받고 보내는 속도가 빨라지는가<span class="verdict" id="v5"></span></h2>
       <p class="sub">폰이 실제로 데이터를 주고받던 순간만 골랐다(0.1 Mbps 이상). 점은 측정 1회, 주황 선은 구간별 중앙값이다.
         세로축은 값이 몇 자릿수에 걸쳐 있어 로그 눈금이다. ρ는 순위 상관계수로, 0에 가까우면 관계가 없다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 신호가 좋으면 인터넷이 실제로 빨라지는지 본다. 단, 여기 쓰는 속도는 앱이 일부러 부하를 걸어 잰 게 아니라
+        <b>그 순간 폰이 마침 쓰고 있던 양</b>이다. 아무것도 안 받고 있으면 신호가 아무리 좋아도 0에 가깝게 찍힌다.
+        그래서 "관계 없음"이 나와도 신호가 무의미하다는 뜻이 아니라, 이 방식으로는 확인이 안 된다는 뜻으로 읽어야 한다.</p>
     </div>
     <div class="legend" id="lg5"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c5"></svg></div></div>
@@ -220,6 +236,9 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <h2>빨리 달리면 속도가 떨어지고, 셀을 더 자주 갈아타는가</h2>
       <p class="sub">왼쪽: 이동 속도 구간별 수신 속도(데이터를 주고받던 순간만). 점이 중앙값, 가로선이 가운데 50% 범위다.
         오른쪽: 그 속도 구간에서 1분에 몇 번 핸드오버가 일어났는지.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 빨리 달릴수록 인터넷이 느려지고 기지국을 더 자주 갈아타는지 본다.
+        왼쪽은 이동 속도 구간별 인터넷 수신 속도, 오른쪽은 그 구간에서 1분에 몇 번 갈아탔는지다.
+        지하철 세션은 땅속에서 GPS 속도가 거의 안 잡혀 이 그림에 표본이 적거나 비어 있을 수 있다.</p>
     </div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c6"></svg></div></div>
     <div class="read" id="r6"></div>
@@ -231,10 +250,40 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <div class="fig-num">그림 7 · 가설 3</div>
       <h2>핑퐁은 느리게 움직일 때 일어나는가<span class="verdict" id="v7"></span></h2>
       <p class="sub">핸드오버가 일어난 순간의 이동 속도. 한 줄은 일반 핸드오버, 한 줄은 핑퐁이다. 굵은 세로 막대가 중앙값이다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — <b>핑퐁</b>은 기지국을 갈아탔다가 30초 안에 원래 기지국으로 되돌아오는 것, 즉 두 기지국 사이를 왔다 갔다 하는 현상이다.
+        천천히 움직여 경계에 오래 머물 때 잘 생긴다는 가설을 확인하는 그림이다. 핑퐁 줄의 중앙값이 왼쪽(느린 쪽)에 있으면 가설이 맞는 것이다.</p>
     </div>
     <div class="legend" id="lg7"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c7"></svg></div></div>
     <div class="read" id="r7"></div>
+  </section>
+
+  <section class="fig" id="f8">
+    <div class="fig-head">
+      <div class="fig-num">그림 8 · 구간 추이</div>
+      <h2>30분 구간으로 나눠 보면, 한 세션 안에서 무엇이 달라지는가</h2>
+      <p class="sub">세션을 앞에서부터 30분씩 끊어 구간별 값을 비교한다. 30분이 안 되는 세션은 나누지 않고 통째로 한 구간이다.
+        마지막 자투리 구간은 측정 시간이 짧아 값이 흔들리므로 <span class="badge">짧음</span>으로 표시했다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 세션마다 길이가 8분에서 94분까지 제각각이라 전체 평균만 보면 긴 세션이 결과를 끌고 간다.
+        그래서 <b>30분이라는 같은 자로 끊어</b> 놓고 비교한다. 같은 세션 안에서도 앞구간과 뒷구간이 다르면, 이동 구간이나 지역이 바뀌었다는 뜻이다.</p>
+    </div>
+    <div class="legend" id="lg8"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c8"></svg></div></div>
+    <div class="read" id="r8"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="t8"></div></details>
+  </section>
+
+  <section class="fig" id="f9">
+    <div class="fig-head">
+      <div class="fig-num">부록 · 측정 버전</div>
+      <h2>세션마다 앱이 무엇을 기록했는지 다르다</h2>
+      <p class="sub">수집 앱이 바뀌면서 기록 항목이 늘었다. 어떤 그림이 어떤 세션에서만 유효한지는 여기에 달려 있다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 같은 앱이라도 버전이 다르면 <b>남긴 항목 수가 다르다.</b> 오래된 세션에는 아예 없는 값이 있어서,
+        "값이 0"인 게 아니라 "잰 적이 없음"인 경우가 있다. 아래 표에서 그 차이를 확인하고 그림을 읽어야 한다.</p>
+    </div>
+    <div class="read" id="r9"></div>
+    <div class="tbl-wrap" id="t9" style="margin:0 26px 20px"></div>
+    <details><summary>버전별로 추가된 항목 전체 보기</summary><div class="tbl-wrap" id="t9b"></div></details>
   </section>
 
   <p class="foot" id="foot"></p>
@@ -361,8 +410,11 @@ function drawHeader() {
   const cells = new Set(P.map(p => p.cell).filter(c => c != null)).size;
   const pp = E.filter(e => e.pp).length;
   const traffic = P.filter(p => p.rx >= TRAFFIC).length;
+  $("#eyebrow").textContent = D.meta.eyebrow;
+  $("#title").textContent = D.meta.title;
+  document.title = D.meta.eyebrow;   // 탭 제목도 리포트 종류에 맞춘다
   $("#dek").textContent = (sel === "all"
-    ? "차량으로 이동하며 수집한 " + S.length + "개 세션"
+    ? D.meta.kind + " 수집한 " + S.length + "개 세션"
     : S[0].label + " 세션") + "의 기록이다. 지도에서 어디서 어떤 셀에 붙었는지 보고, 신호·이동 속도·데이터 속도·핸드오버가 서로 어떤 관계인지 확인한다.";
   const tiles = [
     ["세션", S.length, "개"], ["측정 시간", fmt(mins, 0), "분"], ["이동 거리", fmt(km, 1), "km"],
@@ -389,10 +441,12 @@ function drawLimits() {
   setRead($("#limits"), [
     { b: "측정 방식의 한계 두 가지. " },
     "① 데이터 속도는 앱이 직접 부하를 걸어 잰 값이 아니라, 그 순간 폰이 쓰던 트래픽에서 계산한 값이다. 폰이 데이터를 안 쓰면 신호가 좋아도 0에 가깝게 찍히므로, 속도가 들어가는 그림 5·6은 0.1 Mbps 이상 주고받던 순간만 쓴다. ",
-    "② 앱의 능동 측정(지연 시간 rtt_ms, 다운로드 프로브 probe_dl_mbps)은 이 세션들에서 한 번도 기록되지 않았다. 앱 권한 누락으로 셀룰러 망 연결을 못 얻었기 때문이며, 고친 뒤 수집하면 그림 5를 '실제 망 용량' 기준으로 다시 볼 수 있다.",
+    "② 앱의 능동 측정(지연 시간 rtt_ms, 다운로드 프로브 probe_dl_mbps)은 9/15 세션부터 기록된다. 그 전 세션은 권한 누락으로 셀룰러 망 연결을 못 얻어 값이 비어 있다. 이 그림들은 아직 그 값을 쓰지 않는다.",
   ]);
+  const trimmed = SESS.filter(s => s.cut_head || s.cut_tail);
   $("#foot").textContent = "데이터: " + SESS.map(s => s.file + (s.note ? " (" + s.note + ")" : "")).join(" · ")
-    + ". 수집 주기 5초. 핸드오버는 서빙셀 ID 변경 기준, 지도에는 GPS 정확도 50 m 이하인 점만 표시. 구버전(5/24) 세션은 핸드오버·핑퐁·이웃셀 값을 원본에서 다시 계산했다.";
+    + ". 수집 주기 5초. 핸드오버는 서빙셀 ID 변경 기준. 지도에는 차량 세션의 경우 GPS 정확도 50 m 이하이고 좌표가 얼지 않은 점만, 지하철 세션은 역 보정 좌표를 표시한다."
+    + (trimmed.length ? " 시각화에서 제외한 구간: " + trimmed.map(s => s.label + " — " + s.trim_reason).join(" / ") + " (원본 CSV는 그대로다)." : "");
 }
 
 /* ---------- 그림 1 : 지도 ---------- */
@@ -956,12 +1010,123 @@ function drawFig7() {
   ]);
 }
 
+/* ---------- 그림 8 : 30분 구간 추이 ---------- */
+function drawFig8() {
+  const svg = $("#c8"), S = chosen();
+  const rows = [];
+  S.forEach(s => (s.bins || []).forEach(b => rows.push({ s, b })));
+  const W = 960, PL = 190, PT = 40, ROW = 34, PW = 280, GAP = 120, H = PT + Math.max(1, rows.length) * ROW + 46;
+  prep(svg, W, H);
+  if (!rows.length) { $("#r8").textContent = "구간을 만들 데이터가 없다."; return; }
+
+  const rsrpVals = rows.map(r => r.b.rsrp).filter(v => v != null);
+  const lo = Math.min(-120, Math.floor(Math.min(...rsrpVals) / 10) * 10);
+  const hi = Math.max(-60, Math.ceil(Math.max(...rsrpVals) / 10) * 10);
+  const x1 = v => PL + (v - lo) / (hi - lo) * PW;
+  svg.append(el("text", { x: PL, y: PT - 18, class: "plab" }, "RSRP 중앙값 (dBm)"));
+  for (let v = lo; v <= hi; v += 10) {
+    svg.append(el("line", { x1: x1(v), y1: PT - 4, x2: x1(v), y2: PT + rows.length * ROW, class: "grid" }));
+    svg.append(el("text", { x: x1(v), y: PT + rows.length * ROW + 18, class: "tick", "text-anchor": "middle" }, v));
+  }
+  const ox2 = PL + PW + GAP;
+  // 축은 정상 길이 구간에만 맞춘다. 1~2분짜리 자투리를 30분으로 늘린 값(200회 이상)이 축을
+  // 독점하면 나머지 막대가 전부 왼쪽에 뭉개진다. 넘치는 막대는 축 끝에서 자르고 ▸로 표시한다.
+  const solid = rows.filter(r => !r.b.short).map(r => r.b.ho30);
+  const hmax = Math.max(10, ...(solid.length ? solid : rows.map(r => r.b.ho30)));
+  const x2 = v => ox2 + Math.min(v, hmax) / hmax * PW;
+  svg.append(el("text", { x: ox2, y: PT - 18, class: "plab" }, "30분당 핸드오버 (회)"));
+  for (let k = 0; k <= 4; k++) {
+    const v = hmax * k / 4;
+    svg.append(el("line", { x1: x2(v), y1: PT - 4, x2: x2(v), y2: PT + rows.length * ROW, class: "grid" }));
+    svg.append(el("text", { x: x2(v), y: PT + rows.length * ROW + 18, class: "tick", "text-anchor": "middle" }, fmt(v, 0)));
+  }
+  svg.append(el("text", { x: 12, y: PT - 18, class: "plab" }, "세션 · 구간"));
+
+  rows.forEach((r, i) => {
+    const cy = PT + i * ROW + ROW / 2, b = r.b;
+    const only = (r.s.bins || []).length === 1;
+    const lab = r.s.label + (only ? "" : " · " + b.i + "구간") + (b.short ? " (짧음)" : "");
+    svg.append(el("text", { x: PL - 12, y: cy + 4, class: "alab", "text-anchor": "end",
+      style: "fill:var(--ink-2);font-size:12.5px" }, lab));
+    const dim = b.short ? .45 : 1;
+    if (b.rsrp != null) {
+      svg.append(el("circle", { cx: x1(b.rsrp), cy, r: 5, fill: css("--s1"), opacity: dim,
+        stroke: css("--surface"), "stroke-width": 2 }));
+      svg.append(el("text", { x: x1(b.rsrp) + 10, y: cy + 4, class: "dlab", opacity: dim }, fmt(b.rsrp, 0)));
+    }
+    const w = Math.max(x2(b.ho30) - ox2, 1.5), bh = 16, top = cy - bh / 2, rr = Math.min(4, w);
+    svg.append(el("path", { d: "M" + ox2 + "," + top + "H" + (ox2 + w - rr) + "Q" + (ox2 + w) + "," + top +
+      " " + (ox2 + w) + "," + (top + rr) + "V" + (top + bh - rr) + "Q" + (ox2 + w) + "," + (top + bh) +
+      " " + (ox2 + w - rr) + "," + (top + bh) + "H" + ox2 + "Z", fill: css("--s2"), opacity: dim }));
+    svg.append(el("text", { x: ox2 + w + 8, y: cy + 4, class: "dlab", opacity: dim },
+      (b.ho30 > hmax ? "▸ " : "") + fmt(b.ho30, 0)));
+    const hit = el("rect", { x: 0, y: cy - ROW / 2, width: W, height: ROW, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, lab, [
+      { value: fmt(b.span, 1) + "분", label: "구간 길이 (" + b.rows + "개 측정)" },
+      { value: fmt(b.rsrp, 0) + " dBm", label: "RSRP 중앙값" },
+      { value: b.rx == null ? "–" : fmt(b.rx, 2) + " Mbps", label: "수신 속도 중앙값" },
+      { value: b.ho + "건 → " + fmt(b.ho30, 0) + "회", label: "핸드오버 (30분당 환산)" },
+      { value: b.cells + "개", label: "접속한 셀" },
+    ]));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+  legend($("#lg8"), [
+    { color: css("--s1"), label: "RSRP 중앙값", kind: "dot" },
+    { color: css("--s2"), label: "30분당 핸드오버" },
+    { color: css("--line-2"), label: "흐린 표시 = 5분 미만 자투리 구간" },
+  ]);
+  const split = S.filter(s => (s.bins || []).length > 1);
+  const over = rows.filter(r => r.b.ho30 > hmax);
+  setRead($("#r8"), [
+    { b: split.length ? split.length + "개 세션이 30분을 넘어 구간으로 나뉘었다. " : "이 선택에서는 30분을 넘는 세션이 없어 모두 한 구간이다. " },
+    "핸드오버는 구간 길이가 달라도 비교되도록 30분당 횟수로 환산했다. RSRP는 순간값이라 환산 없이 중앙값을 그대로 쓴다. ",
+    "5분이 안 되는 자투리 구간은 30분으로 늘리면 값이 크게 튀므로 흐리게 표시했다. ",
+    over.length ? "축은 정상 길이 구간에 맞췄고, 이를 넘는 " + over.length + "개 구간은 막대를 자르고 ▸로 표시했다(실제 값은 숫자 참조)." : "",
+  ]);
+  table($("#t8"), ["세션", "구간", "시작(분)", "길이(분)", "측정 수", "RSRP 중앙값", "수신 중앙값(Mbps)", "핸드오버", "30분당 환산", "핑퐁", "접속 셀"],
+    rows.map(r => [r.s.label, r.b.i + "구간" + (r.b.short ? " (짧음)" : ""), fmt(r.b.start, 1), fmt(r.b.span, 1),
+      r.b.rows, fmt(r.b.rsrp, 0), r.b.rx == null ? "–" : fmt(r.b.rx, 3), r.b.ho, fmt(r.b.ho30, 1), r.b.pp, r.b.cells]));
+}
+
+/* ---------- 부록 : 측정 버전 ---------- */
+function drawVersions() {
+  const vs = D.versions || [];
+  setRead($("#r9"), [
+    { b: "이 리포트의 세션은 앱 버전 " + vs.map(v => v.name).join(" · ") + " 로 수집됐다. " },
+    vs.length > 1
+      ? "버전이 섞여 있어서, 옛 버전에만 없는 항목이 들어가는 그림은 세션마다 근거가 다르다. 아래 표의 '기록 항목'을 확인하고 읽어야 한다."
+      : "모든 세션이 같은 버전이라 기록 항목이 동일하다.",
+  ]);
+  table($("#t9"),
+    ["세션", "활동", "앱 버전", "기록 항목", "위치 출처", "측정 시간", "잘라낸 구간", "GPS 동결"],
+    D.sessions.map(s => [
+      s.label, s.activity_ko, s.version, s.ncols + "개", s.coord_src,
+      fmt(s.dur_min, 1) + "분" + (s.cut_head || s.cut_tail ? " (원본 " + fmt(s.raw_min, 1) + "분)" : ""),
+      (s.cut_head || s.cut_tail) ? "앞 " + fmt(s.cut_head, 1) + "분 / 뒤 " + fmt(s.cut_tail, 1) + "분" : "–",
+      fmt(s.frozen_share, 1) + "%",
+    ]));
+  const host = $("#t9b"); host.replaceChildren();
+  vs.forEach(v => {
+    const box = h("div");
+    const head = h("div", "tl-title");
+    head.append(h("b", null, v.name + " · " + v.cols + "개 항목"),
+                document.createTextNode(" — " + v.files.join(", ")));
+    box.append(head);
+    box.append(h("p", null, v.summary));
+    if (v.added.length) box.append(h("p", null, "v1.0 대비 추가: " + v.added.join(", ")));
+    if (v.missing.length) box.append(h("p", null, "이 버전에 없는 항목: " + v.missing.join(" · ")));
+    host.append(box);
+  });
+}
+
 /* ---------- 렌더 ---------- */
 function renderAll(fit) {
   hideTip();
   drawFilters(); drawHeader(); drawLimits();
   if (hl && !allPts().some(p => p.cell === hl.cell)) hl = null;
   drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
+  drawFig8(); drawVersions();
 }
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
 initMap();
