@@ -41,6 +41,28 @@ import numpy as np
 import pandas as pd
 import folium
 
+
+# 배경 지도 3종(키 불필요) — 오른쪽 위 버튼으로 전환.
+#  회색: Esri 캔버스. 한국은 13단계까지만 그림이 있어 그 위는 13단계 타일을 늘려 쓴다.
+#  상세: OSM. 19단계까지 선명하지만 HTML을 더블클릭해 열면(file://, Referer 없음) "Access blocked"로
+#        막힌다 → 리포트_열기.bat(analysis/serve_reports.py)로 열어야 나온다.
+#  위성: Esri 위성사진. 19단계까지, file://에서도 된다.
+# CARTO는 키 없이 "API KEY REQUIRED" 워터마크가 찍혀서 쓰지 않는다.
+ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/"
+
+
+def add_base_tiles(m):
+    folium.TileLayer(ESRI + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+                     attr="Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
+                     max_zoom=19, max_native_zoom=13, name="회색").add_to(m)
+    folium.TileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                     attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                     max_zoom=19, name="상세 (리포트_열기.bat로 열 때만)", show=False).add_to(m)
+    folium.TileLayer(ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                     attr="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+                     max_zoom=19, name="위성", show=False).add_to(m)
+
+
 STATION_CSV = "reference/seoul_station_master_tdata.csv"
 OUTDIR = "analysis_output"
 
@@ -517,7 +539,8 @@ def run(csv, st):
     out_csv = os.path.join(OUTDIR, f"{name}_mapmatched.csv")
     df.to_csv(out_csv, index=False, encoding="utf-8-sig")
 
-    m = folium.Map(location=[anchors["st_lat"].mean(), anchors["st_lon"].mean()], zoom_start=14)
+    m = folium.Map(location=[anchors["st_lat"].mean(), anchors["st_lon"].mean()], zoom_start=14, tiles=None)
+    add_base_tiles(m)
     folium.PolyLine(df[["latitude", "longitude"]].dropna().values.tolist(),
                     color="#d62728", weight=2, opacity=0.6, tooltip="원래 GPS").add_to(m)
     folium.PolyLine(df.loc[covered, ["lat_mm", "lon_mm"]].values.tolist(),
@@ -530,6 +553,7 @@ def run(csv, st):
         folium.Marker([e["lat"], e["lon"]],
                       tooltip=f"{e['key']} {fmt_t(e['t_arr'])}~{fmt_t(e['t_dep'])} [{e['src']}]").add_to(m)
     out_map = os.path.join(OUTDIR, f"{name}_mapmatched_map.html")
+    folium.LayerControl(collapsed=False).add_to(m)
     m.save(out_map)
     print(f"  → {out_csv}\n  → {out_map}")
 

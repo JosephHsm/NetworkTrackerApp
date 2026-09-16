@@ -114,6 +114,9 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 .seg button{font:inherit;font-size:13px;padding:6px 14px;border:0;background:var(--surface);color:var(--ink-2);cursor:pointer}
 .seg button+button{border-left:1px solid var(--line-2)}
 .seg button[aria-pressed="true"]{background:var(--surface-3);color:var(--ink);font-weight:500}
+.seg button:disabled{color:var(--ink-3);cursor:not-allowed;text-decoration:line-through}
+.base-note{font-size:12.5px;color:var(--ink-3)}
+.base-note code{font-family:"IBM Plex Mono",monospace;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 #map{height:520px;margin:12px 26px 0;border-radius:10px;border:1px solid var(--line);background:var(--surface-2)}
 .leaflet-container{font-family:inherit}
 .cellinfo{margin:12px 26px 0;padding:12px 16px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;color:var(--ink-2);display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
@@ -125,6 +128,7 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 .foot{margin-top:36px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12.5px}
 .foot code{font-family:"IBM Plex Mono",monospace;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 .leaflet-tile-pane{opacity:.8}
+.base-osm{filter:saturate(.25)}   /* 색이 많은 OSM 위에서도 신호 점이 보이게 */
 @media (max-width:640px){
   .stats{grid-template-columns:repeat(2,1fr)}
   .fig-head,.fig-body{padding-left:16px;padding-right:16px}
@@ -161,6 +165,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         <button type="button" data-mode="rsrp" aria-pressed="true">신호 세기</button>
         <button type="button" data-mode="cell" aria-pressed="false">접속 셀</button>
       </div>
+      <div class="seg" role="group" aria-label="배경 지도" id="basemap"></div>
+      <span class="base-note" id="base-note"></span>
     </div>
     <div class="legend" id="lg1"></div>
     <div id="map" role="region" aria-label="이동 경로 지도"></div>
@@ -473,13 +479,41 @@ function initMap() {
   mapLayer = L.layerGroup().addTo(map);
   map.on("click", () => { if (hl) { hl = null; drawMap(false); } });
 }
+// 배경 지도 — 셋 다 키가 필요 없다.
+//  회색: Esri 캔버스. 점이 가장 잘 보이지만 한국은 13단계까지만 그림이 있어 그 위는 13단계 타일을 늘려 쓴다.
+//  상세: OSM 공식 타일. 19단계까지 선명하지만 파일을 더블클릭해 열면(file://, Referer 없음)
+//        "Access blocked" 이미지로 막힌다 → serve_reports.py(리포트_열기.bat)로 열 때만 켠다.
+//  위성: Esri 위성사진. 19단계까지 나오고 file://에서도 된다.
+// (CARTO는 키 없이 "API KEY REQUIRED" 워터마크가 찍혀서 쓰지 않는다.)
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const BASES = {
+  gray: { label: "회색", url: () => ESRI + "Canvas/" + (isDark() ? "World_Dark_Gray_Base" : "World_Light_Gray_Base") + "/MapServer/tile/{z}/{y}/{x}",
+          opt: { maxZoom: 19, maxNativeZoom: 13, attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors" } },
+  osm:  { label: "상세", url: () => "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          opt: { maxZoom: 19, className: "base-osm", attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors" } },
+  sat:  { label: "위성", url: () => ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          opt: { maxZoom: 19, attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics" } },
+};
+const FILE_MODE = location.protocol === "file:";
+let base = FILE_MODE ? "gray" : "osm";
+try { const v = localStorage.getItem("carviz.base"); if (v in BASES && !(FILE_MODE && v === "osm")) base = v; } catch (e) {}
+
+function drawBaseButtons() {
+  const host = $("#basemap"); host.replaceChildren();
+  Object.entries(BASES).forEach(([k, b]) => {
+    const btn = h("button", null, b.label); btn.type = "button";
+    btn.setAttribute("aria-pressed", String(base === k));
+    if (FILE_MODE && k === "osm") { btn.disabled = true; btn.title = "파일을 직접 열면 OpenStreetMap이 지도를 막습니다"; }
+    btn.addEventListener("click", () => { base = k; try { localStorage.setItem("carviz.base", k); } catch (e) {} setTiles(); });
+    host.append(btn);
+  });
+  $("#base-note").innerHTML = FILE_MODE ? "상세 지도는 <code>리포트_열기.bat</code>로 열 때만 나온다" : "";
+}
 function setTiles() {
+  drawBaseButtons();
   if (!map) return;
   if (tiles) map.removeLayer(tiles);
-  // Esri 회색 캔버스 타일(키 불필요). OSM 공식 타일은 파일을 더블클릭해 열면(file://, Referer 없음) 403으로 막힌다.
-  tiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
-    + (isDark() ? "World_Dark_Gray_Base" : "World_Light_Gray_Base") + "/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom: 16, attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors" }).addTo(map);
+  tiles = L.tileLayer(BASES[base].url(), BASES[base].opt).addTo(map);
 }
 function drawMap(fit) {
   if (!map) return;
@@ -522,13 +556,13 @@ function drawMap(fit) {
   });
   top.forEach(m => mapLayer.addLayer(m));
   if (hlFit && hlBounds.length) map.fitBounds(hlBounds, { padding: [60, 60], maxZoom: 15 });
-  else if (fit && bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+  else if (fit && bounds.length) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
   hlFit = false;
   drawMapLegend(); drawCellInfo();
 }
 function setMode(m) {
   mapMode = m;
-  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
+  document.querySelectorAll(".seg button[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
   drawMap(false);
 }
 function drawMapLegend() {
@@ -1128,7 +1162,7 @@ function renderAll(fit) {
   drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
   drawFig8(); drawVersions();
 }
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+document.querySelectorAll(".seg button[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
 initMap();
 renderAll(true);
 const rerenderTheme = () => { setTiles(); renderAll(false); };
