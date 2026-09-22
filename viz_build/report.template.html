@@ -230,10 +230,14 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-head">
       <div class="fig-num">그림 3 · 가설 1</div>
       <h2>핸드오버 직전에 신호는 나빠지고, 옆 셀은 좋아지는가<span class="verdict" id="v3"></span></h2>
-      <p class="sub">모든 핸드오버를 발생 시점(0초)에 맞춰 겹친 뒤 5초 간격으로 평균을 냈다. 파랑은 그 순간 접속 중인 셀, 주황은 가장 센 이웃 셀이다.
-        0초를 지나면 접속 셀이 바뀌므로 파랑 선은 새 셀의 값이다.</p>
+      <p class="sub">모든 핸드오버를 발생 시점(0초)에 맞춰 겹친 뒤 5초 간격으로 평균을 냈다. 파랑은 그 순간 접속 중인 셀, 주황은 제일 센 이웃 셀이다.
+        0초를 지나면 접속 셀이 바뀌므로 파랑 선은 새 셀의 값이다.
+        <b>이웃은 접속 셀과 같은 주파수(ARFCN)인 것만 고른다</b> — 밴드가 다르면 RSRP를 나란히 놓고 비교할 수 없고,
+        핸드오버 판정(A3)도 같은 주파수 안에서 이뤄지기 때문이다.</p>
       <p class="plain"><b>쉽게 말하면</b> — "신호가 나빠져서 갈아탄 게 맞는지" 확인하는 그림이다. 세션에서 일어난 갈아타기를 전부
-        <b>갈아탄 순간이 0초가 되도록</b> 포개 놓고 평균을 냈다. 0초 직전에 파랑(붙어 있던 셀)이 내려가고 주황(옆 셀)이 올라가면, 나빠져서 옮겼다는 뜻이다.</p>
+        <b>갈아탄 순간이 0초가 되도록</b> 포개 놓고 평균을 냈다. 0초 직전에 파랑(붙어 있던 셀)이 내려가고 주황(옆 셀)이 올라가면, 나빠져서 옮겼다는 뜻이다.
+        옆 셀은 <b>같은 주파수를 쓰는 셀</b>만 센다. 폰이 보는 이웃 중에는 다른 주파수 대역을 쓰는 것이 더 많은데(측정의 86%),
+        그건 애초에 세기를 맞대어 비교할 대상이 아니다.</p>
     </div>
     <div class="legend" id="lg3"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c3"></svg></div></div>
@@ -241,9 +245,27 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <details><summary>표로 보기</summary><div class="tbl-wrap" id="t3"></div></details>
   </section>
 
-  <section class="fig" id="f4">
+  <section class="fig" id="f3b">
     <div class="fig-head">
       <div class="fig-num">그림 4 · 가설 2</div>
+      <h2>폰은 제일 센 이웃 셀로 옮겨가는가<span class="verdict" id="v3b"></span></h2>
+      <p class="sub">핸드오버 직전에 폰이 보고 있던 이웃 목록을 꺼내, <b>옮겨간 셀이 그중 몇 번째로 셌는지</b> 센다.
+        줄은 같은 주파수(ARFCN)끼리만 세운다 — 다른 밴드는 애초에 세기를 맞대어 비교할 대상이 아니다.
+        직전 목록은 핸드오버 행에 남은 이웃 리스트를 쓰고, 없는 세션은 직전 측정의 목록을 쓴다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 폰이 갈아탈 때 <b>그때 보이던 것 중 제일 좋은 셀로 갔는지</b> 확인하는 그림이다.
+        1위로 갔다면 보이는 선택지 중 최선을 고른 것이고, 2위 이하로 갔다면 신호 말고 다른 이유(혼잡도·정책)가 섞였거나
+        그사이 상황이 바뀐 것이다. <b>목록에 없던 셀</b>로 간 경우는 5초 전에는 보이지도 않던 셀로 갔다는 뜻이라,
+        측정 간격이 너무 성기다는 신호이기도 하다.</p>
+    </div>
+    <div class="legend" id="lg3b"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c3b"></svg></div></div>
+    <div class="read" id="r3b"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="t3b"></div></details>
+  </section>
+
+  <section class="fig" id="f4">
+    <div class="fig-head">
+      <div class="fig-num">그림 5 · 가설 3</div>
       <h2>핸드오버를 하면 신호가 좋아지는가<span class="verdict" id="v4"></span></h2>
       <p class="sub">핸드오버 순간, 새 셀 RSRP에서 직전 셀 RSRP를 뺀 값의 분포다. 더 좋은 셀로 옮겨준다면 막대가 오른쪽(파랑)에 몰려야 한다.</p>
       <p class="plain"><b>쉽게 말하면</b> — 갈아탄 게 이득이었는지 본다. 갈아탄 뒤 신호에서 갈아타기 전 신호를 뺀 값이라,
@@ -257,7 +279,7 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 
   <section class="fig" id="f5">
     <div class="fig-head">
-      <div class="fig-num">그림 5 · 측정 항목 연관성</div>
+      <div class="fig-num">그림 6 · 측정 항목 연관성</div>
       <h2>신호가 좋으면 받고 보내는 속도가 빨라지는가<span class="verdict" id="v5"></span></h2>
       <p class="sub">폰이 실제로 데이터를 주고받던 순간만 골랐다(0.1 Mbps 이상). 점은 측정 1회, 주황 선은 구간별 중앙값이다.
         세로축은 값이 몇 자릿수에 걸쳐 있어 로그 눈금이다. ρ는 순위 상관계수로, 0에 가까우면 관계가 없다.</p>
@@ -273,7 +295,7 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 
   <section class="fig" id="f6">
     <div class="fig-head">
-      <div class="fig-num">그림 6 · 이동 속도</div>
+      <div class="fig-num">그림 7 · 이동 속도</div>
       <h2>빨리 달리면 속도가 떨어지고, 셀을 더 자주 갈아타는가</h2>
       <p class="sub">왼쪽: 이동 속도 구간별 수신 속도(데이터를 주고받던 순간만). 점이 중앙값, 가로선이 가운데 50% 범위다.
         오른쪽: 그 속도 구간에서 1분에 몇 번 핸드오버가 일어났는지.</p>
@@ -288,7 +310,7 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 
   <section class="fig" id="f7">
     <div class="fig-head">
-      <div class="fig-num">그림 7 · 가설 3</div>
+      <div class="fig-num">그림 8 · 가설 4</div>
       <h2>핑퐁은 느리게 움직일 때 일어나는가<span class="verdict" id="v7"></span></h2>
       <p class="sub">핸드오버가 일어난 순간의 이동 속도. 한 줄은 일반 핸드오버, 한 줄은 핑퐁이다. 굵은 세로 막대가 중앙값이다.</p>
       <p class="plain"><b>쉽게 말하면</b> — <b>핑퐁</b>은 기지국을 갈아탔다가 30초 안에 원래 기지국으로 되돌아오는 것, 즉 두 기지국 사이를 왔다 갔다 하는 현상이다.
@@ -301,7 +323,7 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
 
   <section class="fig" id="f8">
     <div class="fig-head">
-      <div class="fig-num">그림 8 · 구간 추이</div>
+      <div class="fig-num">그림 9 · 구간 추이</div>
       <h2>30분 구간으로 나눠 보면, 한 세션 안에서 무엇이 달라지는가</h2>
       <p class="sub">세션을 앞에서부터 30분씩 끊어 구간별 값을 비교한다. 30분이 안 되는 세션은 나누지 않고 통째로 한 구간이다.
         마지막 자투리 구간은 측정 시간이 짧아 값이 흔들리므로 <span class="badge">짧음</span>으로 표시했다.</p>
@@ -429,12 +451,15 @@ const C = Object.fromEntries(D.cols.map((c, i) => [c, i]));
 const SESS = D.sessions.map(s => {
   const P = s.pts.map(a => ({
     s: s.id, t: a[C.t], lat: a[C.lat], lon: a[C.lon], cell: a[C.cell], rsrp: a[C.rsrp], sinr: a[C.sinr],
-    rsrq: a[C.rsrq], nbr: a[C.nbr], speed: a[C.speed], rx: a[C.rx], tx: a[C.tx], pci: a[C.pci],
+    rsrq: a[C.rsrq], nbr: a[C.nbr], nbrx: a[C.nbrx], speed: a[C.speed], rx: a[C.rx], tx: a[C.tx], pci: a[C.pci],
     arfcn: a[C.arfcn], ho: a[C.ho], pp: a[C.pp],
   }));
   // 표본 하나가 대표하는 시간(다음 표본까지, 최대 10초) — 체류 시간·분당 핸드오버 계산용
   P.forEach((p, i) => { const nx = P[i + 1]; p.dt = nx ? Math.min(Math.max(nx.t - p.t, 0), 10) : 5; });
-  const E = s.events.map(a => ({ s: s.id, t: a[0], from: a[1], to: a[2], same: a[3], prev: a[4], nw: a[5], speed: a[6], pp: a[7] }));
+  const EC = Object.fromEntries(D.ev_cols.map((c, i) => [c, i]));
+  const E = s.events.map(a => ({ s: s.id, t: a[EC.t], from: a[EC.from], to: a[EC.to], same: a[EC.same_enb],
+    prev: a[EC.rsrp_prev], nw: a[EC.rsrp_new], speed: a[EC.speed], pp: a[EC.pp],
+    rank: a[EC.rank], nsame: a[EC.nsame], loss: a[EC.loss] }));
   return Object.assign({}, s, { P, E });
 });
 const TRAFFIC = 0.1;   // Mbps
@@ -482,7 +507,7 @@ function drawFilters() {
 function drawLimits() {
   setRead($("#limits"), [
     { b: "측정 방식의 한계 두 가지. " },
-    "① 데이터 속도는 앱이 직접 부하를 걸어 잰 값이 아니라, 그 순간 폰이 쓰던 트래픽에서 계산한 값이다. 폰이 데이터를 안 쓰면 신호가 좋아도 0에 가깝게 찍히므로, 속도가 들어가는 그림 5·6은 0.1 Mbps 이상 주고받던 순간만 쓴다. ",
+    "① 데이터 속도는 앱이 직접 부하를 걸어 잰 값이 아니라, 그 순간 폰이 쓰던 트래픽에서 계산한 값이다. 폰이 데이터를 안 쓰면 신호가 좋아도 0에 가깝게 찍히므로, 속도가 들어가는 그림 6·7은 0.1 Mbps 이상 주고받던 순간만 쓴다. ",
     "② 앱의 능동 측정(지연 시간 rtt_ms, 다운로드 프로브 probe_dl_mbps)은 9/15 세션부터 기록된다. 그 전 세션은 권한 누락으로 셀룰러 망 연결을 못 얻어 값이 비어 있다. 이 그림들은 아직 그 값을 쓰지 않는다.",
   ]);
   const trimmed = SESS.filter(s => s.cut_head || s.cut_tail);
@@ -524,7 +549,7 @@ function pointRows(p) {
   return [
     { value: fmt(p.rsrp) + " dBm", label: "RSRP" },
     { value: fmt(p.sinr, 1) + " dB", label: "SINR" },
-    { value: fmt(p.nbr) + " dBm", label: "가장 센 이웃 셀" },
+    { value: fmt(p.nbr) + " dBm", label: "제일 센 이웃 셀 (같은 주파수)" },
     { value: p.speed == null ? "–" : fmt(p.speed * 3.6, 0) + " km/h", label: "이동 속도" },
     { value: fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps", label: "수신 / 송신" },
     { value: p.cell == null ? "–" : "eNB " + enbOf(p.cell) + " · 섹터 " + secOf(p.cell), label: "PCI " + fmt(p.pci) },
@@ -846,8 +871,9 @@ function drawInspect() {
     insRow(blk, "RSRP", fmt(p.rsrp) + " dBm");
     insRow(blk, "SINR", fmt(p.sinr, 1) + " dB");
     insRow(blk, "RSRQ", fmt(p.rsrq) + " dB");
-    insRow(blk, "가장 센 이웃 셀", fmt(p.nbr) + " dBm");
-    insRow(blk, "이웃과 차이", (p.rsrp != null && p.nbr != null) ? sgn(p.rsrp - p.nbr, 0) + " dB" : "–");
+    insRow(blk, "제일 센 이웃 셀", fmt(p.nbr) + " dBm");
+    insRow(blk, "이웃과 차이", (p.rsrp != null && p.nbr != null) ? sgn(p.rsrp - p.nbr, 0) + " dB" : "\u2013");
+    insRow(blk, "제일 센 이웃 (다른 주파수 포함)", fmt(p.nbrx) + " dBm");
     insRow(blk, "이동 속도", p.speed == null ? "–" : fmt(p.speed * 3.6, 0) + " km/h");
     insRow(blk, "수신 / 송신", fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps");
     insRow(blk, "셀 ID", p.cell == null ? "–" : String(p.cell));
@@ -1172,33 +1198,126 @@ function drawFig3() {
       svg.append(hit);
     });
   }
-  panel(PT, [{ key: "rsrp", nkey: "n", color: css("--s1"), label: "접속 셀" }, { key: "nbr", nkey: "nn", color: css("--s2"), label: "가장 센 이웃" }], "dBm", "RSRP");
+  panel(PT, [{ key: "rsrp", nkey: "n", color: css("--s1"), label: "접속 셀" },
+             { key: "nbr", nkey: "nn", color: css("--s2"), label: "제일 센 이웃 셀" }], "dBm", "RSRP");
   panel(PT + PH + GAP, hasS ? [{ key: "sinr", nkey: "ns", color: css("--s3"), label: "SINR" }] : [], "dB", "SINR (신호 대 잡음)");
   const yb = PT + PH + GAP + PH;
   [-30, -20, -10, 0, 10, 20, 30].forEach(s => svg.append(el("text", { x: x(s), y: yb + 20, class: "tick", "text-anchor": "middle" }, (s > 0 ? "+" : "") + s + "초")));
   svg.append(el("text", { x: x(0), y: yb + 38, class: "alab", "text-anchor": "middle" }, "핸드오버"));
-  legend($("#lg3"), [{ color: css("--s1"), label: "접속 셀 RSRP", kind: "lk" }, { color: css("--s2"), label: "가장 센 이웃 셀 RSRP", kind: "lk" }, { color: css("--s3"), label: "SINR", kind: "lk" }]);
+  legend($("#lg3"), [{ color: css("--s1"), label: "접속 셀 RSRP", kind: "lk" },
+                     { color: css("--s2"), label: "제일 센 이웃 셀 RSRP (같은 주파수)", kind: "lk" },
+                     { color: css("--s3"), label: "SINR", kind: "lk" }]);
 
   const g = sec => bins.find(b => b.sec === sec);
   const b30 = g(-30), b0 = g(0), b5 = g(5), b10 = g(10);
   const dServ = b0.rsrp - b30.rsrp, dNbr = b0.nbr - b30.nbr, dS = b0.sinr - b30.sinr;
-  const verdict = isNaN(dServ) ? "판단 불가" : dServ <= -1 && !(dNbr < -1) ? "그렇다" : dServ <= -0.5 ? "약하게 그렇다" : "아니다";
+  // 접속 셀이 나빠지는 것만으로는 부족하다 — 이웃과의 격차가 좁혀져야 "그래서 옮겼다"가 된다
+  const dGap = b0.gap - b30.gap;
+  let verdict = isNaN(dServ) ? "판단 불가"
+    : (dServ <= -1 && dGap <= -1) ? "그렇다"
+    : (dServ <= -0.5 || dGap <= -0.5) ? "약하게 그렇다" : "아니다";
+  // 격차가 좁혀졌어도 이웃이 끝내 접속 셀을 넘지 못했다면 "그렇다"라고 말할 수 없다
+  if (verdict === "그렇다" && b0.gap > 0) verdict = "약하게 그렇다";
   $("#v3").textContent = verdict;
   setRead($("#r3"), [
     { b: "핸드오버 " + used + "건 기준. " },
-    "30초 전부터 핸드오버 순간까지 접속 셀 RSRP는 " + sgn(dServ) + " dB, 가장 센 이웃 셀은 " + sgn(dNbr) + " dB" + (isNaN(dS) ? " 변했다. " : ", SINR은 " + sgn(dS) + " dB 변했다. "),
-    "접속 셀과 가장 센 이웃의 차이는 30초 전 " + sgn(b30.gap) + " dB, 핸드오버 순간 " + sgn(b0.gap) + " dB다"
-      + (b30.gap < 0 && Math.abs(b0.gap - b30.gap) < 1.5
-        ? " — 이웃이 더 센 상태는 평소에도 이어지고 있어서, '이웃이 더 세졌다'가 곧바로 핸드오버를 부르지는 않는다. "
-        : ". "),
+    "30초 전부터 핸드오버 순간까지 접속 셀 RSRP는 " + sgn(dServ) + " dB, 제일 센 이웃 셀은 " + sgn(dNbr) + " dB" + (isNaN(dS) ? " 변했다. " : ", SINR은 " + sgn(dS) + " dB 변했다. "),
+    "접속 셀과 제일 센 이웃 셀의 차이는 30초 전 " + sgn(b30.gap) + " dB, 핸드오버 순간 " + sgn(b0.gap) + " dB다"
+      + (b0.gap > 0
+        ? " — 넘어가는 순간에도 접속 셀이 " + fmt(b0.gap, 1) + " dB 더 셌다. 5초 간격으로는 A3 트리거가 성립한 짧은 순간을 잡지 못한다. "
+        : " — 핸드오버 순간에는 이웃이 더 세져 있었다. "),
     "넘어간 뒤 10초에는 " + fmt(b10.rsrp, 1) + " dBm으로 " + (b10.rsrp > b0.rsrp ? "회복했다." : "회복하지 않았다."),
     " 5초 간격 수집이라 순간 변화는 뭉개지고, 핸드오버가 30초 안에 연달아 있으면 앞뒤 창이 겹친다.",
   ]);
-  table($("#t3"), ["시점", "접속 셀 RSRP", "표본", "이웃 셀 RSRP", "표본", "차이(접속−이웃)", "SINR", "표본"],
+  table($("#t3"), ["시점", "접속 셀 RSRP", "표본", "제일 센 이웃 셀 RSRP", "표본", "차이(접속−이웃)", "SINR", "표본"],
     bins.map(b => [(b.sec > 0 ? "+" : "") + b.sec + "초", fmt(b.rsrp, 1), b.n, fmt(b.nbr, 1), b.nn, sgn(b.gap), fmt(b.sinr, 1), b.ns]));
 }
 
 /* ---------- 그림 4 : 핸드오버 전후 변화 ---------- */
+/* ---------- 그림 4 : 제일 센 이웃 셀로 옮겨갔는가 ---------- */
+// 핸드오버를 세 갈래로 나눈다: 직전에 보이던 같은 주파수 이웃 중 1위로 / 2위 이하로 / 목록에 없던 셀로.
+const PICK = [
+  ["top",  "--s1",   "제일 센 이웃 셀로"],
+  ["else", "--s2",   "2위 이하로"],
+  ["none", "--line-2", "직전 목록에 없던 셀로"],
+];
+function pickOf(e) {
+  return e.rank == null ? "none" : e.rank === 1 ? "top" : "else";
+}
+function pickStats(evs) {
+  const c = { top: 0, else: 0, none: 0 };
+  evs.forEach(e => { c[pickOf(e)]++; });
+  const n = evs.length;
+  return { n, ...c, topShare: n ? c.top / n : NaN, seen: c.top + c.else };
+}
+function drawFig3b() {
+  const svg = $("#c3b"), E = allEv();
+  legend($("#lg3b"), PICK.map(([, v, label]) => ({ color: css(v), label, kind: "sw" })));
+  if (!E.length) { prep(svg, 960, 60); return; }
+
+  // 전체 + 활동별(선택에 들어 있는 것만) 한 줄씩
+  const groups = [["전체", E]];
+  ["car", "subway", "walking"].forEach(act => {
+    const S = chosen().filter(s => s.activity === act);
+    if (!S.length) return;
+    const ids = new Set(S.map(s => s.id));
+    const g = E.filter(e => ids.has(e.s));
+    if (g.length) groups.push([S[0].activity_ko, g]);
+  });
+
+  const W = 960, PL = 74, PR = 150, RH = 34, GAP = 12, PT = 8;
+  const H = PT + groups.length * (RH + GAP) + 26;
+  prep(svg, W, H);
+  const BW = W - PL - PR;
+  groups.forEach(([name, evs], gi) => {
+    const st = pickStats(evs), y = PT + gi * (RH + GAP);
+    svg.append(el("text", { x: PL - 10, y: y + RH / 2 + 4, class: "dlab", "text-anchor": "end" }, name));
+    let x0 = PL;
+    PICK.forEach(([key, varname]) => {
+      const w = st.n ? BW * st[key] / st.n : 0;
+      if (w <= 0) return;
+      svg.append(el("rect", { x: x0, y, width: Math.max(w, 1), height: RH, fill: css(varname),
+        opacity: key === "none" ? .55 : .9 }));
+      if (w > 42) {
+        svg.append(el("text", { x: x0 + w / 2, y: y + RH / 2 - 1, "text-anchor": "middle",
+          fill: key === "none" ? css("--ink") : css("--surface"),
+          style: "font-size:11.5px;font-weight:600" }, st[key] + "건"));
+        svg.append(el("text", { x: x0 + w / 2, y: y + RH / 2 + 12, "text-anchor": "middle",
+          fill: key === "none" ? css("--ink-2") : css("--surface"),
+          style: "font-size:10.5px;opacity:.9" }, fmt(100 * st[key] / st.n, 0) + "%"));
+      }
+      x0 += w;
+    });
+    svg.append(el("text", { x: W - PR + 10, y: y + RH / 2 + 4, class: "dlab" },
+      "핸드오버 " + st.n + "건 · 1위 " + fmt(100 * st.topShare, 0) + "%"));
+    const hit = el("rect", { x: PL, y, width: BW, height: RH, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, name + " · 핸드오버 " + st.n + "건",
+      PICK.map(([key, varname, label]) => ({ color: css(varname),
+        value: st[key] + "건 (" + fmt(100 * st[key] / st.n, 0) + "%)", label }))));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+
+  const all = pickStats(E);
+  const loss = E.filter(e => e.rank != null && e.rank > 1 && e.loss != null).map(e => e.loss);
+  $("#v3b").textContent = isNaN(all.topShare) ? "판단 불가"
+    : all.topShare >= .6 ? "그렇다" : all.topShare >= .4 ? "절반쯤" : "아니다";
+  setRead($("#r3b"), [
+    { b: "핸드오버 " + all.n + "건 중 " + all.top + "건(" + fmt(100 * all.topShare, 0)
+        + "%)이 직전에 보이던 같은 주파수 이웃 가운데 제일 센 셀로 옮겨갔다. " },
+    "2위 이하로 간 경우가 " + all.else + "건(" + fmt(100 * all.else / all.n, 0) + "%), ",
+    "직전 목록에 아예 없던 셀로 간 경우가 " + all.none + "건(" + fmt(100 * all.none / all.n, 0) + "%)이다. ",
+    all.seen ? "목록에 있던 " + all.seen + "건만 놓고 보면 " + fmt(100 * all.top / all.seen, 0) + "%가 1위였다. " : "",
+    loss.length ? "1위가 아닌 셀로 간 " + loss.length + "건은 1위보다 중앙값 " + fmt(median(loss), 0) + " dB 약한 셀이었다. " : "",
+    "목록에 없던 셀로 옮겨간 경우는 5초 전에는 보이지도 않던 셀이라는 뜻이라, 폰의 선택이 나빴다기보다 측정 간격이 성기다는 신호로 읽어야 한다.",
+  ]);
+  table($("#t3b"), ["구분", "핸드오버", "제일 센 셀로", "2위 이하로", "목록에 없던 셀로", "1위 비율", "목록에 있던 것 중 1위"],
+    groups.map(([name, evs]) => {
+      const st = pickStats(evs);
+      return [name, st.n, st.top, st.else, st.none,
+        fmt(100 * st.topShare, 0) + "%", st.seen ? fmt(100 * st.top / st.seen, 0) + "%" : "–"];
+    }));
+}
 function drawFig4() {
   const svg = $("#c4"), E = allEv().filter(e => e.prev != null && e.nw != null);
   const W = 960, PL = 58, PR = 22, PT = 30, PB = 50, H = 300;
@@ -1542,7 +1661,7 @@ function renderAll(fit) {
   if (hl && !allPts().some(p => p.cell === hl.cell)) hl = null;
   if (pinned && !chosen().some(x => x.id === pinned.p.s)) pinned = null;
   hover = null;
-  drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
+  drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig3b(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
   drawFig8(); drawVersions();
 }
 document.querySelectorAll(".seg button[data-mode]").forEach(b => {

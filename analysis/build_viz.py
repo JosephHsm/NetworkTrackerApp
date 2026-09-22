@@ -117,14 +117,55 @@ def as_bool(s):
     return s.astype(str).str.lower().eq("true")
 
 
-def best_neighbor_from_json(row_json, serving_pci):
+def best_neighbor(row_json, serving_pci, serving_arfcn, same_freq):
+    """이웃 셀 중 가장 센 RSRP.
+
+    same_freq=True면 서빙과 같은 주파수(ARFCN)만 본다.
+    앱이 기록하는 best_nbr_rsrp_dbm은 주파수를 가리지 않는데, 그렇게 고른 최강 이웃의 86%가
+    서빙과 다른 밴드였다. 밴드가 다르면 경로손실도 출력도 달라 RSRP를 직접 비교할 수 없고,
+    그대로 쓰면 "서빙이 최강인 경우가 26%뿐"이라는 잘못된 결론이 나온다
+    (주파수를 맞추면 90%). 핸드오버 판정(A3)도 같은 주파수 안에서 이뤄지므로 그림 3은 이 값을 쓴다.
+    """
     try:
         arr = json.loads(row_json)
     except Exception:
         return np.nan
-    vals = [a.get("rsrp") for a in arr
-            if isinstance(a, dict) and a.get("rsrp") is not None and a.get("pci") != serving_pci]
+    if same_freq and pd.isna(serving_arfcn):
+        return np.nan
+    vals = []
+    for a in arr:
+        if not isinstance(a, dict) or a.get("rsrp") is None:
+            continue
+        ea = a.get("earfcn")
+        if a.get("pci") == serving_pci and ea == serving_arfcn:
+            continue                      # 서빙 자신
+        if same_freq and ea != serving_arfcn:
+            continue
+        vals.append(a["rsrp"])
     return max(vals) if vals else np.nan
+
+
+def target_rank(prev_json, new_pci, new_arfcn):
+    """핸드오버 직전에 보이던 이웃 중, 옮겨간 셀이 몇 번째로 셌는지.
+
+    같은 주파수(ARFCN)끼리만 줄을 세운다 — 다른 밴드는 세기를 맞대어 비교할 대상이 아니다.
+    반환: (순위 1부터, 같은 주파수 이웃 수, 1위 대비 손해 dB). 목록에 없으면 순위·손해가 None.
+    """
+    if pd.isna(new_arfcn) or pd.isna(new_pci):
+        return None, 0, None
+    try:
+        arr = json.loads(prev_json)
+    except Exception:
+        return None, 0, None
+    same = [(a.get("pci"), a.get("rsrp")) for a in arr
+            if isinstance(a, dict) and a.get("rsrp") is not None and a.get("earfcn") == new_arfcn]
+    same.sort(key=lambda x: -x[1])
+    if not same:
+        return None, 0, None
+    for k, (pci, v) in enumerate(same):
+        if pci == new_pci:
+            return k + 1, len(same), same[0][1] - v
+    return None, len(same), None
 
 
 def frozen_mask(lat, lon):
@@ -216,11 +257,14 @@ def load(s, idx):
             pp[i] = any(c == cell[i] for c, _ in hist)
             hist.append((prev_cell_col[i], t[i]))
 
-    if "best_nbr_rsrp_dbm" in df.columns:
-        nbr = pd.to_numeric(df["best_nbr_rsrp_dbm"], errors="coerce")
-    else:
-        nbr = pd.Series([best_neighbor_from_json(j, p)
-                         for j, p in zip(df["neighbors_json"], df["serving_pci"])])
+    # nbr  : 같은 주파수 최강 이웃 (핸드오버 비교에 쓰는 값)
+    # nbrx : 주파수 무관 최강 이웃 (앱의 best_nbr_rsrp_dbm과 같은 정의 — 밴드 간 이동 참고용)
+    s_pci = pd.to_numeric(col(df, "serving_pci"), errors="coerce")
+    s_arf = pd.to_numeric(col(df, "serving_freq_arfcn"), errors="coerce")
+    nbr = pd.Series([best_neighbor(j, p, a, True)
+                     for j, p, a in zip(df["neighbors_json"], s_pci, s_arf)])
+    nbrx = pd.Series([best_neighbor(j, p, a, False)
+                      for j, p, a in zip(df["neighbors_json"], s_pci, s_arf)])
 
     lat_raw = pd.to_numeric(df["latitude"], errors="coerce")
     lon_raw = pd.to_numeric(df["longitude"], errors="coerce")
@@ -257,20 +301,26 @@ def load(s, idx):
             r(lon[i], 6) if map_ok[i] else None,
             None if pd.isna(c) else int(c),
             r(rsrp[i], 0), r(col(df, "sinr_snr_db")[i], 1), r(col(df, "rsrq_db")[i], 0),
-            r(nbr[i], 0), r(speed[i], 1), r(rx[i], 3), r(tx[i], 3),
+            r(nbr[i], 0), r(nbrx[i], 0), r(speed[i], 1), r(rx[i], 3), r(tx[i], 3),
             r(col(df, "serving_pci")[i], 0), r(col(df, "serving_freq_arfcn")[i], 0),
             1 if ho[i] else 0, 1 if pp[i] else 0,
         ])
 
+    # 핸드오버 직전에 보이던 이웃 목록: v1.1은 그 행에 남아 있고(prev_neighbors_json),
+    # 없으면 직전 행의 목록을 쓴다.
+    prev_nb = col(df, "prev_neighbors_json")
     events = []
     for i in np.where(ho)[0]:
         fc, tc = prev_cell_col[i], cell[i]
         if pd.isna(fc) or pd.isna(tc):
             continue
+        pj = prev_nb[i] if isinstance(prev_nb[i], str) and prev_nb[i].strip() not in ("", "[]")             else (df["neighbors_json"][i - 1] if i > 0 else "")
+        rk, nsame, loss = target_rank(pj, s_pci[i], s_arf[i])
         events.append([
             round(float(t[i]), 1), int(fc), int(tc),
             1 if int(fc) // 256 == int(tc) // 256 else 0,
             r(prev_rsrp[i], 0), r(rsrp[i], 0), r(speed[i], 1), 1 if pp[i] else 0,
+            rk, nsame, None if loss is None else round(float(loss), 1),
         ])
 
     dur_min = float(t.iloc[-1]) / 60
@@ -300,9 +350,10 @@ def build(scope, sessions, html):
     picked = [dict(s, id=i) for i, s in enumerate(picked)]
     used = sorted({s["ncols"] for s in picked})
     data = dict(
-        cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "speed", "rx", "tx",
+        cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "nbrx", "speed", "rx", "tx",
               "pci", "arfcn", "ho", "pp"],
-        ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp"],
+        ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp",
+                 "rank", "nsame", "loss"],
         meta=dict(scope=scope, eyebrow="NetworkTrackerApp · " + eyebrow, title=title,
                   kind={"all": "차량·지하철·도보로 이동하며", "car": "차량으로 이동하며",
                         "subway": "지하철로 이동하며", "walking": "걸어서 이동하며"}[scope]),
