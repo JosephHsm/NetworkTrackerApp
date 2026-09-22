@@ -84,8 +84,10 @@ data class NetworkRecord(
     val pressureHpa: Float? = null,
     // 능동 프로브: TCP connect RTT (8.8.8.8:53 → 1.1.1.1:443 → speed.cloudflare.com:443 중 처음 되는 대상, 셀룰러 바인딩) — HO 순간 지연 스파이크 관찰
     val rttMs: Int? = null,
-    // 능동 프로브: 다운로드 버스트 처리량 (버스트 완료 직후 행에만 기록, 나머지 공백)
+    // 능동 프로브 지속 부하: 최근 1초 동안 실제로 받은/보낸 속도 (부하를 켜면 매 행 기록).
+    // 목표는 0.48 Mbps(=60,000 B/s)로 일정하므로, 이 값이 목표에 못 미치는 구간이 곧 망이 못 따라온 구간이다.
     val probeDlMbps: Double? = null,
+    val probeUlMbps: Double? = null,
     // Wi-Fi 스캔 — 지하철역 AP 핑거프린트 (사후 위치 복원용)
     val wifiApCount: Int? = null,
     val wifiScanAgeS: Int? = null,           // 스캔 결과 나이(초). 클수록 stale
@@ -174,6 +176,7 @@ data class NetworkRecord(
             append(pressureHpa       ?: "");              append(',')
             append(rttMs             ?: "");              append(',')
             append(probeDlMbps?.let { fmt("%.3f", it) } ?: ""); append(',')
+            append(probeUlMbps?.let { fmt("%.3f", it) } ?: ""); append(',')
             append(wifiApCount       ?: "");              append(',')
             append(wifiScanAgeS      ?: "");              append(',')
             append(anchorStation.replace(',', ' '));      append(',')
@@ -206,7 +209,7 @@ data class NetworkRecord(
             "collect_trigger,cell_duration_s,ho_count_30s,rsrp_delta,sinr_delta,cell_info_age_ms," +
             "prev_serving_cell_id,prev_rsrp_dbm,prev_rsrq_db," +
             "neighbors_json," +
-            "pressure_hpa,rtt_ms,probe_dl_mbps," +
+            "pressure_hpa,rtt_ms,probe_dl_mbps,probe_ul_mbps," +
             "wifi_ap_count,wifi_scan_age_s," +
             "anchor_station,anchor_lat,anchor_lon," +
             "wifi_scan_json,prev_neighbors_json"

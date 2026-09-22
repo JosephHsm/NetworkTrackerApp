@@ -4,7 +4,7 @@
 템플릿(viz_build/report.template.html)의 /*__DATA__*/ 자리에 세션 데이터를 JSON으로 넣는다.
 브라우저에서 파일을 바로 열어도(file://) 동작하도록 데이터는 HTML 안에 포함한다.
 
-대상은 trackingcsv/new 6개 세션이고, 통합·차량·지하철 세 가지 리포트를 만든다.
+대상은 trackingcsv/new 세션 전부이고, 통합·차량·지하철·도보 네 가지 리포트를 만든다.
 
 원본 CSV는 절대 수정하지 않는다. 자르기·동결 제외는 모두 이 스크립트 안에서만 일어나고,
 얼마나 잘랐는지는 리포트에 그대로 표시된다.
@@ -19,10 +19,13 @@ import pandas as pd
 TEMPLATE = "viz_build/report.template.html"
 MAPMATCH_DIR = "analysis_output"
 OUTS = {
-    "all":    ("viz_build/report_all.html",    "전체 세션",   "이동하는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
-    "car":    ("viz_build/report_car.html",    "차량 세션",   "차로 달리는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
-    "subway": ("viz_build/report_subway.html", "지하철 세션", "지하철을 타는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
+    "all":     ("viz_build/report_all.html",     "전체 세션",   "이동하는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
+    "car":     ("viz_build/report_car.html",     "차량 세션",   "차로 달리는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
+    "subway":  ("viz_build/report_subway.html",  "지하철 세션", "지하철을 타는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
+    "walking": ("viz_build/report_walking.html", "도보 세션",   "걸어가는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
 }
+
+ACTIVITY_KO = {"car": "차량", "subway": "지하철", "walking": "도보"}
 
 MAP_MAX_ACC_M = 50       # 지도에 찍을 GPS 정확도 상한
 PINGPONG_S = 30          # 30초 안에 직전 셀로 돌아오면 핑퐁
@@ -57,6 +60,18 @@ SESSIONS = [
          label="9/15 차량", activity="car", keep=(1, 17),
          note="",
          trim_reason="앞 1분은 출발 전 대기(이동 68 m·0.1 m/s), 17분 이후는 도착 후 미종료(이동 5·4·2 m)"),
+    dict(path="trackingcsv/new/network_log_20260920_123732_subway.csv",
+         label="9/20 지하철", activity="subway",
+         note="activity 태그 누락 — 2호선 건대입구→을지로3가, 3호선 환승 후 안국. 역 태그 3개에 사후 앵커 8개를 보탰다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260921_141259_subway.csv",
+         label="9/21 지하철", activity="subway",
+         note="activity 태그 누락 — 2호선 동대문역사문화공원→건대입구. 역 태그 2개에 사후 앵커 5개를 보탰다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260921_142715_walking.csv",
+         label="9/21 도보", activity="walking",
+         note="지하철에서 내린 뒤 이어서 걸은 구간 (1.1 m/s 일정)",
+         keep=None, trim_reason=""),
 ]
 
 # 앱 버전별 기록 항목. 컬럼 수로 판별한다.
@@ -73,12 +88,22 @@ VERSIONS = {
         name="v1.1",
         summary="61개에 12개가 더해졌다. 지하 측위 보강(기압·위치 출처·역 태그·Wi-Fi 지문)과 "
                 "능동 측정 프로브(지연 시간·다운로드)가 들어왔다.",
+        missing=["probe_ul_mbps (업로드 실측)"],
+    ),
+    74: dict(
+        name="v1.2",
+        summary="능동 프로브가 30분 단위 버스트(2MB/30초)에서 지속 부하로 바뀌었다. 다운·업 각각 "
+                "초당 0.06MB를 끊지 않고 흘리므로, 데이터 총량은 같으면서 모든 행에 실측 처리량이 찍힌다. "
+                "probe_dl_mbps/probe_ul_mbps가 목표(0.48 Mbps)에 못 미치는 구간이 곧 망이 못 따라온 구간이다.",
         missing=[],
     ),
 }
-V11_ADDED = ["rtt_ms", "probe_dl_mbps", "pressure_hpa", "location_source", "location_age_s",
-             "anchor_station", "anchor_lat", "anchor_lon", "wifi_ap_count", "wifi_scan_age_s",
-             "wifi_scan_json", "prev_neighbors_json"]
+ADDED = {
+    73: ["rtt_ms", "probe_dl_mbps", "pressure_hpa", "location_source", "location_age_s",
+         "anchor_station", "anchor_lat", "anchor_lon", "wifi_ap_count", "wifi_scan_age_s",
+         "wifi_scan_json", "prev_neighbors_json"],
+    74: ["probe_ul_mbps"],
+}
 
 
 def col(df, *names):
@@ -253,11 +278,11 @@ def load(s, idx):
     km = float(np.nansum(np.hypot(np.diff(la) * 111000, np.diff(lo) * 88000))) / 1000
 
     ncols = len(pd.read_csv(s["path"], nrows=0).columns)
-    ver = VERSIONS.get(ncols, VERSIONS[73])
+    ver = VERSIONS.get(ncols, VERSIONS[max(VERSIONS)])
 
     return dict(
         id=idx, label=s["label"], note=s["note"], file=os.path.basename(s["path"]), t0=t0,
-        activity=s["activity"], activity_ko="차량" if s["activity"] == "car" else "지하철",
+        activity=s["activity"], activity_ko=ACTIVITY_KO[s["activity"]],
         dur_min=round(dur_min, 1), raw_min=round(raw_min, 1), km=round(km, 1), rows=len(df),
         cut_head=round(cut_head, 1), cut_tail=round(cut_tail, 1), trim_reason=s["trim_reason"],
         version=ver["name"], ncols=ncols, coord_src=coord_src,
@@ -279,10 +304,10 @@ def build(scope, sessions, html):
               "pci", "arfcn", "ho", "pp"],
         ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp"],
         meta=dict(scope=scope, eyebrow="NetworkTrackerApp · " + eyebrow, title=title,
-                  kind={"all": "차량과 지하철로 이동하며", "car": "차량으로 이동하며",
-                        "subway": "지하철로 이동하며"}[scope]),
+                  kind={"all": "차량·지하철·도보로 이동하며", "car": "차량으로 이동하며",
+                        "subway": "지하철로 이동하며", "walking": "걸어서 이동하며"}[scope]),
         versions=[dict(VERSIONS[c], cols=c,
-                       added=V11_ADDED if c == 73 else [],
+                       added=ADDED.get(c, []),
                        files=[s["label"] for s in picked if s["ncols"] == c]) for c in used],
         sessions=picked,
     )

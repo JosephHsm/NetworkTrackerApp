@@ -23,6 +23,7 @@ class NetworkLoggingService : Service() {
         const val EXTRA_INTERVAL     = "interval_ms"
         const val EXTRA_ACTIVITY_TAG = "activity_tag"
         const val EXTRA_PROBE_DL     = "probe_dl_enabled"
+        const val EXTRA_PROBE_UL     = "probe_ul_enabled"
         const val EXTRA_STATION_NAME = "station_name"
         const val DEFAULT_INTERVAL   = 5_000L
         private const val CHANNEL_ID = "nt_channel"
@@ -52,7 +53,8 @@ class NetworkLoggingService : Service() {
     private fun doCollect(trigger: String) {
         collector.collectTrigger = trigger
         collector.externalRttMs  = probe.lastRttMs
-        probe.consumeDlResult()?.let { collector.externalDlMbps = it }
+        collector.externalDlMbps = probe.lastDlMbps
+        collector.externalUlMbps = probe.lastUlMbps
         val record = collector.collect()
         csvLogger.log(record)
         recordCount = csvLogger.recordCount()
@@ -125,6 +127,7 @@ class NetworkLoggingService : Service() {
         intervalMs = intent.getLongExtra(EXTRA_INTERVAL, DEFAULT_INTERVAL)
         val activityTag    = intent.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
         val probeDlEnabled = intent.getBooleanExtra(EXTRA_PROBE_DL, false)
+        val probeUlEnabled = intent.getBooleanExtra(EXTRA_PROBE_UL, false)
 
         // Android 14+: 위치형 FGS는 위치 권한이 없으면 startForeground가 SecurityException을 던진다.
         // 앱이 죽지 않도록 잡아서 서비스를 정상 종료하되, 조용히 실패하면 사용자는 버튼이
@@ -150,8 +153,8 @@ class NetworkLoggingService : Service() {
         collector.startLocationUpdates()
         collector.startTelephonyListener()
         collector.startSensors()
-        // RTT는 항상 측정(무시 가능한 트래픽), 다운로드 버스트는 토글로 결정
-        probe.start(intervalMs, probeDlEnabled)
+        // RTT는 항상 측정(무시 가능한 트래픽), 지속 부하는 방향별 토글로 결정
+        probe.start(intervalMs, probeDlEnabled, probeUlEnabled)
 
         // 핸드오버 감지 시 즉시 추가 수집 (API 31+)
         // timer와 동시 발화 시 중복 방지: 마지막 수집으로부터 1초 미만이면 skip
@@ -207,9 +210,10 @@ class NetworkLoggingService : Service() {
     private fun updateNotification() {
         val mgr = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val rtt = probe.lastRttMs?.let { " | RTT ${it}ms" } ?: " | RTT 실패"
-        val dl  = probe.lastDlMbps?.let { " | DL ${"%.1f".format(java.util.Locale.US, it)}Mbps" } ?: ""
+        val dl  = probe.lastDlMbps?.let { " | DL ${"%.2f".format(java.util.Locale.US, it)}" } ?: ""
+        val ul  = probe.lastUlMbps?.let { " / UL ${"%.2f".format(java.util.Locale.US, it)}Mbps" } ?: ""
         val used = if (probe.probeBytesUsed > 0) " (${probe.probeBytesUsed / 1_048_576}MB)" else ""
-        val probeInfo = rtt + dl + used
+        val probeInfo = rtt + dl + ul + used
         mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개$probeInfo"))
     }
 

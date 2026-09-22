@@ -40,7 +40,7 @@ def main():
         print(f"서버가 이미 실행 중입니다 → {url}")
         return
     print(f"리포트 서버 실행 중 → {url}")
-    print("다른 리포트: viz_build/report_car.html, viz_build/report_subway.html, analysis_output/*_map.html")
+    print("다른 리포트: viz_build/report_car.html, report_subway.html, report_walking.html, analysis_output/*_map.html")
     print("이 창을 닫으면 서버가 꺼집니다.")
     try:
         server.serve_forever()

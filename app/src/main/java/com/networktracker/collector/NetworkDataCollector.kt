@@ -45,9 +45,10 @@ class NetworkDataCollector(private val context: Context) {
     // ── v1.1 확장: 외부 주입 값 ──────────────────────────────────────────────
     // Wi-Fi AP 핑거프린트 (지하 구간 사후 위치 복원용) — startSensors()에서 함께 시작
     private val wifiScanner = WifiScanner(context)
-    // ActiveProbe 결과 — 서비스가 채워 넣음. RTT는 매 행, DL은 1회성(consume)
+    // ActiveProbe 결과 — 서비스가 매 행 채워 넣음 (RTT, 지속 부하의 최근 1초 실측 속도)
     @Volatile var externalRttMs: Int? = null
     @Volatile var externalDlMbps: Double? = null
+    @Volatile var externalUlMbps: Double? = null
     // 수동 역 태그 앵커 — collect() 1회 소비 후 클리어
     @Volatile var pendingAnchor: KakaoStationResolver.StationResult? = null
     // 직전 tick의 이웃셀 JSON — 핸드오버 행에 pre-HO 이웃 리스트로 기록
@@ -559,9 +560,9 @@ class NetworkDataCollector(private val context: Context) {
         val anchor = pendingAnchor
         pendingAnchor = null
 
-        // DL 버스트 결과 소비 (버스트 완료 직후 1개 행에만)
+        // 지속 부하 실측 속도 — 버스트가 아니라 계속 흐르므로 매 행 그대로 기록한다
         val dlMbps = externalDlMbps
-        externalDlMbps = null
+        val ulMbps = externalUlMbps
 
         return NetworkRecord(
             timestamp           = now,
@@ -625,6 +626,7 @@ class NetworkDataCollector(private val context: Context) {
             pressureHpa         = lastPressureHpa,
             rttMs               = externalRttMs,
             probeDlMbps         = dlMbps,
+            probeUlMbps         = ulMbps,
             wifiApCount         = wifiSnap?.apCount,
             wifiScanAgeS        = wifiSnap?.ageS,
             anchorStation       = anchor?.name ?: "",

@@ -51,7 +51,7 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <!-- 능동 프로브 (다운로드 버스트) 토글 -->
+    <!-- 능동 프로브 지속 부하 토글 (방향별) -->
     <!-- AppCompat 테마에서 <Switch>는 SwitchCompat으로 치환되는데 SwitchCompat은
          android.widget.Switch의 하위 클래스가 아니라 findViewById에서 CCE가 난다.
          그래서 처음부터 SwitchCompat으로 명시한다. -->
@@ -59,9 +59,25 @@
         android:id="@+id/switch_probe_dl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="능동 다운로드 프로브 (2MB/30초, 세션당 최대 500MB 소모)"
+        android:text="지속 다운로드 부하 (0.06MB/s = 시간당 216MB)"
         android:checked="true"
         android:textSize="13sp"
+        android:paddingBottom="4dp" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_probe_ul"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="지속 업로드 부하 (0.06MB/s = 시간당 216MB)"
+        android:checked="true"
+        android:textSize="13sp"
+        android:paddingBottom="2dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="둘 다 켜면 시간당 약 432MB. 세션당 1GB에 닿으면 부하만 자동 중지된다."
+        android:textSize="11sp"
         android:paddingBottom="8dp" />
 
     <!-- 지하 구간 수동 역 태그 (로깅 중에만 활성) -->

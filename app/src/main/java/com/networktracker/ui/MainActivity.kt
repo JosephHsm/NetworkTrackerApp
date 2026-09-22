@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spinnerActivity: Spinner
     private lateinit var spinnerInterval: Spinner
     private lateinit var switchProbeDl: SwitchCompat
+    private lateinit var switchProbeUl: SwitchCompat
     private lateinit var etStation: EditText
     private lateinit var btnTagStation: Button
 
@@ -80,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         spinnerActivity = findViewById(R.id.spinner_activity)
         spinnerInterval = findViewById(R.id.spinner_interval)
         switchProbeDl   = findViewById(R.id.switch_probe_dl)
+        switchProbeUl   = findViewById(R.id.switch_probe_ul)
         etStation       = findViewById(R.id.et_station)
         btnTagStation   = findViewById(R.id.btn_tag_station)
 
@@ -148,6 +150,7 @@ class MainActivity : AppCompatActivity() {
         spinnerActivity.isEnabled = !running  // 로깅 중 태그 변경 방지
         spinnerInterval.isEnabled = !running
         switchProbeDl.isEnabled   = !running
+        switchProbeUl.isEnabled   = !running
         btnTagStation.isEnabled   = running   // 역 태그는 로깅 중에만 의미 있음
 
         if (running) {
@@ -248,6 +251,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(NetworkLoggingService.EXTRA_INTERVAL,     interval)
             putExtra(NetworkLoggingService.EXTRA_ACTIVITY_TAG, tag)
             putExtra(NetworkLoggingService.EXTRA_PROBE_DL,     switchProbeDl.isChecked)
+            putExtra(NetworkLoggingService.EXTRA_PROBE_UL,     switchProbeUl.isChecked)
         }
         startForegroundService(intent)
     }
