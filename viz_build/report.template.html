@@ -87,6 +87,15 @@ svg{display:block}
   border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface-2)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 20px;padding:10px 26px 0;font-size:13px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .lgb{font:inherit;font-size:13px;color:var(--ink-2);display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  background:var(--surface);border:1px dashed var(--line-2);border-radius:999px;padding:2px 10px 2px 8px}
+.legend .lgb:hover{color:var(--ink);border-color:var(--ink-3)}
+.legend .lgb[aria-pressed="true"]{background:var(--ink);color:var(--surface);border:1px solid var(--ink)}
+.legend .lgb:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.zoom-sel{fill:var(--s1);fill-opacity:.12;stroke:var(--s1);stroke-width:1}
+.tl-zoom{font:inherit;font-size:12px;margin-left:8px;padding:1px 9px;border-radius:6px;border:1px solid var(--line-2);
+  background:var(--surface);color:var(--ink-2);cursor:pointer}
+.tl-zoom:hover{color:var(--ink);border-color:var(--ink-3)}
 .sw{width:12px;height:12px;border-radius:3px;flex:none}
 .lk{width:16px;height:2px;border-radius:1px;flex:none}
 .dot{width:10px;height:10px;border-radius:50%;flex:none}
@@ -182,7 +191,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         <b>신호 세기</b>·<b>접속 셀</b> 보기는 둘 중 하나만 크게 본다. <b>셀 영향권</b>을 켜면 각 셀이 실제로 서비스한 범위가 그 셀 색의 면으로 깔리고,
         가운데 원의 크기가 그 셀에 머문 시간(영향력)이다. 지도 위에 마우스를 올리기만 하면 오른쪽 상자에 그 점의 값이 바로 나오고, 누르면 그 값이 고정되면서
         <b>그 셀(파랑)과 같은 기지국의 다른 섹터(청록)</b>만 남고 나머지는 흐려진다.
-        커서가 지도 안에 있을 때는 <b>휠로 확대·축소</b>되고, 밖으로 나가면 평소대로 페이지가 스크롤된다.</p>
+        커서가 지도 안에 있을 때는 <b>휠로 확대·축소</b>되고, 밖으로 나가면 평소대로 페이지가 스크롤된다.
+        범례에서 <b>핸드오버·핑퐁 항목(점선 테두리)을 누르면 그 지점만</b> 남고, 다시 누르면 전체가 돌아온다.</p>
       <p class="plain"><b>쉽게 말하면</b> — 지나온 길 위에 신호가 좋았던 곳과 나빴던 곳을 색으로 칠한 지도다. 속이 진할수록 신호가 약한 곳이고,
         테두리 색이 바뀌면 붙어 있던 기지국이 바뀐 것이다. 지하철 세션은 땅속이라 GPS가 안 잡히므로, 역 위치를 기준으로 되짚어 계산한 좌표를 쓴다 — 그래서 차량 세션보다 위치가 거칠다.</p>
     </div>
@@ -215,7 +225,9 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         세로선은 핸드오버 순간으로, <b>실선(굵음)이 다른 기지국</b>, <b>점선이 같은 기지국의 섹터 변경</b>이다. 검은 삼각형은 핑퐁(30초 안에 직전 셀로 복귀)이다.
         <b>기지국 띠 한 칸 안에서도 섹터는 바뀐다</b> — 지도에서 셀을 고르면 그 칸에 테두리가 생기니 어느 구간인지 보고 읽어야 한다.
         섹터 번호는 칸 안에 적었고, 칸이 좁아 번호가 들어가지 않으면 생략된다 — 그때는 지도나 그래프를 짚어 오른쪽 상자에서 확인한다.
-        그래프 위에 마우스를 올리면 그 순간의 값이 그림 1 오른쪽 상자와 지도에 함께 나타나고, <b>반대로 지도를 짚으면 그 지점이 이 그래프에 세로선으로 표시된다.</b></p>
+        그래프 위에 마우스를 올리면 그 순간의 값이 그림 1 오른쪽 상자와 지도에 함께 나타나고, <b>반대로 지도를 짚으면 그 지점이 이 그래프에 세로선으로 표시된다.</b>
+        <b>그래프를 좌우로 끌면 그 구간만 확대</b>되고(지도도 그 구간만 남는다), 더블클릭하거나 '전체 보기'를 누르면 돌아온다.
+        범례의 <b>점선 테두리 항목을 누르면 그 종류의 핸드오버만</b> 지도와 이 그래프에 남는다.</p>
       <p class="plain"><b>쉽게 말하면</b> — 시간이 흐르는 동안 신호가 오르내린 모양과, 그때 폰이 어느 기지국·어느 섹터에 붙어 있었는지를 위아래로 나란히 놓은 것이다.
         <b>색이 통째로 바뀌면 기지국이 바뀐 것</b>, <b>색은 같은데 칸만 갈라지면 같은 기지국 안에서 방향(섹터)만 바꾼 것</b>이다.
         기지국을 바꾸는 쪽이 끊김이 생기기 쉬우므로, 세로 실선이 촘촘한 구간이 불안정한 구간이다.</p>
@@ -281,11 +293,12 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-head">
       <div class="fig-num">그림 6 · 측정 항목 연관성</div>
       <h2>신호가 좋으면 받고 보내는 속도가 빨라지는가<span class="verdict" id="v5"></span></h2>
-      <p class="sub">폰이 실제로 데이터를 주고받던 순간만 골랐다(0.1 Mbps 이상). 점은 측정 1회, 주황 선은 구간별 중앙값이다.
+      <p class="sub">폰이 실제로 데이터를 주고받던 순간만 골랐다(0.4 Mbps = 0.05 MB/s 이상). 점은 측정 1회, 주황 선은 구간별 중앙값이다.
         세로축은 값이 몇 자릿수에 걸쳐 있어 로그 눈금이다. ρ는 순위 상관계수로, 0에 가까우면 관계가 없다.</p>
       <p class="plain"><b>쉽게 말하면</b> — 신호가 좋으면 인터넷이 실제로 빨라지는지 본다. 단, 여기 쓰는 속도는 앱이 일부러 부하를 걸어 잰 게 아니라
         <b>그 순간 폰이 마침 쓰고 있던 양</b>이다. 아무것도 안 받고 있으면 신호가 아무리 좋아도 0에 가깝게 찍힌다.
-        그래서 "관계 없음"이 나와도 신호가 무의미하다는 뜻이 아니라, 이 방식으로는 확인이 안 된다는 뜻으로 읽어야 한다.</p>
+        그래서 "관계 없음"이 나와도 신호가 무의미하다는 뜻이 아니라, 이 방식으로는 확인이 안 된다는 뜻으로 읽어야 한다.
+        v1.2 세션의 송신은 앱이 0.48 Mbps로 고정해 흘린 값이라 신호와 무관하게 한 줄로 몰린다 — 이 줄 아래로 떨어진 점이 망이 못 따라온 순간이다.</p>
     </div>
     <div class="legend" id="lg5"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c5"></svg></div></div>
@@ -334,6 +347,90 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-body"><div class="chart-scroll"><svg id="c8"></svg></div></div>
     <div class="read" id="r8"></div>
     <details><summary>표로 보기</summary><div class="tbl-wrap" id="t8"></div></details>
+  </section>
+
+  <section class="fig" id="f10">
+    <div class="fig-head">
+      <div class="fig-num">그림 10 · 셀 유지 시간</div>
+      <h2>한 번 잡은 셀을 얼마나 오래 붙잡고 있는가</h2>
+      <p class="sub">셀을 잡은 순간부터 다음 셀로 넘어갈 때까지를 '유지 구간' 하나로 세고, 그 길이의 분포를 이동수단별로 나란히 놓았다.
+        세션의 첫 구간과 마지막 구간은 측정 시작·종료에 잘려 실제 길이를 모르므로 뺐다. 5초 간격 수집이라 길이에는 ±5초 오차가 있다.
+        위 단추로 <b>셀</b>과 <b>기지국</b> 단위를 바꾼다 — 기지국 단위는 같은 기지국 안에서 섹터만 바꾼 건 끊김으로 치지 않는다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 폰이 셀 하나에 붙으면 보통 몇 초나 버티는지 본다. 막대가 왼쪽에 몰릴수록 금방금방 갈아탄다는 뜻이다.
+        30초 안에 넘어간 '짧은 유지'가 많으면 셀 경계를 스치듯 지나가거나 핑퐁이 잦은 것이고, 5분 넘는 '긴 유지'가 많으면 한 셀이 넓게 덮고 있는 것이다.</p>
+    </div>
+    <div class="map-tools">
+      <div class="seg" role="group" aria-label="통계 단위" id="lvseg">
+        <button type="button" data-lv="cell" aria-pressed="true">셀 단위</button>
+        <button type="button" data-lv="enb" aria-pressed="false">기지국 단위</button>
+      </div>
+    </div>
+    <div class="legend" id="lg10"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c10"></svg></div></div>
+    <div class="read" id="r10"></div>
+    <details open><summary>표로 보기</summary><div class="tbl-wrap" id="t10"></div></details>
+  </section>
+
+  <section class="fig" id="f11">
+    <div class="fig-head">
+      <div class="fig-num">그림 11 · 셀 유지 거리</div>
+      <h2>셀 하나를 붙잡고 얼마나 멀리 가는가</h2>
+      <p class="sub">유지 구간마다 이동한 거리를 두 가지로 쟀다. <b>직선</b>은 셀을 잡은 지점에서 넘겨준 지점까지 일직선 거리,
+        <b>경로</b>는 실제로 지나온 길을 따라 누적한 거리다. 점이 중앙값, 가로선이 가운데 50% 범위다.
+        좌표는 지도와 같다 — 차량·도보는 정확도 50 m 이하 GPS, 지하철은 역 보정 좌표. 좌표가 2개 미만인 구간은 뺐다. 단위 전환은 그림 10과 같이 움직인다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 셀 하나가 이동 경로를 몇 m씩 맡아 주는지 본다. 직선과 경로가 비슷하면 곧게 지나간 것이고,
+        경로가 훨씬 길면 굽은 길이나 제자리 맴돌기(정지·서행 중 GPS 흔들림 포함)가 섞인 것이다.</p>
+    </div>
+    <div class="legend" id="lg11"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c11"></svg></div></div>
+    <div class="read" id="r11"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="t11"></div></details>
+  </section>
+
+  <section class="fig" id="f12">
+    <div class="fig-head">
+      <div class="fig-num">그림 12 · 핸드오버 종류</div>
+      <h2>셀을 바꿀 때 기지국까지 바뀌는가, 섹터만 바뀌는가</h2>
+      <p class="sub">핸드오버를 세 갈래로 나눴다. <b>섹터 이동</b>은 같은 기지국·같은 주파수에서 방향(섹터)만 바꾼 것,
+        <b>밴드 변경</b>은 같은 기지국에서 주파수 대역만 바꾼 것, <b>기지국 변경</b>은 다른 기지국으로 넘어간 것이다. 기지국 = 셀 ID ÷ 256 (eNB).</p>
+      <p class="plain"><b>쉽게 말하면</b> — 같은 기지국 안에서 방향만 바꾸는 건 가볍고, 기지국 자체를 바꾸는 건 무겁다(끊김이 생기기 쉽다).
+        이동수단마다 이 비율이 어떻게 다른지 본다.</p>
+    </div>
+    <div class="legend" id="lg12"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c12"></svg></div></div>
+    <div class="read" id="r12"></div>
+    <details><summary>세션별 표로 보기</summary><div class="tbl-wrap" id="t12"></div></details>
+  </section>
+
+  <section class="fig" id="f13">
+    <div class="fig-head">
+      <div class="fig-num">그림 13 · 망 점유</div>
+      <h2>5G와 LTE에 각각 얼마나 붙어 있었는가</h2>
+      <p class="sub">측정 시간 중 폰이 어떤 망으로 표시됐는지의 비율이다. <b>5G(NSA)</b>는 LTE를 기본으로 잡고 5G를 덧붙인 상태,
+        <b>LTE-A</b>는 LTE 주파수 여러 개를 묶은(CA) 상태, <b>LTE</b>는 그 밖이다.
+        <b>한계:</b> 앱이 5G 셀 자체(NR 셀 ID·신호)는 모든 세션에서 한 번도 잡지 못했다. 그래서 이 비율은 '화면에 5G로 표시된 시간'이지 '5G로 데이터를 주고받은 시간'이 아니다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 상태 표시줄에 5G가 떠 있던 시간이 얼마나 되는지다. 5G 표시가 떠 있어도 실제 데이터는 LTE로 오갈 수 있다.</p>
+    </div>
+    <div class="legend" id="lg13"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c13"></svg></div></div>
+    <div class="read" id="r13"></div>
+    <details><summary>세션별 표로 보기</summary><div class="tbl-wrap" id="t13"></div></details>
+  </section>
+
+  <section class="fig" id="f14">
+    <div class="fig-head">
+      <div class="fig-num">그림 14 · 능동 측정</div>
+      <h2>신호가 약하거나 빨리 달리거나 셀을 바꿀 때, 응답이 늦어지는가</h2>
+      <p class="sub">앱이 측정할 때마다 셀룰러 망으로 외부 서버에 TCP 연결을 열어 걸린 시간(RTT, ms)을 잰다 — 폰이 데이터를 쓰든 안 쓰든 매번 찍히는 능동 측정이다.
+        위: 신호 세기·이동 속도 구간별 RTT. 점이 중앙값, 가로선이 가운데 50%, 주황 눈금이 상위 10% 경계(느린 순간)다.
+        아래: 그림 3처럼 핸드오버 시각에 맞춰 겹친 RTT. 9/15 이전 세션에는 이 값이 없다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 인터넷이 '빠른지'가 아니라 '바로 대답하는지'를 본다. 평소에는 비슷해도 가끔 확 늦어지는 순간이 체감 끊김이라,
+        중앙값보다 <b>상위 10%(주황)</b>가 언제 커지는지가 중요하다.</p>
+    </div>
+    <div class="legend" id="lg14"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c14"></svg></div></div>
+    <div class="read" id="r14"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="t14"></div></details>
   </section>
 
   <section class="fig" id="f9">
@@ -421,7 +518,10 @@ function hideTip() { tip.style.opacity = 0; }
 function legend(host, items) {
   host.replaceChildren();
   items.forEach(it => {
-    const s = h("span");
+    // onClick이 있는 항목은 눌러서 그 종류만 골라 보는 단추가 된다
+    const s = it.onClick ? h("button", "lgb") : h("span");
+    if (it.onClick) { s.type = "button"; s.setAttribute("aria-pressed", String(!!it.pressed)); s.addEventListener("click", it.onClick);
+      s.title = it.pressed ? "다시 누르면 전체를 봅니다" : "누르면 이것만 남깁니다"; }
     const k = h("span", it.kind || "sw"); k.style.background = it.color;
     if (it.ring) k.style.boxShadow = "0 0 0 2px " + it.ring;
     s.append(k, document.createTextNode(it.label));
@@ -452,7 +552,7 @@ const SESS = D.sessions.map(s => {
   const P = s.pts.map(a => ({
     s: s.id, t: a[C.t], lat: a[C.lat], lon: a[C.lon], cell: a[C.cell], rsrp: a[C.rsrp], sinr: a[C.sinr],
     rsrq: a[C.rsrq], nbr: a[C.nbr], nbrx: a[C.nbrx], speed: a[C.speed], rx: a[C.rx], tx: a[C.tx], pci: a[C.pci],
-    arfcn: a[C.arfcn], ho: a[C.ho], pp: a[C.pp],
+    arfcn: a[C.arfcn], ho: a[C.ho], pp: a[C.pp], rat: a[C.rat], rtt: a[C.rtt],
   }));
   // 표본 하나가 대표하는 시간(다음 표본까지, 최대 10초) — 체류 시간·분당 핸드오버 계산용
   P.forEach((p, i) => { const nx = P[i + 1]; p.dt = nx ? Math.min(Math.max(nx.t - p.t, 0), 10) : 5; });
@@ -460,9 +560,14 @@ const SESS = D.sessions.map(s => {
   const E = s.events.map(a => ({ s: s.id, t: a[EC.t], from: a[EC.from], to: a[EC.to], same: a[EC.same_enb],
     prev: a[EC.rsrp_prev], nw: a[EC.rsrp_new], speed: a[EC.speed], pp: a[EC.pp],
     rank: a[EC.rank], nsame: a[EC.nsame], loss: a[EC.loss] }));
-  return Object.assign({}, s, { P, E });
+  // 셀·기지국 유지 구간 (cell_stats.py와 같은 계산)
+  const G = {};
+  for (const lv in s.segs) G[lv] = s.segs[lv].map(a => Object.fromEntries(D.seg_cols.map((c, i) => [c, a[i]])));
+  return Object.assign({}, s, { P, E, G });
 });
-const TRAFFIC = 0.1;   // Mbps
+// '데이터를 주고받던 순간' 기준 — 0.4 Mbps(= 0.05 MB/s). v1.2의 지속 업로드(0.06 MB/s = 0.48 Mbps)가
+// 이 기준을 넘도록 잡았다. 예전 0.1 Mbps는 폰이 쓰던 잔 트래픽(수십 kbps)까지 '주고받던 순간'으로 셌다.
+const TRAFFIC = 0.4;   // Mbps
 
 let sel = "all";
 try { const v = localStorage.getItem("carviz.sel"); if (v !== null && (v === "all" || SESS.some(s => String(s.id) === v))) sel = v === "all" ? "all" : Number(v); } catch (e) {}
@@ -476,7 +581,7 @@ function drawHeader() {
   const mins = S.reduce((a, s) => a + s.dur_min, 0), km = S.reduce((a, s) => a + s.km, 0);
   const cells = new Set(P.map(p => p.cell).filter(c => c != null)).size;
   const pp = E.filter(e => e.pp).length;
-  const traffic = P.filter(p => p.rx >= TRAFFIC).length;
+  const traffic = P.filter(p => p.rx >= TRAFFIC || p.tx >= TRAFFIC).length;
   $("#eyebrow").textContent = D.meta.eyebrow;
   $("#title").textContent = D.meta.title;
   document.title = D.meta.eyebrow;   // 탭 제목도 리포트 종류에 맞춘다
@@ -506,9 +611,11 @@ function drawFilters() {
 }
 function drawLimits() {
   setRead($("#limits"), [
-    { b: "측정 방식의 한계 두 가지. " },
-    "① 데이터 속도는 앱이 직접 부하를 걸어 잰 값이 아니라, 그 순간 폰이 쓰던 트래픽에서 계산한 값이다. 폰이 데이터를 안 쓰면 신호가 좋아도 0에 가깝게 찍히므로, 속도가 들어가는 그림 6·7은 0.1 Mbps 이상 주고받던 순간만 쓴다. ",
-    "② 앱의 능동 측정(지연 시간 rtt_ms, 다운로드 프로브 probe_dl_mbps)은 9/15 세션부터 기록된다. 그 전 세션은 권한 누락으로 셀룰러 망 연결을 못 얻어 값이 비어 있다. 이 그림들은 아직 그 값을 쓰지 않는다.",
+    { b: "측정 방식의 한계 세 가지. " },
+    "① 송수신 속도는 OS 트래픽 카운터에서 계산한 값이라 폰이 그 순간 실제로 주고받은 양이지 망의 최대 속도가 아니다. 그림 6·7은 0.4 Mbps(= 0.05 MB/s) 이상 주고받던 순간만 쓴다. ",
+    "v1.2(9/24~) 세션은 앱이 초당 0.06 MB(0.48 Mbps)를 끊지 않고 올려 보내므로 송신은 거의 모든 순간이 이 기준을 넘는다. 다운로드도 같은 양을 걸지만, OS 수신 버퍼가 몰아 받아 수신은 여전히 버스트로 찍힌다. ",
+    "② 핸드오버 행이 정기 측정 사이에 끼면 다음 행의 측정 창이 1.5초 이하로 짧아져 속도가 0으로 찍히는 착시가 생긴다(그런 행의 48%). 이 행들은 속도에서 뺐다. ",
+    "③ 능동 측정 중 지연 시간(rtt_ms)은 9/15 세션부터 기록되고 그림 14에서 쓴다. 다운로드 프로브 값(probe_dl_mbps)은 버퍼에서 읽은 속도라 망 상태를 반영하지 않아 쓰지 않는다.",
   ]);
   const trimmed = SESS.filter(s => s.cut_head || s.cut_tail);
   $("#foot").textContent = "데이터: " + SESS.map(s => s.file + (s.note ? " (" + s.note + ")" : "")).join(" · ")
@@ -536,6 +643,18 @@ const enbColor = e => (e == null || isNaN(e)) ? css("--line-2")
 /* ---------- 그림 1 : 지도 ---------- */
 let map = null, mapLayer = null, hullLayer = null, cursor = null, tiles = null;
 let mapMode = "both", hl = null, hlFit = false, showHull = false;
+// 범례에서 고른 핸드오버 종류 — null이면 전부. "inter" 다른 기지국 / "intra" 같은 기지국 / "pp" 핑퐁
+let evOnly = null, evFit = false;
+const EV_KINDS = { inter: "다른 기지국 핸드오버", intra: "같은 기지국 핸드오버 (섹터·밴드)", pp: "핑퐁" };
+const evMatch = (same, pp) => !evOnly || (evOnly === "pp" ? !!pp : evOnly === "intra" ? !!same : !same);
+function setEvOnly(k) {
+  evOnly = evOnly === k ? null : k;
+  evFit = !!evOnly;
+  drawMap(false); drawTimeline();
+}
+// 그림 2에서 끌어 확대한 구간 (세션 id → [시작 초, 끝 초]). 지도도 이 구간만 그린다.
+const tlZoom = new Map();
+const inZoom = p => { const z = tlZoom.get(p.s); return !z || (p.t >= z[0] && p.t <= z[1]); };
 let pinned = null, hover = null;          // 가리킨 점 / 고정한 점
 let pIdx = [], pIdxZoom = null;           // 마우스 근처 점 찾기용 좌표 색인
 const tlCursors = [];                     // 그림 2의 세션별 크로스헤어 (지도에서 짚은 점을 여기에도 찍는다)
@@ -552,6 +671,7 @@ function pointRows(p) {
     { value: fmt(p.nbr) + " dBm", label: "제일 센 이웃 셀 (같은 주파수)" },
     { value: p.speed == null ? "–" : fmt(p.speed * 3.6, 0) + " km/h", label: "이동 속도" },
     { value: fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps", label: "수신 / 송신" },
+    { value: p.rtt == null ? "–" : fmt(p.rtt) + " ms", label: "지연 시간 (RTT)" },
     { value: p.cell == null ? "–" : "eNB " + enbOf(p.cell) + " · 섹터 " + secOf(p.cell), label: "PCI " + fmt(p.pci) },
   ];
 }
@@ -713,7 +833,7 @@ function drawMap(fit) {
   if (!map) return;
   mapLayer.clearLayers(); cursor = null;
   pIdx = []; pIdxZoom = null;
-  const bounds = [], ring = css("--surface"), top = [], hlBounds = [], R = dotR();
+  const bounds = [], ring = css("--surface"), top = [], hlBounds = [], evBounds = [], R = dotR();
   lastDrawR = R;
   drawHulls();
   // 셀을 고르면 나머지는 점 대신 얇은 경로선으로 남긴다.
@@ -722,11 +842,12 @@ function drawMap(fit) {
   const PATH_BG = { color: ring, weight: 5, opacity: .75, interactive: false };
   const PATH_FG = { color: css("--ink-2"), weight: 2.2, opacity: .8, interactive: false };
   chosen().forEach(s => {
-    if (hl) {
+    // 셀을 골랐거나 핸드오버 종류만 볼 때는 나머지 점 대신 경로선을 깐다
+    if (hl || evOnly) {
       const segs = [];
       let seg = [];
       s.P.forEach(p => {
-        if (p.lat == null) { if (seg.length > 1) segs.push(seg); seg = []; }
+        if (p.lat == null || !inZoom(p)) { if (seg.length > 1) segs.push(seg); seg = []; }
         else seg.push([p.lat, p.lon]);
       });
       if (seg.length > 1) segs.push(seg);
@@ -736,9 +857,10 @@ function drawMap(fit) {
     let run = 0, last = null;
     s.P.forEach(p => {
       if (p.cell !== last) { run++; last = p.cell; }
-      if (p.lat == null) return;
+      if (p.lat == null || !inZoom(p)) return;   // 그림 2에서 구간을 확대했으면 그 구간만
       bounds.push([p.lat, p.lon]);
       pIdx.push({ p, x: 0, y: 0, ev: null });   // 경로선 위에서도 값을 짚을 수 있게 색인에는 넣는다
+      if (evOnly && !hl) return;                 // 핸드오버 종류만 볼 때는 점을 그리지 않는다
       const e = p.cell == null ? null : enbOf(p.cell);
       const isSel = hl && p.cell === hl.cell, kin = hl && e === hl.enb;
       let fill, stroke = ring, weight = 1, r = R, op = .95;
@@ -757,27 +879,30 @@ function drawMap(fit) {
       if (kin) { top.push(m); hlBounds.push([p.lat, p.lon]); }
       else mapLayer.addLayer(m);
     });
-    if (mapMode === "rsrp") return;   // 신호 세기만 볼 때는 핸드오버 표식을 뺀다
+    if (mapMode === "rsrp" && !evOnly) return;   // 신호 세기만 볼 때는 핸드오버 표식을 뺀다
     // 핸드오버는 점을 덮지 않도록 속이 빈 링으로 덧씌운다 — 안쪽 RSRP 색이 그대로 보인다
     const byT = new Map(s.P.filter(p => p.ho).map(p => [p.t, p]));
     s.E.forEach(ev => {
-      const p = byT.get(ev.t); if (!p || p.lat == null) return;
+      const p = byT.get(ev.t); if (!p || p.lat == null || !inZoom(p)) return;
       // 셀을 고른 동안에는 그 기지국의 핸드오버만 남긴다 — 나머지 링이 강조를 덮는다
       if (hl && (p.cell == null || enbOf(p.cell) !== hl.enb)) return;
-      // 멀리서 볼 때는 링이 경로를 덮어버리므로 핑퐁만 남기고, 확대하면 전부 나온다
-      if (R < 3.5 && !ev.pp) return;
+      if (!evMatch(ev.same, ev.pp)) return;
+      // 멀리서 볼 때는 링이 경로를 덮어버리므로 핑퐁만 남기고, 확대하면 전부 나온다 (종류를 고르면 줌과 무관하게 다 나온다)
+      if (!evOnly && R < 3.5 && !ev.pp) return;
       pIdx.push({ p, x: 0, y: 0, ev });
-      top.push(L.circleMarker([p.lat, p.lon], {
-        radius: R + (ev.pp ? 3.5 : 2), weight: ev.pp ? 2.2 : 1.7, fill: false,
-        color: ev.pp ? css("--ink") : (ev.same ? css("--s3") : css("--s2")),
-        opacity: .9, interactive: false,
-      }));
+      const col = ev.pp ? css("--ink") : (ev.same ? css("--s3") : css("--s2"));
+      evBounds.push([p.lat, p.lon]);
+      top.push(L.circleMarker([p.lat, p.lon], evOnly
+        // 고른 종류만 볼 때는 경로선 위에서 잘 보이도록 속을 채운 큰 점으로
+        ? { radius: Math.max(R + 2, 5.5), weight: 1.5, color: ring, fillColor: col, fillOpacity: .95, interactive: false }
+        : { radius: R + (ev.pp ? 3.5 : 2), weight: ev.pp ? 2.2 : 1.7, fill: false, color: col, opacity: .9, interactive: false }));
     });
   });
   top.forEach(m => mapLayer.addLayer(m));
   if (hlFit && hlBounds.length) map.fitBounds(hlBounds, { padding: [60, 60], maxZoom: 15 });
+  else if (evFit && evBounds.length) map.fitBounds(evBounds, { padding: [40, 40], maxZoom: 16 });
   else if (fit && bounds.length) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
-  hlFit = false;
+  hlFit = false; evFit = false;
   if (pinned) moveCursor(pinned.p);
   syncTimelineCursor(hover ? hover.p : (pinned ? pinned.p : null));
   drawMapLegend(); drawInspect();
@@ -805,12 +930,16 @@ function drawMapLegend() {
     topEnbs(8).forEach(e => items.push({ color: enbColor(e), label: "eNB " + e, kind: "dot" }));
     if (enbRank.size > 8) items.push({ color: css("--line-2"), label: "그 밖 기지국 " + (enbRank.size - 8) + "곳", kind: "dot" });
   }
-  if (mapMode !== "rsrp" && map && dotR() < 3.5)
-    items.push({ color: "transparent", ring: css("--ink"), label: "핑퐁 (확대하면 나머지 핸드오버도 나온다)", kind: "dot" });
-  else if (mapMode !== "rsrp")
-    items.push({ color: "transparent", ring: css("--s2"), label: "핸드오버 링 (다른 기지국)", kind: "dot" },
-               { color: "transparent", ring: css("--s3"), label: "핸드오버 링 (같은 기지국·섹터)", kind: "dot" },
-               { color: "transparent", ring: css("--ink"), label: "핑퐁", kind: "dot" });
+  // 핸드오버 항목은 눌러서 그 종류만 남기는 단추다 (그림 2와 같이 움직인다)
+  if (mapMode !== "rsrp" || evOnly) {
+    const far = !evOnly && map && dotR() < 3.5;
+    items.push(
+      { color: "transparent", ring: css("--s2"), label: "핸드오버 (다른 기지국)" + (far ? " — 확대하면 보임" : ""), kind: "dot", pressed: evOnly === "inter", onClick: () => setEvOnly("inter") },
+      { color: "transparent", ring: css("--s3"), label: "핸드오버 (같은 기지국·섹터)" + (far ? " — 확대하면 보임" : ""), kind: "dot", pressed: evOnly === "intra", onClick: () => setEvOnly("intra") },
+      { color: "transparent", ring: css("--ink"), label: "핑퐁", kind: "dot", pressed: evOnly === "pp", onClick: () => setEvOnly("pp") });
+  }
+  if (evOnly) items.push({ color: css("--ink-2"), label: EV_KINDS[evOnly] + "만 표시 중 · 나머지는 경로선", kind: "lk" });
+  if (tlZoom.size) items.push({ color: css("--s1"), label: "그림 2에서 확대한 구간만 표시 중", kind: "lk" });
   if (hl) items.push({ color: css("--s1"), label: "고른 셀", kind: "dot" },
                      { color: css("--s3"), label: "같은 기지국의 다른 섹터", kind: "dot" },
                      { color: css("--ink-2"), label: "그 밖 구간은 경로선만", kind: "lk" });
@@ -876,6 +1005,7 @@ function drawInspect() {
     insRow(blk, "제일 센 이웃 (다른 주파수 포함)", fmt(p.nbrx) + " dBm");
     insRow(blk, "이동 속도", p.speed == null ? "–" : fmt(p.speed * 3.6, 0) + " km/h");
     insRow(blk, "수신 / 송신", fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps");
+    insRow(blk, "지연 시간 (RTT)", p.rtt == null ? "–" : fmt(p.rtt) + " ms");
     insRow(blk, "셀 ID", p.cell == null ? "–" : String(p.cell));
     insRow(blk, "기지국 · 섹터", p.cell == null ? "–" : "eNB " + enbOf(p.cell) + " · " + secOf(p.cell));
     insRow(blk, "PCI · ARFCN", fmt(p.pci) + " · " + fmt(p.arfcn));
@@ -971,13 +1101,14 @@ function enbRunsOf(runs) {
 function drawTimeline() {
   const host = $("#c2"); host.replaceChildren();
   tlCursors.length = 0;
+  // 핸드오버 항목은 눌러서 그 종류만 남기는 단추다 (지도와 같이 움직인다)
   const lgItems = [
-    { color: css("--s2"), label: "세로 실선 = 다른 기지국으로 이동", kind: "lk" },
-    { color: css("--s1"), label: "세로 점선 = 같은 기지국 · 섹터만 변경", kind: "lk" },
+    { color: css("--s2"), label: "세로 실선 = 다른 기지국으로 이동", kind: "lk", pressed: evOnly === "inter", onClick: () => setEvOnly("inter") },
+    { color: css("--s1"), label: "세로 점선 = 같은 기지국 · 섹터만 변경", kind: "lk", pressed: evOnly === "intra", onClick: () => setEvOnly("intra") },
+    { color: "transparent", label: "핑퐁 (30초 안에 직전 셀로 복귀)", kind: "tri", pressed: evOnly === "pp", onClick: () => setEvOnly("pp") },
   ];
   topEnbs(8).forEach(e => lgItems.push({ color: enbColor(e), label: "eNB " + e, kind: "sw" }));
   if (enbRank.size > 8) lgItems.push({ color: css("--line-2"), label: "그 밖 기지국 " + (enbRank.size - 8) + "곳", kind: "sw" });
-  lgItems.push({ color: "transparent", label: "핑퐁 (30초 안에 직전 셀로 복귀)", kind: "tri" });
   legend($("#lg2"), lgItems);
 
   const tlRows = [];
@@ -986,31 +1117,50 @@ function drawTimeline() {
     const title = h("div", "tl-title");
     setRead(title, [{ b: s.label }, " · " + fmt(s.dur_min, 1) + "분 · " + fmt(s.km, 1) + " km · 기지국 "
       + eruns.filter(r => r.enb != null).length + "구간 · 셀 " + runs.length + "구간 · 핸드오버 " + s.E.length + "건"]);
+    const T = Math.max(s.P[s.P.length - 1].t, 1);
+    const Z = tlZoom.get(s.id) || [0, T], Z0 = Z[0], Z1 = Z[1];
+    if (tlZoom.has(s.id)) {
+      title.append(document.createTextNode(" · 확대 " + mmss(Z0) + " ~ " + mmss(Z1)));
+      const rb = h("button", "tl-zoom", "전체 보기"); rb.type = "button";
+      rb.addEventListener("click", () => setTlZoom(s.id, null));
+      title.append(rb);
+    }
     const scroll = h("div", "chart-scroll");
     const svg = el("svg", {});
     scroll.append(svg); host.append(title, scroll);
     const W = 960, PL = 52, PR = 14, PT = 14, RH = sel === "all" ? 90 : 170;
     const GAP = 26, EBH = 17, CBH = 14, EBY = PT + RH + GAP, CBY = EBY + EBH + 3, H = CBY + CBH + 26;
     prep(svg, W, H);
-    const T = Math.max(s.P[s.P.length - 1].t, 1);
-    const x = t => PL + t / T * (W - PL - PR);
+    const x = t => PL + (t - Z0) / (Z1 - Z0) * (W - PL - PR);
+    const tAt = sx => Z0 + (sx - PL) / (W - PL - PR) * (Z1 - Z0);
     const LO = -125, HI = -45, y = v => PT + (HI - v) / (HI - LO) * RH;
     [-120, -100, -80, -60].forEach(v => {
       svg.append(el("line", { x1: PL, y1: y(v), x2: W - PR, y2: y(v), class: "grid" }));
       svg.append(el("text", { x: PL - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, v));
     });
     svg.append(el("text", { x: PL - 8, y: PT - 3, class: "alab", "text-anchor": "end" }, "dBm"));
+    // 그래프 몸통은 잘라 그린다 — 확대하면 구간 밖 선·띠가 축 밖으로 삐져나가지 않게
+    const clipId = "tlclip" + s.id, defs = el("defs", {}), cp = el("clipPath", { id: clipId });
+    cp.append(el("rect", { x: PL, y: 0, width: W - PL - PR, height: H }));
+    defs.append(cp); svg.append(defs);
+    const g = el("g", { "clip-path": "url(#" + clipId + ")" });
+    svg.append(g);
 
     // 핸드오버 세로선. 기지국이 바뀐 곳(실선)만 그래프 꼭대기까지 올려 눈에 띄게 하고,
     // 섹터만 바꾼 곳(점선)은 띠 근처에만 짧게 둔다 — 선이 촘촘한 세션에서도 진짜 기지국 변경이 드러난다.
+    // 범례에서 종류를 고르면 그 종류만 꼭대기까지 굵게 그린다.
     runs.slice(1).forEach(r => {
       if (r.kind !== "inter" && r.kind !== "intra") return;
+      if (!evMatch(r.kind === "intra", r.pp)) return;
       const xx = x(r.t0);
-      if (r.kind === "inter") {
-        svg.append(el("line", { x1: xx, y1: PT, x2: xx, y2: EBY, stroke: css("--s2"), "stroke-width": 1.4, opacity: .25 }));
-        svg.append(el("line", { x1: xx, y1: EBY, x2: xx, y2: CBY + CBH, stroke: css("--s2"), "stroke-width": 1.8, opacity: .75 }));
+      if (evOnly) {
+        const c = evOnly === "pp" ? css("--ink") : r.kind === "inter" ? css("--s2") : css("--s1");
+        g.append(el("line", { x1: xx, y1: PT, x2: xx, y2: CBY + CBH, stroke: c, "stroke-width": 1.8, opacity: .8 }));
+      } else if (r.kind === "inter") {
+        g.append(el("line", { x1: xx, y1: PT, x2: xx, y2: EBY, stroke: css("--s2"), "stroke-width": 1.4, opacity: .25 }));
+        g.append(el("line", { x1: xx, y1: EBY, x2: xx, y2: CBY + CBH, stroke: css("--s2"), "stroke-width": 1.8, opacity: .75 }));
       } else {
-        svg.append(el("line", { x1: xx, y1: EBY - 5, x2: xx, y2: CBY + CBH, stroke: css("--s1"),
+        g.append(el("line", { x1: xx, y1: EBY - 5, x2: xx, y2: CBY + CBH, stroke: css("--s1"),
           "stroke-width": 1, "stroke-dasharray": "2,2.5", opacity: .55 }));
       }
     });
@@ -1025,18 +1175,20 @@ function drawTimeline() {
         prevT = q.t;
       }
       if (!d) return;
-      svg.append(el("path", { d, fill: "none", stroke: r.cell == null ? css("--line-2") : enbColor(enbOf(r.cell)),
-        "stroke-width": 1.8, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      g.append(el("path", { d, fill: "none", stroke: r.cell == null ? css("--line-2") : enbColor(enbOf(r.cell)),
+        "stroke-width": 1.8, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: evOnly ? .45 : 1 }));
     });
     // 기지국 띠 — 칸이 바뀌면 진짜 다른 기지국이다
     eruns.forEach((r, j) => {
       const t1 = j + 1 < eruns.length ? r.t1 : T;
       const x0 = x(r.t0) + 1, w = Math.max(x(t1) - x(r.t0) - 2, 1.5);
-      svg.append(el("rect", { x: x0, y: EBY, width: w, height: EBH,
+      g.append(el("rect", { x: x0, y: EBY, width: w, height: EBH,
         fill: r.enb == null ? css("--surface-3") : enbColor(r.enb), rx: 3,
         opacity: hl && r.enb !== hl.enb ? .25 : 1 }));
-      if (r.enb != null && w > 52)
-        svg.append(el("text", { x: x0 + w / 2, y: EBY + EBH - 5, class: "tick", "text-anchor": "middle",
+      // 라벨은 화면에 보이는 폭 기준으로 판단한다 (확대하면 숨었던 번호가 나온다)
+      const vx0 = Math.max(x0, PL), vx1 = Math.min(x0 + w, W - PR);
+      if (r.enb != null && vx1 - vx0 > 52)
+        g.append(el("text", { x: (vx0 + vx1) / 2, y: EBY + EBH - 5, class: "tick", "text-anchor": "middle",
           fill: css("--surface"), style: "font-weight:600" }, r.enb));
     });
     svg.append(el("text", { x: PL - 8, y: EBY + EBH - 5, class: "alab", "text-anchor": "end" }, "기지국"));
@@ -1051,36 +1203,54 @@ function drawTimeline() {
       // 기지국 띠는 한 칸으로 이어지는데 그 안에서 섹터가 바뀌므로, 강조가 없으면
       // 기지국 라벨 아래 놓인 다른 섹터 번호를 그 기지국의 값으로 읽게 된다.
       const selRun = hl && r.cell === hl.cell, kinRun = hl && r.cell != null && enbOf(r.cell) === hl.enb;
-      svg.append(el("rect", { x: x0, y: CBY, width: w, height: CBH, rx: 2,
+      g.append(el("rect", { x: x0, y: CBY, width: w, height: CBH, rx: 2,
         fill: r.cell == null ? css("--surface-3") : enbColor(enbOf(r.cell)),
         opacity: r.cell == null ? 1 : (!hl ? .92 : selRun ? 1 : kinRun ? .85 : .25),
         stroke: selRun ? css("--ink") : "none", "stroke-width": selRun ? 1.5 : 0 }));
       if (r.cell != null) {
         // 글자가 실제로 들어갈 폭이 되고, 앞 라벨과 겹치지 않을 때만 쓴다
-        const txt = String(secOf(r.cell)), need = txt.length * 6.2 + 4, cx = x0 + w / 2;
-        if (w >= need && cx - need / 2 >= labelEnd) {
-          svg.append(el("text", { x: cx, y: CBY + CBH - 4, "text-anchor": "middle",
+        const vx0 = Math.max(x0, PL), vx1 = Math.min(x0 + w, W - PR);
+        const txt = String(secOf(r.cell)), need = txt.length * 6.2 + 4, cx = (vx0 + vx1) / 2;
+        if (vx1 - vx0 >= need && cx - need / 2 >= labelEnd) {
+          g.append(el("text", { x: cx, y: CBY + CBH - 4, "text-anchor": "middle",
             fill: css("--surface"), style: "font-size:10px;font-weight:600" }, txt));
           labelEnd = cx + need / 2 + 2;
         }
       }
-      if (r.pp) svg.append(el("path", { d: "M" + (x0 - 4) + "," + (EBY - 16) + "L" + (x0 + 4) + "," + (EBY - 16)
+      if (r.pp && (!evOnly || evOnly === "pp")) g.append(el("path", { d: "M" + (x0 - 4) + "," + (EBY - 16) + "L" + (x0 + 4) + "," + (EBY - 16)
         + "L" + x0 + "," + (EBY - 8) + "Z", fill: css("--ink"), opacity: .85 }));
     });
     svg.append(el("text", { x: PL - 8, y: CBY + CBH, class: "alab", "text-anchor": "end" }, "섹터"));
     tlRows.push({ s, runs, eruns });
-    // 시간 축
-    const stepMin = T / 60 > 60 ? 15 : T / 60 > 20 ? 5 : T / 60 > 8 ? 2 : 1;
-    for (let m = 0; m * 60 <= T; m += stepMin) svg.append(el("text", { x: x(m * 60), y: H - 6, class: "tick", "text-anchor": "middle" }, m + "분"));
+    // 시간 축 — 보이는 구간 길이에 맞춰 눈금 간격을 고른다
+    const span = (Z1 - Z0) / 60;
+    const stepMin = span > 60 ? 15 : span > 20 ? 5 : span > 8 ? 2 : span > 3 ? 1 : span > 1.5 ? 0.5 : 0.25;
+    for (let m = Math.ceil(Z0 / 60 / stepMin) * stepMin; m * 60 <= Z1 + 1e-6; m += stepMin)
+      svg.append(el("text", { x: x(m * 60), y: H - 6, class: "tick", "text-anchor": "middle" },
+        stepMin < 1 ? mmss(m * 60).replace(" 00초", "") : m + "분"));
     // 크로스헤어
     const cross = el("line", { x1: 0, y1: PT, x2: 0, y2: CBY + CBH, stroke: css("--ink"), "stroke-width": 1, opacity: 0 });
     const cdot = el("circle", { cx: 0, cy: 0, r: 4.5, fill: css("--ink-2"), stroke: css("--surface"), "stroke-width": 2, opacity: 0 });
-    svg.append(cross, cdot);
+    const zsel = el("rect", { x: 0, y: PT, width: 0, height: CBY + CBH - PT, class: "zoom-sel", opacity: 0 });
+    svg.append(cross, cdot, zsel);
     // 지도에서 짚은 점도 여기에 표시되도록 크로스헤어를 등록해 둔다
-    tlCursors.push({ sid: s.id, x, y, cross, cdot });
-    const hit = el("rect", { x: PL, y: 0, width: W - PL - PR, height: H, fill: "transparent" });
+    tlCursors.push({ sid: s.id, x, y, cross, cdot, Z0, Z1 });
+    // 끌어서 구간 확대: 누른 채 좌우로 끌면 파란 상자가 그려지고, 놓으면 그 구간으로 확대된다.
+    const hit = el("rect", { x: PL, y: 0, width: W - PL - PR, height: H, fill: "transparent", style: "cursor:crosshair;touch-action:pan-y" });
+    const svgX = ev => { const bb = svg.getBoundingClientRect(); return Math.max(PL, Math.min(W - PR, (ev.clientX - bb.left) / bb.width * W)); };
+    let drag = null;   // 끌기 시작한 화면 x
+    hit.addEventListener("pointerdown", ev => {
+      if (ev.button !== 0) return;
+      drag = svgX(ev); hit.setPointerCapture(ev.pointerId);
+    });
     hit.addEventListener("pointermove", ev => {
-      const bb = svg.getBoundingClientRect(), t = ((ev.clientX - bb.left) / bb.width * W - PL) / (W - PL - PR) * T;
+      const sx = svgX(ev);
+      if (drag != null && Math.abs(sx - drag) > 3) {
+        hideTip();
+        zsel.setAttribute("x", Math.min(sx, drag)); zsel.setAttribute("width", Math.abs(sx - drag)); zsel.setAttribute("opacity", 1);
+        return;
+      }
+      const t = tAt(sx);
       let lo = 0, hi = s.P.length - 1;
       while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (s.P[mid].t < t) lo = mid; else hi = mid; }
       const p = Math.abs(s.P[lo].t - t) < Math.abs(s.P[hi].t - t) ? s.P[lo] : s.P[hi];
@@ -1088,7 +1258,16 @@ function drawTimeline() {
       showTip(ev, s.label + " · " + mmss(p.t) + (rr ? " · " + KIND[rr.kind][1] + (rr.pp ? " · 핑퐁" : "") : ""), pointRows(p));
       syncHover(p);
     });
-    hit.addEventListener("pointerleave", () => { hideTip(); syncHover(null); });
+    hit.addEventListener("pointerup", ev => {
+      if (drag == null) return;
+      const sx = svgX(ev), a = drag; drag = null;
+      zsel.setAttribute("opacity", 0);
+      if (Math.abs(sx - a) < 8) return;   // 짧게 끈 건 클릭으로 본다
+      const t0 = tAt(Math.min(a, sx)), t1 = tAt(Math.max(a, sx));
+      if (t1 - t0 >= 10) setTlZoom(s.id, [t0, t1]);
+    });
+    hit.addEventListener("dblclick", () => { if (tlZoom.has(s.id)) setTlZoom(s.id, null); });
+    hit.addEventListener("pointerleave", () => { if (drag == null) { hideTip(); syncHover(null); } });
     svg.append(hit);
   });
   const E = allEv(), P = allPts();
@@ -1110,6 +1289,13 @@ function drawTimeline() {
     tlRows.map(({ s, runs, eruns }) => [s.label, fmt(s.dur_min, 1), eruns.filter(r => r.enb != null).length, runs.length,
       runs.filter(r => r.kind === "intra").length, runs.filter(r => r.kind === "inter").length, runs.filter(r => r.pp).length]));
 }
+/** 그림 2 구간 확대 — 지도도 그 구간만 다시 그리고 거기에 맞춘다. z = null이면 해제. */
+function setTlZoom(sid, z) {
+  if (z) tlZoom.set(sid, z); else tlZoom.delete(sid);
+  hover = null;
+  drawTimeline();
+  drawMap(true);
+}
 function syncHover(p) {
   // 그림 2를 짚으면 지도 커서와 오른쪽 상자가 같이 움직인다
   if ((hover ? hover.p : null) === p) return;
@@ -1118,7 +1304,7 @@ function syncHover(p) {
 /** 지도에서 짚은 점을 그림 2의 크로스헤어에도 찍는다 — 좁은 칸이라 번호가 생략된 구간도 어디인지 보인다. */
 function syncTimelineCursor(p) {
   tlCursors.forEach(c => {
-    const on = p != null && c.sid === p.s;
+    const on = p != null && c.sid === p.s && p.t >= c.Z0 && p.t <= c.Z1;
     c.cross.setAttribute("opacity", on ? .6 : 0);
     if (on) { c.cross.setAttribute("x1", c.x(p.t)); c.cross.setAttribute("x2", c.x(p.t)); }
     if (on && p.rsrp != null) {
@@ -1257,7 +1443,7 @@ function drawFig3b() {
 
   // 전체 + 활동별(선택에 들어 있는 것만) 한 줄씩
   const groups = [["전체", E]];
-  ["car", "subway", "walking"].forEach(act => {
+  ACT_ORDER.forEach(act => {
     const S = chosen().filter(s => s.activity === act);
     if (!S.length) return;
     const ids = new Set(S.map(s => s.id));
@@ -1425,8 +1611,9 @@ function drawFig5() {
   const trafficShare = P.length ? P.filter(p => p.rx >= TRAFFIC).length / P.length * 100 : NaN;
   setRead($("#r5"), [
     { b: best ? "가장 뚜렷한 조합도 " + best.pn.yl + " 속도 ↔ " + best.pn.xl.split(" ")[0] + " ρ = " + fmt(best.rho, 2) + " (" + strength(best.rho) + ")다. " : "표본이 부족하다. " },
-    "데이터를 주고받던 순간은 전체 측정의 " + fmt(trafficShare, 0) + "%뿐이고, 그때 속도도 폰이 요청한 양에 따라 정해진다. ",
-    "그래서 이 그림의 '관계 없음'은 '신호가 속도에 영향이 없다'가 아니라 '이 방식으로는 확인할 수 없다'로 읽어야 한다. 능동 프로브를 고친 뒤 다시 보면 판단할 수 있다.",
+    "0.4 Mbps 이상 받던 순간은 전체 측정의 " + fmt(trafficShare, 0) + "%이고, 그때 속도도 폰이 요청한 양에 따라 정해진다. ",
+    "송신은 v1.2 세션에서 앱이 0.48 Mbps로 고정해 흘리므로 신호와 상관이 생길 수 없다(상한이 정해진 부하). ",
+    "그래서 이 그림의 '관계 없음'은 '신호가 속도에 영향이 없다'가 아니라 '이 방식으로는 확인할 수 없다'로 읽어야 한다. 망 상태와의 관계는 그림 14의 지연 시간으로 본다.",
   ]);
   table($("#t5"), ["조합", "표본 수", "ρ (순위 상관)", "해석", "속도 중앙값(Mbps)"], summary.map(s => [s.pn.yl + " ↔ " + s.pn.xl, s.n, fmt(s.rho, 3), strength(s.rho), fmt(s.med, 3)]));
 }
@@ -1621,6 +1808,325 @@ function drawFig8() {
       r.b.rows, fmt(r.b.rsrp, 0), r.b.rx == null ? "–" : fmt(r.b.rx, 3), r.b.ho, fmt(r.b.ho30, 1), r.b.pp, r.b.cells]));
 }
 
+/* ---------- 그림 10~13 : 셀 유지 통계 (cell_stats.py와 같은 구간) ---------- */
+const ACT_ORDER = ["car", "subway", "walking", "home"];
+const ACT_COLOR = { car: "--s1", subway: "--s2", walking: "--s3", home: "--e3" };
+let statLv = "cell";
+try { const v = localStorage.getItem("carviz.statlv"); if (v === "cell" || v === "enb") statLv = v; } catch (e) {}
+const LV_KO = () => statLv === "cell" ? "셀" : "기지국";
+/** 비교 묶음: 전체를 고르면 이동수단별, 세션 하나면 그 세션 하나. */
+function statGroups() {
+  const S = chosen();
+  if (sel !== "all") return [{ key: S[0].activity, name: S[0].label, color: css(ACT_COLOR[S[0].activity] || "--s1"), S }];
+  return ACT_ORDER.map(a => ({ key: a, S: S.filter(s => s.activity === a) })).filter(g => g.S.length)
+    .map(g => ({ ...g, name: g.S[0].activity_ko + " (" + g.S.length + ")", color: css(ACT_COLOR[g.key]) }));
+}
+const segsOf = (g, lv) => g.S.flatMap(s => (s.G[lv || statLv] || []).map(x => Object.assign({ sid: s.id }, x)));
+const DWELL_BINS = [[0, 10, "10초 미만"], [10, 20, "10–20초"], [20, 30, "20–30초"], [30, 60, "30초–1분"],
+  [60, 120, "1–2분"], [120, 300, "2–5분"], [300, 600, "5–10분"], [600, Infinity, "10분 이상"]];
+const SHORT_S = 30, LONG_S = 300;
+function dwellSummary(segs) {
+  const u = segs.filter(x => !x.censored), d = u.map(x => x.dwell_s);
+  return { n: segs.length, used: u.length, d, mean: mean(d), med: median(d), p10: quant(d, .1), p90: quant(d, .9),
+    min: d.length ? Math.min(...d) : NaN, max: d.length ? Math.max(...d) : NaN,
+    short: d.length ? d.filter(v => v < SHORT_S).length / d.length : NaN, long: d.length ? d.filter(v => v >= LONG_S).length / d.length : NaN };
+}
+const secTxt = v => isNaN(v) ? "–" : v < 90 ? fmt(v, 0) + "초" : fmt(v / 60, 1) + "분";
+function drawLvSeg() {
+  document.querySelectorAll("#lvseg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lv === statLv)));
+}
+function drawFig10() {
+  drawLvSeg();
+  const svg = $("#c10"), G = statGroups().map(g => ({ ...g, st: dwellSummary(segsOf(g)) })).filter(g => g.st.used);
+  legend($("#lg10"), G.map(g => ({ color: g.color, label: g.name + " · " + g.st.used + "구간", kind: "sw" })));
+  const W = 960, PL = 52, PR = 16, PT = 30, PH = 230, H = PT + PH + 50;
+  prep(svg, W, H);
+  if (!G.length) { svg.append(el("text", { x: PL, y: PT + 40, class: "alab" }, "잘리지 않은 유지 구간이 없다")); $("#r10").textContent = ""; return; }
+  const share = G.map(g => DWELL_BINS.map(([lo, hi]) => g.st.d.filter(v => v >= lo && v < hi).length / g.st.d.length * 100));
+  const ymax = Math.max(10, Math.ceil(Math.max(...share.flat()) / 10) * 10);
+  const y = v => PT + PH * (1 - v / ymax);
+  for (let v = 0; v <= ymax; v += ymax > 50 ? 20 : 10) {
+    svg.append(el("line", { x1: PL, y1: y(v), x2: W - PR, y2: y(v), class: "grid" }));
+    svg.append(el("text", { x: PL - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, v + "%"));
+  }
+  svg.append(el("text", { x: PL - 8, y: PT - 12, class: "alab", "text-anchor": "end" }, "구간 비율"));
+  const CW = (W - PL - PR) / DWELL_BINS.length, BW = Math.min(26, (CW - 14) / G.length);
+  // 30초 미만(짧은 유지) 칸과 5분 이상(긴 유지) 칸에 옅은 배경
+  svg.append(el("rect", { x: PL, y: PT, width: CW * 3, height: PH, fill: css("--surface-2") }));
+  svg.append(el("text", { x: PL + 6, y: PT + 14, class: "alab" }, "짧은 유지 (30초 미만)"));
+  svg.append(el("rect", { x: PL + CW * 6, y: PT, width: CW * 2, height: PH, fill: css("--surface-2") }));
+  svg.append(el("text", { x: PL + CW * 6 + 6, y: PT + 14, class: "alab" }, "긴 유지 (5분 이상)"));
+  DWELL_BINS.forEach(([lo, hi, label], bi) => {
+    const cx = PL + CW * bi + CW / 2, x0 = cx - BW * G.length / 2;
+    svg.append(el("text", { x: cx, y: PT + PH + 20, class: "tick", "text-anchor": "middle" }, label));
+    G.forEach((g, gi) => {
+      const v = share[gi][bi], top = y(v);
+      const r = el("rect", { x: x0 + gi * BW + 1, y: top, width: BW - 2, height: Math.max(PT + PH - top, v > 0 ? 1 : 0), rx: 2, fill: g.color });
+      r.addEventListener("pointermove", ev => showTip(ev, g.name + " · " + label, [
+        { value: fmt(v, 1) + "%", label: "(" + g.st.d.filter(d => d >= lo && d < hi).length + " / " + g.st.used + "구간)", color: g.color }]));
+      r.addEventListener("pointerleave", hideTip);
+      svg.append(r);
+    });
+  });
+  svg.append(el("text", { x: W - PR, y: H - 6, class: "alab", "text-anchor": "end" }, LV_KO() + " 하나를 유지한 시간"));
+  const all = dwellSummary(G.flatMap(g => segsOf(g)));
+  const byMed = [...G].sort((a, b) => a.st.med - b.st.med);
+  setRead($("#r10"), [
+    { b: LV_KO() + " 하나를 유지하는 시간은 중앙값 " + secTxt(all.med) + ", 평균 " + secTxt(all.mean) + "이다 (잘리지 않은 " + all.used + "구간). " },
+    "평균이 중앙값보다 긴 건 드물게 아주 오래 붙잡는 구간이 평균을 끌어올리기 때문이다 — 대표값으로는 중앙값을 본다. ",
+    G.length > 1 ? "가장 빨리 갈아타는 건 " + byMed[0].name.replace(/ \(\d+\)$/, "") + "(중앙값 " + secTxt(byMed[0].st.med) + "), 가장 오래 붙잡는 건 "
+      + byMed[byMed.length - 1].name.replace(/ \(\d+\)$/, "") + "(" + secTxt(byMed[byMed.length - 1].st.med) + ")다. " : "",
+    "30초 안에 넘어간 짧은 유지가 전체의 " + fmt(all.short * 100, 0) + "%, 5분 넘게 붙잡은 긴 유지가 " + fmt(all.long * 100, 1) + "%다. ",
+    statLv === "cell" ? "기지국 단위로 바꿔 보면 섹터만 바꾼 건 끊김으로 치지 않아 유지 시간이 길어진다." : "셀 단위보다 길게 나오는 만큼이 같은 기지국 안에서 섹터·밴드만 바꾼 몫이다.",
+  ]);
+  table($("#t10"), ["구분", "구간(잘림 제외)", "평균", "중앙값", "하위 10%", "상위 10%", "최단", "최장", "30초 미만", "5분 이상"],
+    G.concat(G.length > 1 ? [{ name: "전체", st: all }] : []).map(g => [g.name, g.st.used + " / " + g.st.n, secTxt(g.st.mean), secTxt(g.st.med),
+      secTxt(g.st.p10), secTxt(g.st.p90), secTxt(g.st.min), secTxt(g.st.max), fmt(g.st.short * 100, 0) + "%", fmt(g.st.long * 100, 1) + "%"]));
+}
+const mTxt = v => isNaN(v) ? "–" : v < 1000 ? fmt(v, 0) + " m" : fmt(v / 1000, 2) + " km";
+function drawFig11() {
+  const svg = $("#c11");
+  const G = statGroups().map(g => {
+    const u = segsOf(g).filter(x => !x.censored && x.path_m != null);
+    const st = k => { const a = u.map(x => x[k]); return { med: median(a), q1: quant(a, .25), q3: quant(a, .75), mean: mean(a) }; };
+    const sp = u.filter(x => x.dwell_s > 0).map(x => x.path_m / x.dwell_s);
+    return { ...g, n: u.length, straight: st("straight_m"), path: st("path_m"), mps: median(sp),
+      bend: median(u.filter(x => x.straight_m >= 20).map(x => x.path_m / x.straight_m)) };
+  }).filter(g => g.n);
+  legend($("#lg11"), [{ color: css("--ink-2"), label: "● 직선 거리 (잡은 지점 → 넘겨준 지점)", kind: "dot" },
+                      { color: "transparent", ring: css("--ink-2"), label: "○ 경로 거리 (지나온 길을 따라)", kind: "dot" },
+                      { color: css("--line-2"), label: "가로선 = 가운데 50%", kind: "lk" }]);
+  const ROW = 56, W = 960, PL = 150, PR = 130, PT = 20, H = PT + Math.max(1, G.length) * ROW + 40;
+  prep(svg, W, H);
+  if (!G.length) { svg.append(el("text", { x: PL, y: PT + 30, class: "alab" }, "좌표가 있는 유지 구간이 없다")); $("#r11").textContent = ""; return; }
+  const LLO = 0, LHI = 4;   // 1 m ~ 10 km, 로그
+  const x = v => PL + (Math.log10(Math.max(v, 1)) - LLO) / (LHI - LLO) * (W - PL - PR);
+  [1, 10, 100, 1000, 10000].forEach(v => {
+    svg.append(el("line", { x1: x(v), y1: PT - 4, x2: x(v), y2: PT + G.length * ROW, class: "grid" }));
+    svg.append(el("text", { x: x(v), y: PT + G.length * ROW + 18, class: "tick", "text-anchor": "middle" }, v >= 1000 ? v / 1000 + " km" : v + " m"));
+  });
+  svg.append(el("text", { x: W - PR, y: H - 4, class: "alab", "text-anchor": "end" }, LV_KO() + " 하나를 유지하는 동안 이동한 거리 (로그 눈금)"));
+  G.forEach((g, i) => {
+    const cy = PT + i * ROW + ROW / 2;
+    svg.append(el("text", { x: PL - 12, y: cy + 4, class: "alab", "text-anchor": "end", style: "fill:var(--ink-2);font-size:12.5px" }, g.name));
+    [["straight", -8, true], ["path", 8, false]].forEach(([k, dy, filled]) => {
+      const s = g[k];
+      svg.append(el("line", { x1: x(s.q1), y1: cy + dy, x2: x(s.q3), y2: cy + dy, stroke: g.color, "stroke-width": 2, "stroke-linecap": "round", opacity: .45 }));
+      svg.append(el("circle", { cx: x(s.med), cy: cy + dy, r: 5, fill: filled ? g.color : css("--surface"), stroke: g.color, "stroke-width": 2 }));
+    });
+    svg.append(el("text", { x: W - PR + 10, y: cy + 4, class: "dlab" }, mTxt(g.straight.med) + " / " + mTxt(g.path.med)));
+    const hit = el("rect", { x: 0, y: cy - ROW / 2, width: W, height: ROW, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, g.name + " · " + g.n + "구간", [
+      { value: mTxt(g.straight.med), label: "직선 중앙값 (" + mTxt(g.straight.q1) + " ~ " + mTxt(g.straight.q3) + ")", color: g.color },
+      { value: mTxt(g.path.med), label: "경로 중앙값 (" + mTxt(g.path.q1) + " ~ " + mTxt(g.path.q3) + ")" },
+      { value: fmt(g.bend, 2) + "배", label: "경로 ÷ 직선 (직선 20 m 이상 구간)" },
+      { value: fmt(g.mps * 3.6, 0) + " km/h", label: "구간 평균 이동 속도 중앙값" },
+    ]));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+  const car = G.find(g => g.key === "car"), sub = G.find(g => g.key === "subway");
+  setRead($("#r11"), [
+    { b: LV_KO() + " 하나가 맡아 주는 거리는 " + G.map(g => g.name.replace(/ \(\d+\)$/, "") + " 직선 " + mTxt(g.straight.med)).join(", ") + "다 (중앙값). " },
+    "경로 거리는 직선의 " + G.map(g => fmt(g.bend, 2) + "배").join(" · ") + "로, 1에 가까울수록 곧게 지나갔다는 뜻이다. ",
+    car && sub ? "지하철 거리는 역 사이를 시간 비례로 메운 좌표라, 역 간 직선 경로를 따른 근사값이다. " : "",
+    "정지·서행 구간은 GPS가 제자리에서 흔들려 경로 거리가 실제보다 길게 잡힌다 — 정지 세션의 경로 거리는 이동이 아니라 흔들림의 크기다.",
+  ]);
+  table($("#t11"), ["구분", "구간", "직선 중앙값", "직선 25~75%", "경로 중앙값", "경로 25~75%", "경로 평균", "경로÷직선", "이동 속도 중앙값"],
+    G.map(g => [g.name, g.n, mTxt(g.straight.med), mTxt(g.straight.q1) + " ~ " + mTxt(g.straight.q3), mTxt(g.path.med),
+      mTxt(g.path.q1) + " ~ " + mTxt(g.path.q3), mTxt(g.path.mean), fmt(g.bend, 2), fmt(g.mps * 3.6, 0) + " km/h"]));
+}
+const HO_TYPES = [["sector", "--s3", "섹터 이동 (같은 기지국·같은 주파수)"], ["band", "--e4", "밴드 변경 (같은 기지국·다른 주파수)"], ["inter", "--s2", "기지국 변경"]];
+function hoCount(segs) {
+  const c = { sector: 0, band: 0, inter: 0, pp: 0 };
+  segs.forEach(x => { if (x.end_type) { c[x.end_type]++; if (x.end_pp) c.pp++; } });
+  c.n = c.sector + c.band + c.inter;
+  return c;
+}
+function stackRows(svg, rows, types, valueOf, unit) {
+  const W = 960, PL = 150, PR = 170, RH = 32, GAP = 12, PT = 8, H = PT + rows.length * (RH + GAP) + 10;
+  prep(svg, W, H);
+  const BW = W - PL - PR;
+  rows.forEach((r, i) => {
+    const y = PT + i * (RH + GAP), tot = types.reduce((a, [k]) => a + valueOf(r, k), 0);
+    svg.append(el("text", { x: PL - 10, y: y + RH / 2 + 4, class: "dlab", "text-anchor": "end" }, r.name));
+    let x0 = PL;
+    types.forEach(([k, v]) => {
+      const w = tot ? BW * valueOf(r, k) / tot : 0;
+      if (w <= 0) return;
+      svg.append(el("rect", { x: x0, y, width: Math.max(w, 1), height: RH, fill: css(v) }));
+      if (w > 40) svg.append(el("text", { x: x0 + w / 2, y: y + RH / 2 + 4, "text-anchor": "middle", fill: css("--surface"),
+        style: "font-size:11.5px;font-weight:600" }, fmt(100 * valueOf(r, k) / tot, 0) + "%"));
+      x0 += w;
+    });
+    svg.append(el("text", { x: W - PR + 10, y: y + RH / 2 + 4, class: "dlab" }, r.right));
+    const hit = el("rect", { x: PL, y, width: BW, height: RH, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, r.name, types.map(([k, v, label]) => ({ color: css(v),
+      value: (unit === "s" ? mmss(valueOf(r, k)) : valueOf(r, k) + "건") + " (" + fmt(tot ? 100 * valueOf(r, k) / tot : NaN, 1) + "%)", label }))));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+}
+function drawFig12() {
+  const G = statGroups().map(g => ({ ...g, c: hoCount(segsOf(g, "cell")), e: segsOf(g, "enb").filter(x => !x.censored) }))
+    .filter(g => g.c.n);
+  legend($("#lg12"), HO_TYPES.map(([, v, label]) => ({ color: css(v), label, kind: "sw" })));
+  if (!G.length) { prep($("#c12"), 960, 40); $("#r12").textContent = "핸드오버가 없다."; return; }
+  G.forEach(g => {
+    const mins = g.S.reduce((a, s) => a + s.dur_min, 0);
+    g.right = g.c.n + "건 · 분당 " + fmt(g.c.n / Math.max(mins, 1e-9), 2) + "회";
+    g.sectorsPerEnb = mean(g.e.map(x => x.n_intra_ho));
+  });
+  stackRows($("#c12"), G, HO_TYPES, (r, k) => r.c[k], "n");
+  const T = G.reduce((a, g) => { ["sector", "band", "inter", "pp", "n"].forEach(k => a[k] = (a[k] || 0) + g.c[k]); return a; }, {});
+  const intra = T.sector + T.band;
+  setRead($("#r12"), [
+    { b: "핸드오버 " + T.n + "건 중 기지국을 바꾼 게 " + T.inter + "건(" + fmt(100 * T.inter / T.n, 0) + "%), 같은 기지국 안에서 바꾼 게 " + intra + "건(" + fmt(100 * intra / T.n, 0) + "%)이다. " },
+    "같은 기지국 안 " + intra + "건은 섹터 이동 " + T.sector + "건, 밴드 변경 " + T.band + "건으로 나뉜다. ",
+    "기지국 하나에 붙어 있는 동안 섹터·밴드를 평균 " + G.map(g => g.name.replace(/ \(\d+\)$/, "") + " " + fmt(g.sectorsPerEnb, 1) + "번").join(", ") + " 바꾼다. ",
+    "핑퐁(30초 안에 직전 셀로 복귀)은 " + T.pp + "건(" + fmt(100 * T.pp / T.n, 0) + "%)이다.",
+  ]);
+  const rows = [];
+  chosen().forEach(s => {
+    const c = hoCount(s.G.cell || []), e = (s.G.enb || []).filter(x => !x.censored);
+    rows.push([s.label, s.activity_ko, c.n, c.sector, c.band, c.inter, c.n ? fmt(100 * c.inter / c.n, 0) + "%" : "–", c.pp, fmt(mean(e.map(x => x.n_intra_ho)), 1)]);
+  });
+  table($("#t12"), ["세션", "이동수단", "핸드오버", "섹터 이동", "밴드 변경", "기지국 변경", "기지국 변경 비율", "핑퐁", "기지국당 섹터·밴드 변경"], rows);
+}
+const RAT_TYPES = [["2", "--s1", "5G (NSA)"], ["1", "--e4", "LTE-A (CA)"], ["0", "--cell-a", "LTE"]];
+function drawFig13() {
+  legend($("#lg13"), RAT_TYPES.map(([, v, label]) => ({ color: css(v), label, kind: "sw" })));
+  const sum = S => { const o = { 2: 0, 1: 0, 0: 0 }; S.forEach(s => ["2", "1", "0"].forEach(k => o[k] += (s.rat_s || {})[k] || 0)); return o; };
+  const G = statGroups().map(g => ({ ...g, r: sum(g.S) }));
+  G.forEach(g => { const tot = g.r[2] + g.r[1] + g.r[0]; g.right = "5G 표시 " + fmt(tot ? 100 * g.r[2] / tot : NaN, 0) + "% · " + fmt(tot / 60, 0) + "분"; });
+  stackRows($("#c13"), G, RAT_TYPES, (r, k) => r.r[k], "s");
+  const all = sum(chosen()), tot = all[2] + all[1] + all[0];
+  const sorted = [...G].sort((a, b) => b.r[2] / (b.r[2] + b.r[1] + b.r[0]) - a.r[2] / (a.r[2] + a.r[1] + a.r[0]));
+  setRead($("#r13"), [
+    { b: "측정 시간의 " + fmt(100 * all[2] / tot, 0) + "%는 5G(NSA), " + fmt(100 * all[1] / tot, 0) + "%는 LTE-A, " + fmt(100 * all[0] / tot, 0) + "%는 LTE로 표시됐다. " },
+    G.length > 1 ? "5G 표시 비율은 " + sorted.map(g => g.name.replace(/ \(\d+\)$/, "") + " " + fmt(100 * g.r[2] / (g.r[2] + g.r[1] + g.r[0]), 0) + "%").join(" > ") + " 순이다. " : "",
+    "앱이 5G 셀 자체는 한 번도 잡지 못했으므로(전 세션 is_5g_actual 0%) 이 값은 '5G가 표시된 시간'이다 — 5G로 실제 데이터를 받은 시간은 이 데이터로 알 수 없다.",
+  ]);
+  table($("#t13"), ["세션", "이동수단", "측정(분)", "5G(NSA)", "LTE-A", "LTE"],
+    chosen().map(s => { const r = s.rat_s || {}, t = (r["2"] || 0) + (r["1"] || 0) + (r["0"] || 0) || 1;
+      return [s.label, s.activity_ko, fmt(t / 60, 1), fmt(100 * (r["2"] || 0) / t, 0) + "%", fmt(100 * (r["1"] || 0) / t, 0) + "%", fmt(100 * (r["0"] || 0) / t, 0) + "%"]; }));
+}
+document.querySelectorAll("#lvseg button").forEach(b => b.addEventListener("click", () => {
+  statLv = b.dataset.lv;
+  try { localStorage.setItem("carviz.statlv", statLv); } catch (e) {}
+  drawFig10(); drawFig11();
+}));
+
+/* ---------- 그림 14 : 능동 측정 — 지연 시간(RTT)과 업로드 유지 ---------- */
+const UL_TARGET = 0.48, UL_SHORT = 0.4;   // Mbps — 지속 업로드 목표(0.06 MB/s)와 미달 기준(0.05 MB/s)
+const RTT_RSRP = [[-Infinity, -110, "−110 dBm 이하"], [-110, -100, "−110 ~ −100"], [-100, -90, "−100 ~ −90"], [-90, -80, "−90 ~ −80"], [-80, Infinity, "−80 dBm 초과"]];
+function rttRows(P, bands, key) {
+  return bands.map(([lo, hi, label]) => {
+    const inb = P.filter(p => p[key] != null && p[key] > lo && p[key] <= hi);
+    const r = inb.map(p => p.rtt);
+    return { label, n: r.length, med: median(r), q1: quant(r, .25), q3: quant(r, .75), p90: quant(r, .9) };
+  });
+}
+function drawFig14() {
+  const svg = $("#c14"), V2 = new Set(chosen().filter(s => s.ncols >= 74).map(s => s.id));
+  const P = allPts().filter(p => p.rtt != null);
+  const W = 960, PL = 128, PT = 40, ROW = 30, PW = 270, GAP = 200, NR = Math.max(RTT_RSRP.length, SPEED_BANDS.length);
+  const AH = 170, AT = PT + NR * ROW + 70, H = AT + AH + 50;
+  prep(svg, W, H);
+  legend($("#lg14"), [{ color: css("--s1"), label: "RTT 중앙값", kind: "dot" }, { color: css("--s1"), label: "가운데 50%", kind: "lk" },
+                      { color: css("--s2"), label: "상위 10% 경계 (느린 순간)", kind: "lk" }]);
+  if (P.length < 20) {
+    svg.setAttribute("viewBox", "0 0 960 60");
+    svg.append(el("text", { x: 20, y: 34, class: "alab" }, "이 선택에는 지연 시간(rtt_ms) 기록이 없다 — 9/15 이전 세션은 능동 측정이 비어 있다."));
+    $("#r14").textContent = ""; $("#t14").replaceChildren(); return;
+  }
+  const A = rttRows(P, RTT_RSRP, "rsrp"), B = rttRows(P.map(p => Object.assign({}, p, { sp: p.speed == null ? null : p.speed + 1e-9 })),
+    SPEED_BANDS.map(([lo, hi, l]) => [lo, hi, l]), "sp");
+  const XMAX = Math.min(400, Math.max(100, Math.ceil(Math.max(...A.concat(B).map(r => isNaN(r.p90) ? 0 : r.p90)) / 50) * 50));
+  function panel(rows, ox, title) {
+    const x = v => ox + Math.min(v, XMAX) / XMAX * PW;
+    svg.append(el("text", { x: ox, y: PT - 18, class: "plab" }, title));
+    for (let v = 0; v <= XMAX; v += XMAX > 200 ? 100 : 50) {
+      svg.append(el("line", { x1: x(v), y1: PT - 4, x2: x(v), y2: PT + rows.length * ROW, class: "grid" }));
+      svg.append(el("text", { x: x(v), y: PT + rows.length * ROW + 16, class: "tick", "text-anchor": "middle" }, v));
+    }
+    rows.forEach((r, i) => {
+      const cy = PT + i * ROW + ROW / 2;
+      svg.append(el("text", { x: ox - 10, y: cy + 4, class: "alab", "text-anchor": "end", style: "fill:var(--ink-2);font-size:12px" }, r.label));
+      if (r.n < 10) { svg.append(el("text", { x: ox, y: cy + 4, class: "alab" }, "표본 부족 (" + r.n + ")")); return; }
+      svg.append(el("line", { x1: x(r.q1), y1: cy, x2: x(r.q3), y2: cy, stroke: css("--s1"), "stroke-width": 2, "stroke-linecap": "round", opacity: .5 }));
+      svg.append(el("line", { x1: x(r.p90), y1: cy - 7, x2: x(r.p90), y2: cy + 7, stroke: css("--s2"), "stroke-width": 2 }));
+      svg.append(el("circle", { cx: x(r.med), cy, r: 5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }));
+      // 상위 10%가 축을 넘으면 축 끝에 ▸로 표시하고 숫자는 실제 값을 쓴다
+      svg.append(el("text", { x: x(r.p90) + 8, y: cy + 4, class: "dlab" }, (r.p90 > XMAX ? "▸ " : "") + fmt(r.med, 0) + " / " + fmt(r.p90, 0)));
+      const hit = el("rect", { x: ox - PL + 10, y: cy - ROW / 2, width: PW + PL, height: ROW, fill: "transparent" });
+      hit.addEventListener("pointermove", ev => showTip(ev, title + " · " + r.label, [
+        { value: fmt(r.med, 0) + " ms", label: "RTT 중앙값 (표본 " + r.n + ")" },
+        { value: fmt(r.q1, 0) + " ~ " + fmt(r.q3, 0) + " ms", label: "가운데 50%" },
+        { value: fmt(r.p90, 0) + " ms", label: "상위 10% 경계" }]));
+      hit.addEventListener("pointerleave", hideTip);
+      svg.append(hit);
+    });
+    svg.append(el("text", { x: ox + PW, y: PT + rows.length * ROW + 32, class: "alab", "text-anchor": "end" }, "RTT (ms)"));
+  }
+  panel(A, PL, "신호 세기(RSRP)별");
+  panel(B, PL + PW + GAP, "이동 속도별");
+
+  // 핸드오버 전후 — 그림 3처럼 핸드오버 시각에 맞춰 겹친다
+  const bins = []; for (let k = -30; k <= 30; k += 5) bins.push({ k, v: [] });
+  chosen().forEach(s => s.E.forEach(ev => s.P.forEach(p => {
+    if (p.rtt == null) return;
+    const b = bins[Math.round((p.t - ev.t) / 5) + 6];
+    if (b) b.v.push(p.rtt);
+  })));
+  bins.forEach(b => { b.med = median(b.v); b.p90 = quant(b.v, .9); });
+  const ok = bins.filter(b => b.v.length >= 10);
+  const AW = W - PL - 140, ax = k => PL + (k + 30) / 60 * AW;
+  svg.append(el("text", { x: PL, y: AT - 16, class: "plab" }, "핸드오버 전후 (0초 = 셀이 바뀐 순간)"));
+  if (ok.length >= 3) {
+    const yHi = Math.max(50, Math.ceil(Math.max(...ok.map(b => b.p90)) / 25) * 25), ay = v => AT + AH * (1 - v / yHi);
+    for (let v = 0; v <= yHi; v += yHi > 150 ? 50 : 25) {
+      svg.append(el("line", { x1: PL, y1: ay(v), x2: PL + AW, y2: ay(v), class: "grid" }));
+      svg.append(el("text", { x: PL - 8, y: ay(v) + 4, class: "tick", "text-anchor": "end" }, v));
+    }
+    svg.append(el("line", { x1: ax(0), y1: AT, x2: ax(0), y2: AT + AH, stroke: css("--ink-3") }));
+    [["med", "--s1", "중앙값"], ["p90", "--s2", "상위 10%"]].forEach(([k, c, label]) => {
+      svg.append(el("path", { d: "M" + ok.map(b => ax(b.k) + "," + ay(b[k])).join("L"), fill: "none", stroke: css(c), "stroke-width": 2 }));
+      ok.forEach(b => svg.append(el("circle", { cx: ax(b.k), cy: ay(b[k]), r: 3.5, fill: css(c), stroke: css("--surface"), "stroke-width": 1.5 })));
+      const L = ok[ok.length - 1];
+      svg.append(el("text", { x: ax(L.k) + 10, y: ay(L[k]) + 4, class: "dlab" }, label + " " + fmt(L[k], 0) + " ms"));
+    });
+    ok.forEach(b => {
+      const hit = el("rect", { x: ax(b.k) - AW / 24, y: AT, width: AW / 12, height: AH, fill: "transparent" });
+      hit.addEventListener("pointermove", ev => showTip(ev, (b.k > 0 ? "+" : "") + b.k + "초", [
+        { value: fmt(b.med, 0) + " ms", label: "RTT 중앙값", color: css("--s1") },
+        { value: fmt(b.p90, 0) + " ms", label: "상위 10% (표본 " + b.v.length + ")", color: css("--s2") }]));
+      hit.addEventListener("pointerleave", hideTip);
+      svg.append(hit);
+    });
+    [-30, -20, -10, 0, 10, 20, 30].forEach(k => svg.append(el("text", { x: ax(k), y: AT + AH + 18, class: "tick", "text-anchor": "middle" }, (k > 0 ? "+" : "") + k + "초")));
+  } else svg.append(el("text", { x: PL, y: AT + 30, class: "alab" }, "핸드오버 전후 RTT 표본이 부족하다"));
+
+  // 업로드 유지 — v1.2 지속 부하 세션만
+  const U = allPts().filter(p => V2.has(p.s) && p.tx != null);
+  const uShort = U.filter(p => p.tx < UL_SHORT).length;
+  const good = A.filter(r => r.n >= 10), weak = good[0], strong = good[good.length - 1];
+  const Bv = B.filter(r => r.n >= 10), still = Bv[0], fast = Bv[Bv.length - 1];
+  const b0 = bins[6], bm = bins[0];
+  setRead($("#r14"), [
+    { b: "지연 시간(RTT)은 측정 " + P.length + "회에서 중앙값 " + fmt(median(P.map(p => p.rtt)), 0) + " ms, 상위 10% " + fmt(quant(P.map(p => p.rtt), .9), 0) + " ms다. " },
+    weak && strong && weak !== strong ? "신호가 가장 약한 구간(" + weak.label + ")은 중앙값 " + fmt(weak.med, 0) + " ms로, 가장 센 구간(" + strong.label + ") " + fmt(strong.med, 0) + " ms보다 " + sgn(weak.med - strong.med, 0) + " ms다. " : "",
+    still && fast && still !== fast ? "이동 속도로는 " + still.label + " " + fmt(still.med, 0) + " ms, " + fast.label + " " + fmt(fast.med, 0) + " ms다. " : "",
+    !isNaN(b0.med) && !isNaN(bm.med) ? "핸드오버 순간 RTT는 중앙값 " + fmt(b0.med, 0) + " ms(30초 전 " + fmt(bm.med, 0) + " ms), 상위 10%는 " + fmt(b0.p90, 0) + " ms(30초 전 " + fmt(bm.p90, 0) + " ms)로, "
+      + (b0.p90 - bm.p90 >= 15 ? "셀을 바꾸는 순간 느린 응답이 늘어난다. " : "5초 간격으로 볼 때 핸드오버가 지연을 눈에 띄게 늘리지는 않는다. ") : "",
+    U.length ? "지속 업로드(0.48 Mbps)가 0.4 Mbps 아래로 떨어진 순간은 " + U.length + "회 중 " + uShort + "회(" + fmt(100 * uShort / U.length, 1) + "%)뿐이라, 이 정도 부하는 망이 거의 항상 따라온다 — 끊김을 잡으려면 RTT가 더 민감한 지표다." : "",
+  ]);
+  table($("#t14"), ["구분", "구간", "표본", "RTT 중앙값", "25%", "75%", "상위 10%"],
+    A.map(r => ["신호 세기", r.label, r.n, fmt(r.med, 0), fmt(r.q1, 0), fmt(r.q3, 0), fmt(r.p90, 0)])
+      .concat(B.map(r => ["이동 속도", r.label, r.n, fmt(r.med, 0), fmt(r.q1, 0), fmt(r.q3, 0), fmt(r.p90, 0)]))
+      .concat(bins.map(b => ["핸드오버 기준", (b.k > 0 ? "+" : "") + b.k + "초", b.v.length, fmt(b.med, 0), "", "", fmt(b.p90, 0)])));
+}
+
 /* ---------- 부록 : 측정 버전 ---------- */
 function drawVersions() {
   const vs = D.versions || [];
@@ -1662,7 +2168,7 @@ function renderAll(fit) {
   if (pinned && !chosen().some(x => x.id === pinned.p.s)) pinned = null;
   hover = null;
   drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig3b(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
-  drawFig8(); drawVersions();
+  drawFig8(); drawFig10(); drawFig11(); drawFig12(); drawFig13(); drawFig14(); drawVersions();
 }
 document.querySelectorAll(".seg button[data-mode]").forEach(b => {
   b.setAttribute("aria-pressed", String(b.dataset.mode === mapMode));

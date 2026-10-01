@@ -16,6 +16,8 @@ import json, os
 import numpy as np
 import pandas as pd
 
+import cell_stats
+
 TEMPLATE = "viz_build/report.template.html"
 MAPMATCH_DIR = "analysis_output"
 OUTS = {
@@ -25,7 +27,10 @@ OUTS = {
     "walking": ("viz_build/report_walking.html", "도보 세션",   "걸어가는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
 }
 
-ACTIVITY_KO = {"car": "차량", "subway": "지하철", "walking": "도보"}
+SEG_COLS = ["key", "enb", "t_start", "dwell_s", "censored", "n_cells", "n_intra_ho",
+            "straight_m", "path_m", "speed_mean", "rsrp_mean", "nr_share", "end_type", "end_pp"]
+
+ACTIVITY_KO = {"car": "차량", "subway": "지하철", "walking": "도보", "home": "정지"}
 
 MAP_MAX_ACC_M = 50       # 지도에 찍을 GPS 정확도 상한
 PINGPONG_S = 30          # 30초 안에 직전 셀로 돌아오면 핑퐁
@@ -35,6 +40,10 @@ BIN_S = 30 * 60          # 구간 길이 — 30분
 # 2.2분/3건·1.6분/11건짜리 자투리는 30분으로 늘리면 값이 두 배 이상 튄다.
 SHORT_BIN_S = 5 * 60
 FROZEN_RUN = 3           # 같은 좌표가 이만큼 연속되면 GPS 동결로 본다
+# 직전 행과 이보다 가까운 행은 송수신 속도를 버린다. 핸드오버 행이 정기 수집 사이에 끼면
+# 바로 다음 정기 행의 측정 창이 1초 남짓이 되는데, 그 창에서는 OS 트래픽 카운터가 아직 안 올라
+# 48%가 0으로 찍혔다(v1.2 기준, 창 2초 이상은 0이 하나도 없음). 망이 멈춘 게 아니라 측정 착시다.
+MIN_RATE_WINDOW_S = 1.5
 
 # keep: (시작분, 끝분) — 수집을 늦게 시작하거나 끄는 걸 깜빡한 구간을 시각화에서만 제외한다.
 #       근거는 analysis 단계에서 분 단위 이동거리·서빙셀 수로 확인했고 trim_reason에 남긴다.
@@ -72,6 +81,51 @@ SESSIONS = [
          label="9/21 도보", activity="walking",
          note="지하철에서 내린 뒤 이어서 걸은 구간 (1.1 m/s 일정)",
          keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260924_140453_subway.csv",
+         label="9/24 지하철", activity="subway",
+         note="activity 태그 누락 — 7호선 건대입구→상동. 역 태그 2개에 사후 앵커 16개를 보탰다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260925_072530_car.csv",
+         label="9/25 07:25 차량", activity="car",
+         note="activity 태그 누락 — 역 태그 없음·속도 중앙값 15 m/s로 차량 판단", keep=(1, 26),
+         trim_reason="앞 1분은 출발 전 대기(이동 3 m·0 m/s)"),
+    dict(path="trackingcsv/new/network_log_20260925_154924_car.csv",
+         label="9/25 15:49 차량", activity="car",
+         note="activity 태그 누락 — 역 태그 없음·최고 20 m/s로 차량 판단(정체 구간이 길다)",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260925_163819_car.csv",
+         label="9/25 16:38 차량", activity="car",
+         note="activity 태그 누락 — 역 태그 없음·최고 24 m/s로 차량 판단. 15:49 세션에서 이어진다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260927_205144_car.csv",
+         label="9/27 차량", activity="car",
+         note="수집 종료를 깜빡해 원본이 21:58까지 이어졌다 — 21:33 주차까지만 이 파일로 잘랐다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260927_213901_home.csv",
+         label="9/27 정지", activity="home",
+         note="9/27 차량 원본의 도착 후 구간(21:39~21:58)을 잘라낸 실내 정지 측정. 주차~입실 5분은 양쪽에서 뺐다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260928_171804_subway.csv",
+         label="9/28 17:18 지하철", activity="subway",
+         note="2호선 건대입구→시청. 역 태그 5개에 사후 앵커 7개를 보탰다", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260928_174322_subway.csv",
+         label="9/28 17:43 지하철", activity="subway",
+         note="1호선 시청→용산", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260928_195736_subway.csv",
+         label="9/28 19:57 지하철", activity="subway",
+         note="2호선 시청→건대입구. 역 태그 3개에 사후 앵커 8개를 보탰다", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260929_135542_car.csv",
+         label="9/29 13:55 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260929_143147_car.csv",
+         label="9/29 14:31 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260929_183716_car.csv",
+         label="9/29 18:37 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20260929_191910_car.csv",
+         label="9/29 19:19 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261001_133919_car.csv",
+         label="10/1 13:39 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261001_143101_car.csv",
+         label="10/1 14:31 차량", activity="car", note="", keep=None, trim_reason=""),
 ]
 
 # 앱 버전별 기록 항목. 컬럼 수로 판별한다.
@@ -92,9 +146,10 @@ VERSIONS = {
     ),
     74: dict(
         name="v1.2",
-        summary="능동 프로브가 30분 단위 버스트(2MB/30초)에서 지속 부하로 바뀌었다. 다운·업 각각 "
-                "초당 0.06MB를 끊지 않고 흘리므로, 데이터 총량은 같으면서 모든 행에 실측 처리량이 찍힌다. "
-                "probe_dl_mbps/probe_ul_mbps가 목표(0.48 Mbps)에 못 미치는 구간이 곧 망이 못 따라온 구간이다.",
+        summary="능동 프로브가 30초 단위 버스트(2MB/30초)에서 지속 부하로 바뀌었다(다운·업 각각 초당 0.06MB = 0.48 Mbps). "
+                "업로드는 실제로 고르게 나가 송신 속도가 96%의 순간에 0.4 Mbps 이상으로 찍힌다. "
+                "다운로드는 앱이 천천히 읽어도 OS 수신 버퍼가 먼저 몰아 받아, 망에서는 여전히 버스트로 오간다 — "
+                "그래서 probe_dl_mbps는 버퍼에서 읽은 속도라 망 상태와 무관하게 목표치 근처에 머문다(분석에 쓰지 않는다).",
         missing=[],
     ),
 }
@@ -283,11 +338,15 @@ def load(s, idx):
         map_ok = lat.notna() & (acc <= MAP_MAX_ACC_M) & ~stale & ~frozen
         coord_src = "GPS"
 
-    rx = pd.to_numeric(col(df, "mobile_rx_bitrate_Mbps", "rx_bitrate_Mbps"), errors="coerce")
-    tx = pd.to_numeric(col(df, "mobile_tx_bitrate_Mbps", "tx_bitrate_Mbps"), errors="coerce")
+    short_win = (df["timestamp"].diff() / 1000.0 <= MIN_RATE_WINDOW_S).to_numpy()
+    rx = pd.to_numeric(col(df, "mobile_rx_bitrate_Mbps", "rx_bitrate_Mbps"), errors="coerce").mask(short_win)
+    tx = pd.to_numeric(col(df, "mobile_tx_bitrate_Mbps", "tx_bitrate_Mbps"), errors="coerce").mask(short_win)
+    rtt = pd.to_numeric(col(df, "rtt_ms"), errors="coerce")
     speed = pd.to_numeric(df["gps_speed_ms"], errors="coerce")
     # 좌표가 얼어 있는 동안의 속도는 직전 값이 그대로 남은 것이라 속도 그림에서 뺀다
     speed = speed.where(~frozen)
+
+    rat = cell_stats.rat_code(col(df, "override_network_type"))
 
     def r(v, nd):
         return None if pd.isna(v) else round(float(v), nd)
@@ -303,7 +362,7 @@ def load(s, idx):
             r(rsrp[i], 0), r(col(df, "sinr_snr_db")[i], 1), r(col(df, "rsrq_db")[i], 0),
             r(nbr[i], 0), r(nbrx[i], 0), r(speed[i], 1), r(rx[i], 3), r(tx[i], 3),
             r(col(df, "serving_pci")[i], 0), r(col(df, "serving_freq_arfcn")[i], 0),
-            1 if ho[i] else 0, 1 if pp[i] else 0,
+            1 if ho[i] else 0, 1 if pp[i] else 0, int(rat[i]), r(rtt[i], 0),
         ])
 
     # 핸드오버 직전에 보이던 이웃 목록: v1.1은 그 행에 남아 있고(prev_neighbors_json),
@@ -327,6 +386,13 @@ def load(s, idx):
     la, lo = lat.where(map_ok), lon.where(map_ok)
     km = float(np.nansum(np.hypot(np.diff(la) * 111000, np.diff(lo) * 88000))) / 1000
 
+    # 셀 유지 구간 — cell_stats.py가 CSV로 내는 것과 같은 함수·같은 좌표
+    sf = pd.DataFrame(dict(t=t, lat=lat.where(map_ok), lon=lon.where(map_ok), cell=cell,
+                           arfcn=pd.to_numeric(col(df, "serving_freq_arfcn"), errors="coerce"),
+                           rsrp=rsrp, sinr=pd.to_numeric(col(df, "sinr_snr_db"), errors="coerce"),
+                           speed=speed, rat=rat, pp=pp.to_numpy()))
+    segs = {lv: cell_stats.segments(sf, lv) for lv in ("cell", "enb")}
+
     ncols = len(pd.read_csv(s["path"], nrows=0).columns)
     ver = VERSIONS.get(ncols, VERSIONS[max(VERSIONS)])
 
@@ -339,7 +405,7 @@ def load(s, idx):
         frozen_share=round(100.0 * frozen.mean(), 1),
         has_sinr=bool(col(df, "sinr_snr_db").notna().mean() > 0.5),
         bins=make_bins(t, ho, pp, rsrp, rx, cell),
-        pts=pts, events=events,
+        pts=pts, events=events, segs=segs, rat_s=cell_stats.rat_seconds(sf),
     )
 
 
@@ -347,15 +413,17 @@ def build(scope, sessions, html):
     out, eyebrow, title = OUTS[scope]
     picked = [s for s in sessions if scope == "all" or s["activity"] == scope]
     # 리포트마다 id를 0부터 다시 매긴다 (템플릿이 SESS[id]로 참조한다)
-    picked = [dict(s, id=i) for i, s in enumerate(picked)]
+    picked = [dict(s, id=i, segs={lv: [[g[c] for c in SEG_COLS] for g in s["segs"][lv]] for lv in s["segs"]})
+              for i, s in enumerate(picked)]
     used = sorted({s["ncols"] for s in picked})
     data = dict(
         cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "nbrx", "speed", "rx", "tx",
-              "pci", "arfcn", "ho", "pp"],
+              "pci", "arfcn", "ho", "pp", "rat", "rtt"],
+        seg_cols=SEG_COLS,
         ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp",
                  "rank", "nsame", "loss"],
         meta=dict(scope=scope, eyebrow="NetworkTrackerApp · " + eyebrow, title=title,
-                  kind={"all": "차량·지하철·도보로 이동하며", "car": "차량으로 이동하며",
+                  kind={"all": "차량·지하철·도보로 이동하거나 머물며", "car": "차량으로 이동하며",
                         "subway": "지하철로 이동하며", "walking": "걸어서 이동하며"}[scope]),
         versions=[dict(VERSIONS[c], cols=c,
                        added=ADDED.get(c, []),
