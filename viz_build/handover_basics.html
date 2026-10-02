@@ -1,0 +1,402 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>핸드오버 기준 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#111519; --ink-2:#4b5462; --ink-3:#7d8794; --line:#dbe0e7; --line-2:#c2cad4;
+  --blue:#2a78d6; --red:#d6453f; --green:#1a9a6a; --amber:#b9800f;
+  --hl:rgba(42,120,214,.12); --hl-g:rgba(26,154,106,.14); --hl-p:rgba(214,69,63,.12);
+  --callout:#f7f9fc;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f; --line:#242b35; --line-2:#333c48;
+  --blue:#5fa0ea; --red:#ee7a74; --green:#34c894; --amber:#e2b545;
+  --hl:rgba(95,160,234,.18); --hl-g:rgba(52,200,148,.16); --hl-p:rgba(238,122,116,.16);
+  --callout:#1a2029;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f; --line:#242b35; --line-2:#333c48;
+  --blue:#5fa0ea; --red:#ee7a74; --green:#34c894; --amber:#e2b545;
+  --hl:rgba(95,160,234,.18); --hl-g:rgba(52,200,148,.16); --hl-p:rgba(238,122,116,.16);
+  --callout:#1a2029;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  font-size:15.5px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.page{max-width:860px;margin:28px auto 80px;padding:34px 40px 50px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px}
+h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:30px;line-height:1.25;font-weight:600;margin-top:12px}
+h2{font-size:21px;line-height:1.4;font-weight:600;margin:44px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h2 .no{display:inline-block;min-width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;
+  background:var(--ink);color:var(--surface);font-size:14px;font-weight:600;margin-right:10px;vertical-align:2px}
+h3{font-size:16.5px;font-weight:600;margin:24px 0 6px}
+p{margin:6px 0}
+.date{font-size:13px;color:var(--ink-3)}
+.back{font-size:13.5px;color:var(--blue);text-decoration:none}
+.back:hover{text-decoration:underline}
+a{color:var(--blue)}
+code{font-family:"IBM Plex Mono",Consolas,monospace;font-size:13px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.hl{background:var(--hl);padding:1px 4px;border-radius:3px}
+.hl-g{background:var(--hl-g);padding:1px 4px;border-radius:3px}
+.hl-p{background:var(--hl-p);padding:1px 4px;border-radius:3px}
+.red{color:var(--red)} .blue{color:var(--blue)} .green{color:var(--green)}
+.u{font-weight:600;border-bottom:2px solid var(--red)}
+ul,ol{margin:6px 0;padding-left:22px}
+li{margin:3px 0}
+.sticky{background:var(--callout);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;
+  padding:12px 18px;margin:18px 0;color:var(--ink-2)}
+.sticky b{color:var(--ink)}
+.side{font-size:13.5px;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:8px 12px;margin:8px 0}
+.card{background:var(--callout);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:14px 0}
+.formula{font-family:"IBM Plex Mono",Consolas,monospace;font-size:14.5px;line-height:1.9;text-align:center;padding:10px 12px;margin:12px 0;
+  background:var(--surface-2);border-radius:8px;color:var(--ink)}
+.formula .op{font-weight:700;padding:0 2px;color:var(--blue)}
+table{border-collapse:collapse;margin:10px 0;width:100%;font-size:14px;line-height:1.6}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px 6px 0;text-align:left;vertical-align:top}
+th{color:var(--ink-3);font-weight:500;font-size:13px;white-space:nowrap}
+.tbl{overflow-x:auto;clear:both}
+svg{display:block;max-width:100%;height:auto;margin:12px 0}
+svg text{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif;fill:var(--ink)}
+.verdict{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:2px;border:1px solid currentColor}
+.v-yes{color:var(--green)} .v-half{color:var(--amber)} .v-no{color:var(--red)}
+.src{font-size:13.5px;color:var(--ink-2)}
+.src li{margin-bottom:6px}
+.src .tag{display:inline-block;font-size:11.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border-radius:4px;padding:0 6px;margin-right:6px}
+.end{margin-top:56px;padding-top:8px;border-top:3px double var(--line-2)}
+@media (max-width:640px){
+  .page{margin:0;border-radius:0;border-left:0;border-right:0;padding:24px 16px 40px}
+  h1{font-size:25px}
+}
+</style>
+
+<div class="page">
+  <a class="back" href="report_all.html">← 리포트로 돌아가기</a>
+  <h1>핸드오버는 누가, 언제, 왜 정하나</h1>
+  <div class="date">2026. 10. 2 · LG U+ (화웨이 장비 지역) 기준으로 정리한 공부 노트 · 부록</div>
+
+  <div class="sticky">
+    <b>한 줄 요약</b><br>
+    폰이 "옮길래!" 하고 정하는 게 <span class="u">아님</span>. 폰은 주변 셀 세기를 재서 <b>보고만</b> 하고,<br>
+    <b>기지국이 정해진 규칙(이벤트 A1~A5)에 따라 "저 셀로 가" 하고 명령</b>하는 구조.<br>
+    → 그래서 핸드오버 기준 = 기지국(=통신사·장비사) 설정값.
+  </div>
+
+  <h2><span class="no">1</span>순서부터</h2>
+  <p>핸드오버는 4단계로 일어난다. 우리 앱이 보는 건 사실상 <span class="hl">맨 끝 결과(셀 ID가 바뀜)</span>뿐이라는 걸 기억!</p>
+  <svg viewBox="0 0 760 150" role="img" aria-label="핸드오버 4단계: 측정, 보고, 결정, 명령">
+    <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+      <rect x="10" y="30" width="150" height="70" rx="14"/>
+      <rect x="205" y="30" width="150" height="70" rx="14"/>
+      <rect x="400" y="30" width="150" height="70" rx="14"/>
+      <rect x="595" y="30" width="150" height="70" rx="14"/>
+      <path d="M163 64 C 178 60, 188 68, 200 64 M192 57 l9 7 -9 7"/>
+      <path d="M358 64 C 373 60, 383 68, 395 64 M387 57 l9 7 -9 7"/>
+      <path d="M553 64 C 568 60, 578 68, 590 64 M582 57 l9 7 -9 7"/>
+    </g>
+    <text x="85" y="60" text-anchor="middle" font-size="18" font-weight="600">① 측정</text>
+    <text x="85" y="86" text-anchor="middle" font-size="16">폰이 주변 셀 RSRP</text>
+    <text x="280" y="60" text-anchor="middle" font-size="18" font-weight="600">② 보고</text>
+    <text x="280" y="86" text-anchor="middle" font-size="16">조건 맞으면 리포트</text>
+    <text x="475" y="60" text-anchor="middle" font-size="18" font-weight="600">③ 결정</text>
+    <text x="475" y="86" text-anchor="middle" font-size="16">기지국이 판단</text>
+    <text x="670" y="60" text-anchor="middle" font-size="18" font-weight="600">④ 명령</text>
+    <text x="670" y="86" text-anchor="middle" font-size="16">"이 셀로 가" → 이동</text>
+    <text x="280" y="130" text-anchor="middle" font-size="17" fill="var(--red)" style="fill:var(--red)">↑ 여기 규칙이 "이벤트"</text>
+    <text x="670" y="130" text-anchor="middle" font-size="17" style="fill:var(--blue)">↑ 우리 앱이 보는 건 이것</text>
+  </svg>
+
+  <h2><span class="no">2</span>이벤트 = "언제 보고할지" 규칙</h2>
+  <p>3GPP 표준(TS 36.331)에 이름이 정해져 있다. 외울 필요는 없고 <span class="hl">"무엇과 무엇을 비교하냐"</span>만 보면 됨.</p>
+  <div class="tbl"><table>
+    <tr><th>이벤트</th><th>쉬운 말</th><th>주로 쓰는 곳</th></tr>
+    <tr><td><b>A1</b></td><td>서빙이 기준선보다 <span class="green">좋아짐</span></td><td>"이제 괜찮으니 다른 주파수 측정 그만"</td></tr>
+    <tr><td><b>A2</b></td><td>서빙이 기준선보다 <span class="red">나빠짐</span></td><td>"위험하니 다른 주파수도 재 봐" (밴드 변경의 시작)</td></tr>
+    <tr><td><b class="blue">A3</b></td><td>이웃이 서빙보다 <span class="hl">offset만큼 더 셈</span></td><td><b>같은 주파수 핸드오버의 기본</b></td></tr>
+    <tr><td><b>A4</b></td><td>이웃이 기준선보다 좋음</td><td>다른 주파수·부하 분산</td></tr>
+    <tr><td><b>A5</b></td><td>서빙은 기준1보다 나쁘고 <i>동시에</i> 이웃은 기준2보다 좋음</td><td>다른 주파수 (커버리지)</td></tr>
+    <tr><td><b>B1</b></td><td>다른 기술(5G NR) 셀이 기준선보다 좋음</td><td>LTE에 5G 덧붙이기 (NSA)</td></tr>
+  </table></div>
+
+
+  <h2><span class="no">+</span>A1~A5 조건식 공부 (TS 36.331 5.5.4)</h2>
+  <h3>기호부터</h3>
+  <div class="tbl"><table>
+    <tr><th>기호</th><th>뜻</th></tr>
+    <tr><td><b>Ms</b></td><td>서빙 셀(지금 셀) 측정값 — 보정 없이 그대로</td></tr>
+    <tr><td><b>Mp</b></td><td>기준 셀(PCell) 측정값 — A3·A5에서 이 이름. 보통 = 서빙이라고 생각</td></tr>
+    <tr><td><b>Mn</b></td><td>이웃 셀(옆 셀) 측정값</td></tr>
+    <tr><td><b>Thresh</b></td><td>기준선 (예: −110 dBm)</td></tr>
+    <tr><td><b>Hys</b></td><td>히스테리시스 — 경계에서 들락날락 안 하게 두는 여유</td></tr>
+    <tr><td><b>Off</b></td><td>A3 오프셋 — 옆 셀이 몇 dB 더 세야 하나</td></tr>
+    <tr><td><b>Ofn / Ofp</b></td><td>주파수별 보정 (이웃 주파수 / 서빙 주파수)</td></tr>
+    <tr><td><b>Ocn / Ocp</b></td><td>셀별 보정(CIO) — "이 셀로는 잘/덜 넘어가게" 손잡이</td></tr>
+    <tr><td><b>TTT</b></td><td>Time To Trigger — 진입 조건이 이 시간 동안 <b>계속</b> 맞아야 보고</td></tr>
+  </table></div>
+  <ul>
+    <li>측정값은 RSRP(dBm) 또는 RSRQ(dB) — 기지국이 고른다.</li>
+    <li>전부 <span class="hl">진입 조건이 TTT 동안 유지 → 폰이 보고</span>.</li>
+    <li><b>이탈 조건</b> = 진입에서 Hys 부호만 뒤집은 것 (경계에서 금방 안 풀리게).</li>
+  </ul>
+
+  <h3><span class="green">A1</span> — 서빙이 기준선보다 좋아짐</h3>
+  <div class="formula">진입: Ms − Hys <span class="op">&gt;</span> Thresh <br> 이탈: Ms + Hys <span class="op">&lt;</span> Thresh</div>
+  <p>"지금 셀 충분히 좋아졌다" → <b>다른 주파수 측정 그만</b> (A2로 시작한 측정 끝내기).<br>
+     예) Thresh −100, Hys 2 → 서빙이 <b>−98 dBm보다 좋아야</b> 진입.</p>
+
+  <h3><span class="red">A2</span> — 서빙이 기준선보다 나빠짐</h3>
+  <div class="formula">진입: Ms + Hys <span class="op">&lt;</span> Thresh <br> 이탈: Ms − Hys <span class="op">&gt;</span> Thresh</div>
+  <p>"지금 셀 위험" → <b>다른 주파수·다른 기술 측정 시작</b> = 밴드 변경의 첫 단계.<br>
+     예) Thresh −110, Hys 2 → 서빙이 <b>−112 dBm보다 나빠야</b> 진입.<br>
+     <span class="hl">A1이랑 짝 — A2로 켜고 A1로 끈다</span></p>
+
+  <h3><span class="blue">A3</span> — 이웃이 서빙보다 오프셋만큼 더 셈 ★ 핸드오버 기본</h3>
+  <div class="formula">진입: Mn + Ofn + Ocn − Hys <span class="op">&gt;</span> Mp + Ofp + Ocp + Off<br>이탈: Mn + Ofn + Ocn + Hys <span class="op">&lt;</span> Mp + Ofp + Ocp + Off</div>
+  <p>옆 셀이 지금 셀보다 <span class="hl">(Off + Hys)</span>만큼 더 센 상태가 TTT 동안 → 보고.<br>
+     <b>기준선(Thresh)이 없다!</b> 절대 세기 상관없이 <span class="u">"누가 더 세냐"만</span> 보는 상대 비교.<br>
+     쓰임: 같은 주파수 핸드오버 (섹터 이동 · 기지국 변경 대부분).<br>
+     예) 보정 다 0, Off 1, Hys 1, TTT 320 ms → 옆 셀이 <b>2 dB 이상 센 게 0.32초</b> 이어지면 보고.</p>
+
+  <h3>A4 — 이웃이 기준선보다 좋음</h3>
+  <div class="formula">진입: Mn + Ofn + Ocn − Hys <span class="op">&gt;</span> Thresh <br> 이탈: Mn + Ofn + Ocn + Hys <span class="op">&lt;</span> Thresh</div>
+  <p>서빙은 상관없고 "옆 셀이 그냥 충분히 좋다" → 다른 주파수로 보내기 · 부하 분산 · 서비스별 이동.<br>
+     = "서빙 멀쩡해도 옆이 좋으면 보내자" 정책용.</p>
+
+  <h3>A5 — 서빙은 기준1보다 나쁘고, <i>동시에</i> 이웃은 기준2보다 좋음</h3>
+  <div class="formula">진입: Mp + Hys <span class="op">&lt;</span> Thresh1 &nbsp;<u>그리고</u>&nbsp; Mn + Ofn + Ocn − Hys <span class="op">&gt;</span> Thresh2<br>
+    이탈: Mp − Hys <span class="op">&gt;</span> Thresh1 &nbsp;<u>또는</u>&nbsp; Mn + Ofn + Ocn + Hys <span class="op">&lt;</span> Thresh2</div>
+  <p>"지금 셀 별로 + 옆 셀 쓸 만함" → 커버리지 때문에 다른 주파수로. A3보다 조심스러운 기준.<br>
+     <span class="hl-p">진입은 둘 다(AND), 이탈은 하나만(OR) 깨져도</span> 끝.</p>
+
+  <h3>한눈에</h3>
+  <div class="tbl"><table>
+    <tr><th>이벤트</th><th>누구를 보나</th><th>비교 대상</th><th>한 줄</th></tr>
+    <tr><td><b class="green">A1</b></td><td>서빙</td><td>기준선</td><td>좋아짐 → 측정 그만</td></tr>
+    <tr><td><b class="red">A2</b></td><td>서빙</td><td>기준선</td><td>나빠짐 → 다른 주파수 재 봐</td></tr>
+    <tr><td><b class="blue">A3</b></td><td>이웃 vs 서빙</td><td><b>서로</b></td><td>옆이 더 셈 → 옮겨</td></tr>
+    <tr><td><b>A4</b></td><td>이웃</td><td>기준선</td><td>옆이 충분히 좋음</td></tr>
+    <tr><td><b>A5</b></td><td>서빙 + 이웃</td><td>기준선 2개</td><td>서빙 나쁨 <b>그리고</b> 옆 좋음</td></tr>
+  </table></div>
+
+  <div class="sticky">
+    <b>외우는 법</b><br>
+    A1·A2 = <b>서빙만</b> (1 좋아짐 / 2 나빠짐)<br>
+    A3 = <b>둘을 서로</b> 비교<br>
+    A4 = <b>이웃만</b><br>
+    A5 = <b>A2 + A4 합친 것</b><br><br>
+    <b>Hys 부호:</b> 진입 땐 항상 "조건 만족하기 <u>더 어렵게</u>" 붙는다.<br>
+    → 좋아짐 보는 건 빼고(−), 나빠짐 보는 건 더하고(+).
+  </div>
+  <p class="src">참고: A6(CA에서 이웃이 SCell보다 오프셋만큼 셈)도 있음. 다른 기술(5G NR 등)은 <b>B1</b>(= A4의 다른 기술 버전), <b>B2</b>(= A5의 다른 기술 버전). LG U+ 5G NSA에서 5G 덧붙일 때 쓰는 게 B1.</p>
+
+  <h3>실제로는 이렇게 이어진다 (화웨이 다른 주파수 핸드오버)</h3>
+  <svg viewBox="0 0 760 210" role="img" aria-label="A2로 다른 주파수 측정을 시작하고, A1이면 측정 중단, A3 또는 A4·A5면 핸드오버">
+    <g fill="none" stroke="var(--ink)" stroke-width="2">
+      <rect x="20" y="20" width="200" height="56" rx="12"/>
+      <rect x="300" y="20" width="200" height="56" rx="12"/>
+      <rect x="40" y="135" width="190" height="56" rx="12"/>
+      <rect x="290" y="135" width="190" height="56" rx="12"/>
+      <rect x="540" y="135" width="200" height="56" rx="12"/>
+      <path d="M223 48 C 250 44, 270 52, 295 48 M287 41 l9 7 -9 7"/>
+      <path d="M400 80 V100 M135 100 H640 M135 100 V130 M385 100 V130 M640 100 V130"/>
+      <path d="M129 124 l6 7 6 -7 M379 124 l6 7 6 -7 M634 124 l6 7 6 -7"/>
+    </g>
+    <text x="120" y="54" text-anchor="middle" font-size="19">서빙 나빠짐 <tspan font-weight="700" style="fill:var(--red)">A2</tspan></text>
+    <text x="260" y="38" text-anchor="middle" font-size="15" style="fill:var(--ink-3)">켜!</text>
+    <text x="400" y="54" text-anchor="middle" font-size="19">다른 주파수 측정</text>
+    <text x="135" y="160" text-anchor="middle" font-size="18">서빙 회복 <tspan font-weight="700" style="fill:var(--green)">A1</tspan></text>
+    <text x="135" y="182" text-anchor="middle" font-size="15">→ 측정 중단</text>
+    <text x="385" y="160" text-anchor="middle" font-size="18">옆이 더 셈 <tspan font-weight="700" style="fill:var(--blue)">A3</tspan></text>
+    <text x="385" y="182" text-anchor="middle" font-size="15">→ 핸드오버</text>
+    <text x="640" y="160" text-anchor="middle" font-size="18">옆 좋음 <tspan font-weight="700">A4 / A5</tspan></text>
+    <text x="640" y="182" text-anchor="middle" font-size="15">→ 핸드오버</text>
+  </svg>
+  <p>같은 주파수끼리는 이 과정 없이 <span class="hl">A3 하나로 바로</span> — 같은 주파수 셀은 폰이 늘 재고 있으니까.</p>
+  <p class="src">근거: <a href="https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=2440">3GPP TS 36.331</a> 5.5.4절 (이벤트 A1~A6, B1·B2 진입/이탈 조건)</p>
+
+  <h2><span class="no">3</span>제일 중요한 A3 자세히</h2>
+  <p>표준 원문 식은 이렇게 생겼다 (진입 조건):</p>
+  <div class="formula">Mn + Ofn + Ocn − Hys &nbsp;<span class="op">&gt;</span>&nbsp; Mp + Ofp + Ocp + Off</div>
+  <p>겁먹지 말고 풀어 쓰면 →</p>
+  <div class="card">
+    <b>이웃 셀 세기</b>(Mn, 셀별 보정 Ocn 포함)가 <b>지금 셀 세기</b>(Mp)보다<br>
+    <span class="hl">Off(오프셋) + Hys(히스테리시스)</span> 만큼 더 세고,<br>
+    그 상태가 <span class="hl">TTT(Time To Trigger)</span> 동안 쭉 이어지면 → 폰이 "A3 떴어요" 보고 → 기지국이 핸드오버.
+  </div>
+  <svg viewBox="0 0 760 270" role="img" aria-label="A3 이벤트: 이웃 셀이 서빙 셀보다 오프셋만큼 세진 상태가 TTT 동안 유지되면 보고">
+    <line x1="60" y1="225" x2="740" y2="225" stroke="var(--ink-3)" stroke-width="1.5"/>
+    <line x1="60" y1="20" x2="60" y2="225" stroke="var(--ink-3)" stroke-width="1.5"/>
+    <text x="745" y="248" text-anchor="end" font-size="17" style="fill:var(--ink-3)">시간 →</text>
+    <text x="52" y="30" text-anchor="end" font-size="17" style="fill:var(--ink-3)">세기</text>
+    <path d="M70 70 C 220 75, 330 105, 430 145 S 640 200, 730 210" fill="none" stroke="var(--blue)" stroke-width="3"/>
+    <path d="M70 200 C 220 190, 330 150, 430 112 S 640 70, 730 60" fill="none" stroke="var(--red)" stroke-width="3"/>
+    <path d="M70 50 C 220 55, 330 85, 430 125 S 640 180, 730 190" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <text x="80" y="38" font-size="15" style="fill:var(--blue)">┄ 서빙 + Off + Hys (옆 셀이 넘어야 할 선)</text>
+    <text x="80" y="96" font-size="18" style="fill:var(--blue)">지금 셀 (서빙)</text>
+    <text x="80" y="192" font-size="18" style="fill:var(--red)">옆 셀 (이웃)</text>
+    <line x1="455" y1="20" x2="455" y2="225" stroke="var(--ink)" stroke-dasharray="3 4"/>
+    <line x1="545" y1="20" x2="545" y2="225" stroke="var(--ink)" stroke-dasharray="3 4"/>
+    <path d="M455 32 H545" stroke="var(--green)" stroke-width="2.5"/>
+    <path d="M462 25 l-7 7 7 7 M538 25 l7 7 -7 7" fill="none" stroke="var(--green)" stroke-width="2.5"/>
+    <text x="500" y="22" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--green)">TTT</text>
+    <text x="455" y="248" text-anchor="middle" font-size="16">옆 셀이 선을 넘음</text>
+    <text x="580" y="248" text-anchor="middle" font-size="16" font-weight="700">→ 보고 · 핸드오버!</text>
+  </svg>
+  <h3>화웨이 장비에서는 이 이름으로 설정한다</h3>
+  <div class="tbl"><table>
+    <tr><th>표준 기호</th><th>화웨이 파라미터</th><th>공개 자료상 값</th><th>메모</th></tr>
+    <tr><td>Off</td><td>IntraFreqHoA3Offset</td><td><span class="hl">기본 2 × 0.5 dB = 1 dB</span></td><td>작을수록 빨리, 자주 옮김</td></tr>
+    <tr><td>TTT</td><td>IntraFreqHoA3TimeToTrig</td><td><span class="hl">권장 320 ms</span></td><td>0.32초! 우리 측정 간격(5초)보다 훨씬 짧음</td></tr>
+    <tr><td>Hys</td><td>IntraFreqHoA3Hyst</td><td>QCI(서비스)별 설정</td><td>핑퐁 방지용 여유</td></tr>
+    <tr><td>Ocn</td><td>CellIndividualOffset</td><td>이웃 관계마다 다르게</td><td>"이 셀로는 잘 넘어가게/덜 넘어가게" 손잡이</td></tr>
+    <tr><td>(필터)</td><td>EutranFilterCoeffRSRP</td><td>기지국 공통</td><td>측정값을 평활해서 순간 튐 무시</td></tr>
+  </table></div>
+  <p class="red">⚠ 이건 장비 <b>기본값/권장값</b>이다. LG U+가 실제로 쓰는 값은 공개 안 됨. 셀마다 다를 수도 있음.</p>
+  <p>업계에서 흔히 말하는 "보통 값"은 offset 3 dB · hysteresis 0 dB · TTT 320 ms 정도 (출처 ③).</p>
+
+  <h2><span class="no">4</span>밴드(주파수)를 바꿀 때는 절차가 다르다</h2>
+  <p>같은 주파수끼리는 A3 하나면 끝. 근데 <span class="hl">다른 주파수</span>로 가려면 폰이 그 주파수를 먼저 재 봐야 해서 순서가 길다:</p>
+  <div class="card">
+    서빙이 나빠짐 → <b class="red">A2</b> (다른 주파수 재 봐!) → 측정 → <b class="blue">A3 / A4 / A5</b> 만족하면 이동<br>
+    도중에 서빙이 다시 좋아지면 → <b class="green">A1</b> (측정 그만)
+  </div>
+  <p>화웨이 쪽 이름: InterFreqHoA1/A2ThdRSRP(RSRQ), InterFreqHoA4ThdRSRP, InterFreqHoA1A2Hyst … 대부분 <span class="hl">QCI별로 따로</span> 정할 수 있다.<br>
+     → 같은 셀에서도 통화 중이냐 데이터만 쓰냐에 따라 기준이 다를 수 있다는 뜻!</p>
+  <h3>우리 데이터에 나온 LG U+ LTE 주파수</h3>
+  <div class="tbl"><table>
+    <tr><th>EARFCN (데이터 값)</th><th>대역</th><th>성격</th></tr>
+    <tr><td>100</td><td>B1 · 2.1 GHz</td><td>중대역</td></tr>
+    <tr><td>2600</td><td>B5 · 850 MHz</td><td><span class="hl-g">저대역 = 멀리 감, 건물 잘 뚫음, 대신 좁음</span></td></tr>
+    <tr><td>3050</td><td>B7 · 2.6 GHz</td><td>고대역 = 용량 큼, 대신 빨리 약해짐</td></tr>
+  </table></div>
+  <p class="src">(EARFCN → 대역 변환은 3GPP TS 36.101 표 기준)</p>
+
+  <h2><span class="no">5</span>5G 표시는? (NSA)</h2>
+  <p>LG U+ 5G는 <span class="hl">NSA</span> = LTE를 "앵커(닻)"로 잡고 5G를 <b>옆에 덧붙이는</b> 방식.</p>
+  <ul>
+    <li>폰은 항상 LTE 셀에 붙어 있음 → 우리가 센 핸드오버는 전부 <b>LTE 앵커</b> 핸드오버.</li>
+    <li>5G를 붙일지는 <b>B1</b> 이벤트(5G 셀이 기준보다 세면)로 결정.</li>
+    <li>LTE 앵커가 바뀌면 붙어 있던 5G도 다시 붙여야 할 수 있음 → 순간 끊김 원인.</li>
+  </ul>
+  <p class="red">우리 앱은 5G 셀을 한 번도 못 잡았다 (is_5g_actual 0%) → 이 부분은 검증 불가.</p>
+
+  <h2><span class="no">6</span>핑퐁은 왜 생기고 어떻게 막나</h2>
+  <div class="card">
+    <b>너무 빨리 옮기게 설정</b> (offset·hys 작음, TTT 짧음) → 경계에서 왔다 갔다 = <span class="hl-p">핑퐁↑</span><br>
+    <b>너무 늦게 옮기게 설정</b> (값 큼) → 신호 다 죽을 때까지 버팀 = <span class="hl-p">끊김(RLF)↑</span><br>
+    → 둘 사이 줄타기. 자동으로 맞추는 기능이 SON의 <b>MRO</b>(Mobility Robustness Optimization).
+  </div>
+  <p>막는 손잡이: Hys(여유) · TTT(기다리기) · Ocn(셀별 보정) · 측정 필터.</p>
+
+  <h2><span class="no">7</span>우리 리포트 용어랑 연결</h2>
+  <div class="tbl"><table>
+    <tr><th>리포트(그림 12)에서</th><th>표준으로 보면</th></tr>
+    <tr><td>섹터 이동 (같은 기지국 · 같은 주파수)</td><td>같은 주파수 → <b>A3</b></td></tr>
+    <tr><td>기지국 변경 (대부분 같은 주파수)</td><td>같은 주파수 → <b>A3</b> (주파수가 바뀌면 아래)</td></tr>
+    <tr><td>밴드 변경</td><td>다른 주파수 → <b>A2 → A3/A4/A5</b></td></tr>
+    <tr><td>핑퐁 (30초 안에 복귀)</td><td>A3 여유가 작을 때 경계에서 생기는 현상</td></tr>
+  </table></div>
+
+  <h2><span class="no">8</span>근거 (어디서 봤나)</h2>
+  <ol class="src">
+    <li><span class="tag">표준</span><a href="https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=2440">3GPP TS 36.331 (RRC)</a> — 이벤트 A1~A5·B1 정의와 A3 식(5.5.4절). 가장 확실한 근거.</li>
+    <li><span class="tag">표준</span><a href="https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=2411">3GPP TS 36.101</a> — EARFCN ↔ 대역 표 (100=B1, 2600=B5, 3050=B7).</li>
+    <li><span class="tag">설명</span><a href="https://telecomhall.net/t/handover-its-parameters-intra-freq/28801">telecomhall — Handover &amp; its parameters (Intra-freq.)</a> — A3 offset 3 dB · hys 0 · TTT 320 ms가 "흔한 값"이라는 실무자 설명. 공식 문서 아님.</li>
+    <li><span class="tag">화웨이</span><a href="https://pdfcoffee.com/intra-rat-huawei-algo-and-parametrs-pdf-free.html">Intra-RAT Huawei Algo and Parameters (eRAN 7.0, 2014)</a> — 화웨이 파라미터 이름(IntraFreqHoA3Offset 등), A1~A5 쓰임새, QCI별 설정. <b>비공식 사본 · 옛 버전</b>이라 지금 버전과 다를 수 있음.</li>
+    <li><span class="tag">화웨이</span><a href="https://www.scribd.com/document/491904291/Tsel-Lte-Omc-Guideline">Huawei LTE Configuration Guide (사업자 설정 가이드 사본)</a> — IntraFreqHoA3Offset 기본 2(×0.5 dB), TTT 권장 320 ms. 다른 나라 사업자 문서 사본이라 참고용.</li>
+    <li><span class="tag">화웨이</span><a href="https://www.scribd.com/document/707959359/LTE-Huawei-Feature">LTE Huawei Feature (사본)</a> — 같은 파라미터 묶음 참고.</li>
+    <li><span class="tag">기사</span><a href="https://www.koreajoongangdaily.com/business/news-in-focus-lg-u-faces-mounting-pressure-to-drop-huawei-equipment/11903425">JoongAng Daily — LG U+ 화웨이 장비</a> — LG U+만 화웨이 채택, 5G 기준 30% 조금 못 미침, 수도권·강원 담당.</li>
+    <li><span class="tag">기사</span><a href="https://www.koreajoongangdaily.com/business/lg-u-ceo-says-huawei-gear-is-not-a-risk/11419112">JoongAng Daily — LG U+ CEO 인터뷰</a> — 4G·5G 호환성 때문에 화웨이 사용.</li>
+    <li><span class="tag">설명</span><a href="https://devopedia.org/5g-handover">Devopedia — 5G Handover</a> — NSA(EN-DC)에서 LTE 앵커·B1·SgNB 흐름.</li>
+  </ol>
+  <p class="src">※ 화웨이 정식 원문은 support.huawei.com의 eRAN "Intra-RAT Mobility Management in Connected Mode Feature Parameter Description" (계정 필요할 수 있음). 위 사본들과 버전이 다를 수 있으니 숫자는 "대략 이 정도"로만 쓸 것.</p>
+
+  <div class="end">
+  <h2><span class="no">✓</span>우리 측정과 맞춰 보기</h2>
+  <p class="date">계산: <code>python analysis/handover_rules.py</code> → analysis_output/stats/handover_rules.json · 핸드오버 1,597건(직전 이웃 목록이 있는 v1.1 이후 세션)</p>
+  <div class="sticky">
+    <b>먼저 한계부터!</b> A3는 <b>0.32초</b> 동안의 일인데 우리는 <b>5초</b>에 한 번 잰다.<br>
+    → 핸드오버 "순간"은 못 보고, 직전 측정(중앙값 <b>3.4초 전</b>)과 결과만 본다. 그래서 아래는 전부 <span class="u">간접 확인</span>.
+  </div>
+
+  <h3>① 옆 셀이 더 세지면, 실제로 곧 옮겨 가나? <span class="verdict v-yes">대체로 그렇다</span></h3>
+  <p>같은 주파수 이웃이 서빙보다 셌던 측정 뒤 <b>10초 안에</b> 진짜 핸드오버가 났는지 셌다.</p>
+  <svg viewBox="0 0 760 210" role="img" aria-label="이웃이 더 셀수록 10초 안에 핸드오버가 난 비율이 높아진다: 이웃이 약할 때 31%, 1dB 이상 55%, 3dB 이상 62%, 6dB 이상 71%">
+    <g font-size="18">
+      <text x="200" y="40" text-anchor="end">이웃이 더 약함</text>
+      <text x="200" y="85" text-anchor="end">이웃이 +1 dB 이상</text>
+      <text x="200" y="130" text-anchor="end">이웃이 +3 dB 이상</text>
+      <text x="200" y="175" text-anchor="end">이웃이 +6 dB 이상</text>
+    </g>
+    <g>
+      <rect x="215" y="22" width="152" height="26" rx="6" style="fill:var(--ink-3)" opacity=".55"/>
+      <rect x="215" y="67" width="268" height="26" rx="6" style="fill:var(--blue)" opacity=".55"/>
+      <rect x="215" y="112" width="302" height="26" rx="6" style="fill:var(--blue)" opacity=".75"/>
+      <rect x="215" y="157" width="347" height="26" rx="6" style="fill:var(--blue)"/>
+    </g>
+    <g font-size="19" font-weight="700">
+      <text x="377" y="41">31% <tspan font-weight="400" font-size="16" style="fill:var(--ink-3)">(7,353회 · 바탕값)</tspan></text>
+      <text x="493" y="86">55% <tspan font-weight="400" font-size="16" style="fill:var(--ink-3)">(467회)</tspan></text>
+      <text x="527" y="131">62% <tspan font-weight="400" font-size="16" style="fill:var(--ink-3)">(177회)</tspan></text>
+      <text x="572" y="176">71% <tspan font-weight="400" font-size="16" style="fill:var(--ink-3)">(48회)</tspan></text>
+    </g>
+  </svg>
+  <p>→ 이웃이 셀수록 곧 옮겨 갈 확률이 <span class="hl">31% → 71%로 계단처럼</span> 올라간다. <b>"옆 셀이 일정 이상 세지면 옮긴다"(A3 방향)</b>와 맞는 모습.</p>
+  <p>→ 근데 +3 dB 넘게 셌는데도 10초 동안 안 옮긴 게 38%. 이유 후보: 그 이웃이 이웃 목록에 등록 안 됐거나, Ocn으로 불리하게 보정됐거나, 그 사이 다시 약해졌거나. (5초 간격이라 구분 불가)</p>
+
+  <h3>② 옮기기 직전에 이미 "A3 조건"이었나? <span class="verdict v-no">확인 안 됨</span></h3>
+  <p>옮겨 간 셀이 직전 측정의 이웃 목록에 있던 경우(67%)만 놓고, <b>옮겨 간 셀 − 당시 서빙</b>을 봤다.</p>
+  <ul>
+    <li>중앙값 <b class="red">−5 dB</b> (가운데 50%: −8 ~ −2 dB) → 3.4초 전엔 옮겨 간 셀이 오히려 <b>약했다</b>.</li>
+    <li>화웨이 기본 offset(+1 dB) 이상이었던 건 <b>11%</b>뿐.</li>
+    <li>차량 −4 dB · 지하철 −5 dB · 도보 −3 dB · 정지 −1 dB → <span class="hl">멈춰 있을수록 0 dB(조건)에 가까워진다.</span></li>
+  </ul>
+  <p>→ 이건 "A3를 안 따른다"가 아니라 <span class="u">"3초 사이에 판이 뒤집힌다"</span>로 읽는 게 맞다. 빨리 움직일수록 3초 전 값과 핸드오버 순간 값의 차이가 커지고, 멈춰 있는 정지 세션은 −1 dB로 거의 조건선에 붙어 있다.<br>
+     덤으로, 안드로이드가 주는 이웃 RSRP는 폰이 기지국에 보고하는 필터된 값과 같지 않을 수 있다.</p>
+  <p>→ 리포트 그림 3·4("핸드오버 순간에도 서빙이 더 셌다", "제일 센 셀로 간 비율")가 애매하게 나온 것도 같은 이유.</p>
+
+  <h3>③ 밴드 바꿀 때는 신호가 나빠서였나? (A2 → A4/A5) <span class="verdict v-half">절반쯤 · 방향은 그렇다</span></h3>
+  <p>다른 주파수로 옮긴 55건(그중 66%는 같은 기지국 안에서 대역만 바꿈). 옮기기 직전 서빙 RSRP 중앙값:</p>
+  <div class="tbl"><table>
+    <tr><th>방향</th><th>건수</th><th>직전 서빙 RSRP</th><th>읽기</th></tr>
+    <tr><td>B1 2.1G → <b>B5 850M</b></td><td>14</td><td class="red"><b>−92 dBm</b></td><td>나빠서 저대역으로 내려감</td></tr>
+    <tr><td>B7 2.6G → <b>B5 850M</b></td><td>9</td><td class="red"><b>−92 dBm</b></td><td>〃</td></tr>
+    <tr><td>B5 850M → B1 2.1G</td><td>14</td><td class="green"><b>−80 dBm</b></td><td>좋아지니 다시 올라감</td></tr>
+    <tr><td>B5 850M → B7 2.6G</td><td>8</td><td>−86 dBm</td><td>〃</td></tr>
+    <tr><td>B7 2.6G → B1 2.1G</td><td>6</td><td>−84 dBm</td><td>중·고대역끼리</td></tr>
+    <tr><td>B1 2.1G → B7 2.6G</td><td>4</td><td>−74 dBm</td><td>아주 좋을 때 고대역</td></tr>
+  </table></div>
+  <p>→ <span class="hl-g">저대역(850M)으로는 신호가 나쁠 때(−92) 내려가고, 좋을 때(−80) 다시 올라온다.</span> "멀리 가는 저대역은 구멍 메우기, 용량 큰 고대역은 신호 좋을 때"라는 전형적인 다른 주파수 운용(A2로 측정 시작 → A4/A5로 이동)과 맞는 그림.</p>
+  <p>→ 다만 전체로 보면 밴드 변경 직전 −87 dBm vs 같은 주파수 핸드오버 직전 −83 dBm으로 차이가 크지 않다. A2 기준선이 아주 낮게(예: −110) 잡혀 있었다면 더 나빠야 했을 것 → <b>기준선이 비교적 높거나, 부하 분산 같은 다른 이유도 섞였을</b> 가능성. 55건이라 단정은 못 함.</p>
+
+  <h3>④ 핑퐁·정지 중 핸드오버 <span class="verdict v-half">작은 offset이면 그럴 법</span></h3>
+  <ul>
+    <li>전체 핸드오버의 <b>16%가 핑퐁</b> (30초 안에 직전 셀로 복귀).</li>
+    <li>9/27 정지(실내, 19분)에서도 기지국이 <b>10번</b> 바뀜. 직전 여유 중앙값 −1 dB → 두 셀이 거의 같은 세기로 붙어 있었음.</li>
+  </ul>
+  <p>→ offset이 화웨이 기본값처럼 <b>1 dB</b> 정도로 작으면, 세기가 비슷한 두 셀 사이에서는 페이딩만으로도 왔다 갔다 할 수 있다. <span class="u">기본값을 그대로 쓴다는 증거는 아니고, "그래도 이상하지 않다" 수준.</span></p>
+
+  <div class="sticky">
+    <b>정리</b><br>
+    ✔ 큰 방향 — "옆 셀이 세지면 옮긴다", "나쁘면 저대역, 좋으면 고대역" — 은 <b>표준·화웨이 방식대로 움직이는 것 같다.</b><br>
+    ✘ 실제 offset·TTT 값이 얼마인지는 <b>5초 간격으론 못 맞춘다.</b><br><br>
+    <b>다음에 할 일</b><br>
+    1) 수집 간격을 <b>1초 이하</b>로 (최소한 핸드오버 전후 30초만이라도) → 넘어가기 직전 여유(dB)를 직접 봄 → offset+hys 추정 가능.<br>
+    2) 같은 경로를 여러 번 → 같은 셀 쌍에서 매번 같은 dB 차이로 넘어가는지 (= 셀별 Ocn 흔적).<br>
+    3) 속도별로 나눠 ② 다시 → 정지·도보에서 여유가 +1 dB 근처에 몰리면 기본값 그대로일 가능성↑.
+  </div>
+  
+  </div>
+</div>

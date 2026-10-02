@@ -1,0 +1,105 @@
+{
+ "n_ho": 1597,
+ "n_intra_freq": 1542,
+ "n_inter_freq": 55,
+ "a3": {
+  "seen": 1035,
+  "seen_share": 0.671,
+  "margin_median": -5.0,
+  "margin_p25": -8.0,
+  "margin_p75": -2.0,
+  "ge0": 0.159,
+  "ge1": 0.106,
+  "ge3": 0.037,
+  "lt_minus3": 0.6,
+  "lag_median": 3.4,
+  "by_act": {
+   "car": {
+    "n": 638,
+    "median": -4.0,
+    "ge1": 0.118
+   },
+   "home": {
+    "n": 10,
+    "median": -1.0,
+    "ge1": 0.1
+   },
+   "subway": {
+    "n": 374,
+    "median": -5.0,
+    "ge1": 0.088
+   },
+   "walking": {
+    "n": 13,
+    "median": -3.0,
+    "ge1": 0.077
+   }
+  },
+  "gain_median": -1.0
+ },
+ "a3_condition": {
+  "ge1": {
+   "rows": 467,
+   "share_of_rows": 0.057,
+   "follow": 0.546
+  },
+  "ge3": {
+   "rows": 177,
+   "share_of_rows": 0.022,
+   "follow": 0.616
+  },
+  "ge6": {
+   "rows": 48,
+   "share_of_rows": 0.006,
+   "follow": 0.708
+  },
+  "lt0": {
+   "rows": 7353,
+   "follow": 0.307
+  },
+  "by_act_ge3": {
+   "car": {
+    "rows": 77,
+    "follow": 0.597
+   },
+   "home": {
+    "rows": 1,
+    "follow": 0.0
+   },
+   "subway": {
+    "rows": 95,
+    "follow": 0.653
+   },
+   "walking": {
+    "rows": 4,
+    "follow": 0.25
+   }
+  }
+ },
+ "inter_freq": {
+  "n": 55,
+  "old_rsrp_median": -87.0,
+  "old_rsrp_p25": -97.0,
+  "old_rsrp_p75": -76.0,
+  "old_rsrq_median": -11.0,
+  "intra_old_rsrp_median": -83.0,
+  "intra_old_rsrq_median": -11.0,
+  "pairs": {
+   "B1 2.1GHz → B5 850MHz": 14,
+   "B5 850MHz → B1 2.1GHz": 14,
+   "B7 2.6GHz → B5 850MHz": 9,
+   "B5 850MHz → B7 2.6GHz": 8,
+   "B7 2.6GHz → B1 2.1GHz": 6,
+   "B1 2.1GHz → B7 2.6GHz": 4
+  },
+  "pair_rsrp": {
+   "B1 2.1GHz → B5 850MHz": -92.0,
+   "B1 2.1GHz → B7 2.6GHz": -74.0,
+   "B5 850MHz → B1 2.1GHz": -80.0,
+   "B5 850MHz → B7 2.6GHz": -86.0,
+   "B7 2.6GHz → B1 2.1GHz": -84.0,
+   "B7 2.6GHz → B5 850MHz": -92.0
+  },
+  "same_enb_share": 0.655
+ }
+}

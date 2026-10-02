@@ -394,7 +394,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
       <p class="sub">핸드오버를 세 갈래로 나눴다. <b>섹터 이동</b>은 같은 기지국·같은 주파수에서 방향(섹터)만 바꾼 것,
         <b>밴드 변경</b>은 같은 기지국에서 주파수 대역만 바꾼 것, <b>기지국 변경</b>은 다른 기지국으로 넘어간 것이다. 기지국 = 셀 ID ÷ 256 (eNB).</p>
       <p class="plain"><b>쉽게 말하면</b> — 같은 기지국 안에서 방향만 바꾸는 건 가볍고, 기지국 자체를 바꾸는 건 무겁다(끊김이 생기기 쉽다).
-        이동수단마다 이 비율이 어떻게 다른지 본다.</p>
+        이동수단마다 이 비율이 어떻게 다른지 본다. 기지국이 어떤 규칙(A3·A2/A4/A5)으로 옮기라고 정하는지와 우리 측정이 그 규칙대로 움직이는지는
+        <a href="handover_basics.html"><b>부록 노트 · 핸드오버 기준</b></a>에 정리했다.</p>
     </div>
     <div class="legend" id="lg12"></div>
     <div class="fig-body"><div class="chart-scroll"><svg id="c12"></svg></div></div>
@@ -431,6 +432,18 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-body"><div class="chart-scroll"><svg id="c14"></svg></div></div>
     <div class="read" id="r14"></div>
     <details><summary>표로 보기</summary><div class="tbl-wrap" id="t14"></div></details>
+  </section>
+
+  <section class="fig" id="f15">
+    <div class="fig-head">
+      <div class="fig-num">부록 · 핸드오버 기준</div>
+      <h2>핸드오버는 누가, 언제, 왜 정하나</h2>
+      <p class="sub">3GPP 이벤트(A1~A5·B1)와 화웨이 장비 파라미터(LG U+는 수도권에서 화웨이 장비를 쓴다)를 쉬운 말로 정리하고,
+        근거 자료를 연결했다. 끝에는 우리 측정이 그 규칙대로 움직이는지 맞춰 본 결과가 있다.</p>
+      <p class="plain"><b>바로 가기</b> — <a href="handover_basics.html"><b>핸드오버 기준 노트 열기 →</b></a>
+        (요약: "옆 셀이 세지면 옮긴다", "나쁘면 저대역, 좋으면 고대역"은 맞는 모습. 실제 offset·TTT 값은 5초 간격으론 못 맞춘다.)</p>
+    </div>
+    <div style="height:20px"></div>
   </section>
 
   <section class="fig" id="f9">
@@ -1149,19 +1162,28 @@ function drawTimeline() {
     // 핸드오버 세로선. 기지국이 바뀐 곳(실선)만 그래프 꼭대기까지 올려 눈에 띄게 하고,
     // 섹터만 바꾼 곳(점선)은 띠 근처에만 짧게 둔다 — 선이 촘촘한 세션에서도 진짜 기지국 변경이 드러난다.
     // 범례에서 종류를 고르면 그 종류만 꼭대기까지 굵게 그린다.
+    // 핸드오버 세로선은 띠를 다 그린 뒤 맨 위에 얹는다(gl). 먼저 그리면 기지국·섹터 띠에 가려
+    // 띠 근처에만 있는 점선(같은 기지국)이 통째로 안 보였다.
+    const gl = el("g", { "clip-path": "url(#" + clipId + ")" });
+    const halo = css("--surface");
     runs.slice(1).forEach(r => {
       if (r.kind !== "inter" && r.kind !== "intra") return;
       if (!evMatch(r.kind === "intra", r.pp)) return;
       const xx = x(r.t0);
+      // 바탕색 테를 먼저 깔아 색 띠 위에서도 선이 묻히지 않게 한다
+      const line = (y1, y2, stroke, w, extra) => {
+        gl.append(el("line", { x1: xx, y1, x2: xx, y2, stroke: halo, "stroke-width": w + 2, opacity: .85 }));
+        gl.append(el("line", Object.assign({ x1: xx, y1, x2: xx, y2, stroke, "stroke-width": w }, extra || {})));
+      };
       if (evOnly) {
         const c = evOnly === "pp" ? css("--ink") : r.kind === "inter" ? css("--s2") : css("--s1");
-        g.append(el("line", { x1: xx, y1: PT, x2: xx, y2: CBY + CBH, stroke: c, "stroke-width": 1.8, opacity: .8 }));
+        gl.append(el("line", { x1: xx, y1: PT, x2: xx, y2: EBY, stroke: c, "stroke-width": 1.8, opacity: .8 }));
+        line(EBY, CBY + CBH, c, 1.8);
       } else if (r.kind === "inter") {
-        g.append(el("line", { x1: xx, y1: PT, x2: xx, y2: EBY, stroke: css("--s2"), "stroke-width": 1.4, opacity: .25 }));
-        g.append(el("line", { x1: xx, y1: EBY, x2: xx, y2: CBY + CBH, stroke: css("--s2"), "stroke-width": 1.8, opacity: .75 }));
+        gl.append(el("line", { x1: xx, y1: PT, x2: xx, y2: EBY, stroke: css("--s2"), "stroke-width": 1.4, opacity: .25 }));
+        line(EBY - 6, CBY + CBH, css("--s2"), 1.8);
       } else {
-        g.append(el("line", { x1: xx, y1: EBY - 5, x2: xx, y2: CBY + CBH, stroke: css("--s1"),
-          "stroke-width": 1, "stroke-dasharray": "2,2.5", opacity: .55 }));
+        line(EBY - 8, CBY + CBH, css("--s1"), 1.4, { "stroke-dasharray": "3,2.5" });
       }
     });
     // RSRP 선 — 붙어 있던 기지국 색으로 칠한다. 색이 바뀌는 순간이 곧 기지국이 바뀐 순간이다.
@@ -1220,6 +1242,7 @@ function drawTimeline() {
       if (r.pp && (!evOnly || evOnly === "pp")) g.append(el("path", { d: "M" + (x0 - 4) + "," + (EBY - 16) + "L" + (x0 + 4) + "," + (EBY - 16)
         + "L" + x0 + "," + (EBY - 8) + "Z", fill: css("--ink"), opacity: .85 }));
     });
+    svg.append(gl);
     svg.append(el("text", { x: PL - 8, y: CBY + CBH, class: "alab", "text-anchor": "end" }, "섹터"));
     tlRows.push({ s, runs, eruns });
     // 시간 축 — 보이는 구간 길이에 맞춰 눈금 간격을 고른다
