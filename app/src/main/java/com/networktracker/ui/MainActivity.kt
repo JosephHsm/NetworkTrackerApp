@@ -28,6 +28,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spinnerInterval: Spinner
     private lateinit var switchProbeDl: SwitchCompat
     private lateinit var switchProbeUl: SwitchCompat
+    private lateinit var switchSpeedTest: SwitchCompat
+    private lateinit var spinnerSpeedTest: Spinner
     private lateinit var etStation: EditText
     private lateinit var btnTagStation: Button
 
@@ -50,6 +52,13 @@ class MainActivity : AppCompatActivity() {
         "2초"  to 2_000L,
         "5초"  to 5_000L,
         "10초" to 10_000L
+    )
+
+    // 속도 측정 간격 옵션 (표시명 → ms)
+    private val speedTestOptions = listOf(
+        "30초마다" to 30_000L,
+        "60초마다" to 60_000L,
+        "2분마다"  to 120_000L
     )
 
     private val uiTick = object : Runnable {
@@ -82,6 +91,8 @@ class MainActivity : AppCompatActivity() {
         spinnerInterval = findViewById(R.id.spinner_interval)
         switchProbeDl   = findViewById(R.id.switch_probe_dl)
         switchProbeUl   = findViewById(R.id.switch_probe_ul)
+        switchSpeedTest = findViewById(R.id.switch_speedtest)
+        spinnerSpeedTest = findViewById(R.id.spinner_speedtest)
         etStation       = findViewById(R.id.et_station)
         btnTagStation   = findViewById(R.id.btn_tag_station)
 
@@ -96,6 +107,12 @@ class MainActivity : AppCompatActivity() {
             intervalOptions.map { it.first }
         )
         spinnerInterval.setSelection(1)   // 기본 5초
+        spinnerSpeedTest.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            speedTestOptions.map { it.first }
+        )
+        spinnerSpeedTest.setSelection(1)  // 기본 60초
 
         csvLogger = CsvLogger(this)
 
@@ -151,6 +168,8 @@ class MainActivity : AppCompatActivity() {
         spinnerInterval.isEnabled = !running
         switchProbeDl.isEnabled   = !running
         switchProbeUl.isEnabled   = !running
+        switchSpeedTest.isEnabled = !running
+        spinnerSpeedTest.isEnabled = !running
         btnTagStation.isEnabled   = running   // 역 태그는 로깅 중에만 의미 있음
 
         if (running) {
@@ -252,6 +271,10 @@ class MainActivity : AppCompatActivity() {
             putExtra(NetworkLoggingService.EXTRA_ACTIVITY_TAG, tag)
             putExtra(NetworkLoggingService.EXTRA_PROBE_DL,     switchProbeDl.isChecked)
             putExtra(NetworkLoggingService.EXTRA_PROBE_UL,     switchProbeUl.isChecked)
+            putExtra(NetworkLoggingService.EXTRA_SPEEDTEST_MS,
+                if (switchSpeedTest.isChecked)
+                    speedTestOptions.getOrNull(spinnerSpeedTest.selectedItemPosition)?.second ?: 60_000L
+                else 0L)
         }
         startForegroundService(intent)
     }

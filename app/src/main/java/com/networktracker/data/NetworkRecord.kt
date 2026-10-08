@@ -98,7 +98,16 @@ data class NetworkRecord(
     // Wi-Fi AP 상세 (RSSI 내림차순 상위 15개, JSON)
     val wifiScanJson: String = "",
     // 핸드오버 행에만: 직전 tick의 이웃셀 리스트 — A3 분석을 한 행으로
-    val prevNeighborsJson: String = ""
+    val prevNeighborsJson: String = "",
+
+    // ── v1.3 속도 측정(Speed Test) — collect_trigger="speedtest" 행에만 기록 ──────────
+    // 페이싱 없이 3초 동안 받은 다운로드 속도(첫 0.5초 제외). 직전 "speedtest_start" 행과 짝을 이룬다.
+    val speedtestDlMbps: Double? = null,
+    val speedtestBytes: Long? = null,
+    val speedtestMs: Long? = null,
+    val speedtestTtfbMs: Long? = null,
+    // 왜 쟀는가: "interval"(정기) | "handover"(셀이 바뀐 직후, 새 셀의 속도)
+    val speedtestReason: String = ""
 ) {
     fun toCsvRow(): String {
         val dt           = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(timestamp))
@@ -183,7 +192,12 @@ data class NetworkRecord(
             append(anchorLat         ?: "");              append(',')
             append(anchorLon         ?: "");              append(',')
             append('"'); append(escapedWifi); append('"'); append(',')
-            append('"'); append(escapedPrvNb); append('"')
+            append('"'); append(escapedPrvNb); append('"'); append(',')
+            append(speedtestDlMbps?.let { fmt("%.3f", it) } ?: ""); append(',')
+            append(speedtestBytes    ?: "");              append(',')
+            append(speedtestMs       ?: "");              append(',')
+            append(speedtestTtfbMs   ?: "");              append(',')
+            append(speedtestReason)
         }
     }
 
@@ -212,6 +226,7 @@ data class NetworkRecord(
             "pressure_hpa,rtt_ms,probe_dl_mbps,probe_ul_mbps," +
             "wifi_ap_count,wifi_scan_age_s," +
             "anchor_station,anchor_lat,anchor_lon," +
-            "wifi_scan_json,prev_neighbors_json"
+            "wifi_scan_json,prev_neighbors_json," +
+            "speedtest_dl_mbps,speedtest_bytes,speedtest_ms,speedtest_ttfb_ms,speedtest_reason"
     }
 }

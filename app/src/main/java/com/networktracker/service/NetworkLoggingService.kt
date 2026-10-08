@@ -24,6 +24,8 @@ class NetworkLoggingService : Service() {
         const val EXTRA_ACTIVITY_TAG = "activity_tag"
         const val EXTRA_PROBE_DL     = "probe_dl_enabled"
         const val EXTRA_PROBE_UL     = "probe_ul_enabled"
+        /** 속도 측정 간격(ms). 0이면 끔. */
+        const val EXTRA_SPEEDTEST_MS = "speedtest_interval_ms"
         const val EXTRA_STATION_NAME = "station_name"
         const val DEFAULT_INTERVAL   = 5_000L
         private const val CHANNEL_ID = "nt_channel"
@@ -57,6 +59,9 @@ class NetworkLoggingService : Service() {
         collector.externalUlMbps = probe.lastUlMbps
         val record = collector.collect()
         csvLogger.log(record)
+        // 셀이 바뀐 행이면 새 셀에서 바로 속도를 잰다 — 즉시 수집(API 31+)이든 정기 수집이든 같은 경로.
+        // 속도 측정이 꺼져 있거나, 직전 측정 직후(10초 안)면 프로브가 알아서 건너뛴다.
+        if (record.handoverDetected) probe.requestSpeedTest("handover")
         recordCount = csvLogger.recordCount()
         lastRecord  = record
         probeStatus = probe.statusText()
@@ -128,6 +133,7 @@ class NetworkLoggingService : Service() {
         val activityTag    = intent.getStringExtra(EXTRA_ACTIVITY_TAG) ?: ""
         val probeDlEnabled = intent.getBooleanExtra(EXTRA_PROBE_DL, false)
         val probeUlEnabled = intent.getBooleanExtra(EXTRA_PROBE_UL, false)
+        val speedTestMs    = intent.getLongExtra(EXTRA_SPEEDTEST_MS, 0L)
 
         // Android 14+: 위치형 FGS는 위치 권한이 없으면 startForeground가 SecurityException을 던진다.
         // 앱이 죽지 않도록 잡아서 서비스를 정상 종료하되, 조용히 실패하면 사용자는 버튼이
@@ -153,8 +159,26 @@ class NetworkLoggingService : Service() {
         collector.startLocationUpdates()
         collector.startTelephonyListener()
         collector.startSensors()
+        // 속도 측정 직전·직후에 행을 하나씩 더 남긴다 — 같은 구간의 RSRP·SINR과 속도를 짝짓기 위해.
+        // 콜백은 측정 스레드에서 오므로 수집은 메인 스레드로 넘긴다. 정기 수집 간격과는 상관없이 기록한다.
+        probe.onSpeedTestStart = {
+            handler.post {
+                if (!isRunning) return@post
+                lastCollectMs = System.currentTimeMillis()
+                doCollect("speedtest_start")
+            }
+        }
+        probe.onSpeedTestDone = { result ->
+            handler.post {
+                if (!isRunning) return@post
+                collector.pendingSpeedTest = result
+                lastCollectMs = System.currentTimeMillis()
+                // 측정 도중 셀이 바뀌었는지는 분석에서 이 행과 직전 speedtest_start 행의 serving_cell_id를 비교해 본다
+                doCollect("speedtest")
+            }
+        }
         // RTT는 항상 측정(무시 가능한 트래픽), 지속 부하는 방향별 토글로 결정
-        probe.start(intervalMs, probeDlEnabled, probeUlEnabled)
+        probe.start(intervalMs, probeDlEnabled, probeUlEnabled, speedTestMs)
 
         // 핸드오버 감지 시 즉시 추가 수집 (API 31+)
         // timer와 동시 발화 시 중복 방지: 마지막 수집으로부터 1초 미만이면 skip
@@ -177,6 +201,8 @@ class NetworkLoggingService : Service() {
         probeStatus = ""
         handler.removeCallbacks(tick)
         collector.onCellChangeDetected = null
+        probe.onSpeedTestStart = null
+        probe.onSpeedTestDone = null
         probe.stop()
         collector.stopLocationUpdates()
         collector.stopTelephonyListener()
@@ -213,7 +239,8 @@ class NetworkLoggingService : Service() {
         val dl  = probe.lastDlMbps?.let { " | DL ${"%.2f".format(java.util.Locale.US, it)}" } ?: ""
         val ul  = probe.lastUlMbps?.let { " / UL ${"%.2f".format(java.util.Locale.US, it)}Mbps" } ?: ""
         val used = if (probe.probeBytesUsed > 0) " (${probe.probeBytesUsed / 1_048_576}MB)" else ""
-        val probeInfo = rtt + dl + ul + used
+        val st = probe.lastSpeedTest?.mbps?.let { " | ST ${"%.1f".format(java.util.Locale.US, it)}Mbps" } ?: ""
+        val probeInfo = rtt + dl + ul + used + st
         mgr.notify(NOTIF_ID, buildNotification("수집 중: ${recordCount}개$probeInfo"))
     }
 

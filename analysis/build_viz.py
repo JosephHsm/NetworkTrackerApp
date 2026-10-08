@@ -19,7 +19,10 @@ import pandas as pd
 import cell_stats
 
 TEMPLATE = "viz_build/report.template.html"
+INDEX_TEMPLATE = "viz_build/index.template.html"   # 교수님용 첫 화면 (리포트·CSV·세션 목록 모음)
+INDEX_OUT = "viz_build/index.html"
 MAPMATCH_DIR = "analysis_output"
+SECTOR_JSON = "analysis_output/stats/sector_rules.json"
 OUTS = {
     "all":     ("viz_build/report_all.html",     "전체 세션",   "이동하는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
     "car":     ("viz_build/report_car.html",     "차량 세션",   "차로 달리는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
@@ -126,6 +129,22 @@ SESSIONS = [
          label="10/1 13:39 차량", activity="car", note="", keep=None, trim_reason=""),
     dict(path="trackingcsv/new/network_log_20261001_143101_car.csv",
          label="10/1 14:31 차량", activity="car", note="", keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261002_144830_home.csv",
+         label="10/2 14:48 정지", activity="home",
+         note="activity 태그 누락 — 14분 내내 좌표 이동 없음(세종대 부근 실내). 마지막 20초 걸어 나간 구간은 뺐다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261002_150542_walking.csv",
+         label="10/2 도보", activity="walking",
+         note="activity 태그 누락 — 1.1 m/s 일정. 수집 종료를 깜빡해 원본이 15:25까지 이어졌다 — 15:19 도착까지만 이 파일로 잘랐다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261002_152022_home.csv",
+         label="10/2 15:20 정지", activity="home",
+         note="10/2 도보 원본의 도착 후 구간(15:20~15:24, Wi-Fi 연결)을 잘라낸 실내 정지 측정. 엘리베이터(기압 −0.8 hPa) 1분은 양쪽에서 뺐다",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261004_141602_walking.csv",
+         label="10/4 도보", activity="walking",
+         note="activity 태그 누락 — 1.1 m/s 일정. 원본 끝 2분 40초는 멈춰 선 채 종료를 누르지 않은 구간이라 잘랐다",
+         keep=None, trim_reason=""),
 ]
 
 # 앱 버전별 기록 항목. 컬럼 수로 판별한다.
@@ -150,6 +169,14 @@ VERSIONS = {
                 "업로드는 실제로 고르게 나가 송신 속도가 96%의 순간에 0.4 Mbps 이상으로 찍힌다. "
                 "다운로드는 앱이 천천히 읽어도 OS 수신 버퍼가 먼저 몰아 받아, 망에서는 여전히 버스트로 오간다 — "
                 "그래서 probe_dl_mbps는 버퍼에서 읽은 속도라 망 상태와 무관하게 목표치 근처에 머문다(분석에 쓰지 않는다).",
+        missing=["speedtest_* (속도 측정)"],
+    ),
+    79: dict(
+        name="v1.3",
+        summary="속도 측정(Speed Test)이 들어왔다. 정해진 간격(30초~2분)마다 3초 동안 페이싱 없이 다운로드해 "
+                "'그 순간 그 셀에서 받을 수 있는 최대 속도'를 잰다(첫 0.5초는 TCP 느린 시작이라 뺀다). "
+                "측정 직전(speedtest_start)과 직후(speedtest)에 행이 하나씩 더 남아, 같은 몇 초의 RSRP·SINR과 속도를 짝지을 수 있다. "
+                "셀이 바뀔 때마다 새 셀에서도 바로 잰다(speedtest_reason = handover, 직전 측정 10초 안이면 건너뜀).",
         missing=[],
     ),
 }
@@ -158,6 +185,7 @@ ADDED = {
          "anchor_station", "anchor_lat", "anchor_lon", "wifi_ap_count", "wifi_scan_age_s",
          "wifi_scan_json", "prev_neighbors_json"],
     74: ["probe_ul_mbps"],
+    79: ["speedtest_dl_mbps", "speedtest_bytes", "speedtest_ms", "speedtest_ttfb_ms", "speedtest_reason"],
 }
 
 
@@ -382,6 +410,29 @@ def load(s, idx):
             rk, nsame, None if loss is None else round(float(loss), 1),
         ])
 
+    # 속도 측정(v1.3): "speedtest" 행마다 직전 "speedtest_start" 행(15초 안)과 짝지어
+    # 같은 구간의 RSRP·SINR(두 행 평균)과 다운로드 속도를 한 점으로 만든다
+    speedtests = []
+    if "speedtest_dl_mbps" in df.columns:
+        trig = df["collect_trigger"].astype(str).to_numpy()
+        stm = pd.to_numeric(df["speedtest_dl_mbps"], errors="coerce")
+        streason = col(df, "speedtest_reason").astype(str).to_numpy()
+        sinr_all = pd.to_numeric(col(df, "sinr_snr_db"), errors="coerce")
+        last_start = None
+        for i in range(len(df)):
+            if trig[i] == "speedtest_start":
+                last_start = i
+            elif trig[i] == "speedtest" and pd.notna(stm[i]):
+                a = last_start if last_start is not None and t[i] - t[last_start] <= 15 else i
+                both = [a, i]
+                speedtests.append([
+                    round(float(t[i]), 1), round(float(stm[i]), 2),
+                    r(rsrp[both].mean(), 1), r(sinr_all[both].mean(), 1), r(speed[i], 1),
+                    1 if pd.notna(cell[a]) and pd.notna(cell[i]) and cell[a] != cell[i] else 0, int(rat[i]),
+                    1 if streason[i] == "handover" else 0,
+                ])
+                last_start = None
+
     dur_min = float(t.iloc[-1]) / 60
     la, lo = lat.where(map_ok), lon.where(map_ok)
     km = float(np.nansum(np.hypot(np.diff(la) * 111000, np.diff(lo) * 88000))) / 1000
@@ -405,7 +456,7 @@ def load(s, idx):
         frozen_share=round(100.0 * frozen.mean(), 1),
         has_sinr=bool(col(df, "sinr_snr_db").notna().mean() > 0.5),
         bins=make_bins(t, ho, pp, rsrp, rx, cell),
-        pts=pts, events=events, segs=segs, rat_s=cell_stats.rat_seconds(sf),
+        pts=pts, events=events, segs=segs, speedtests=speedtests, rat_s=cell_stats.rat_seconds(sf),
     )
 
 
@@ -420,6 +471,7 @@ def build(scope, sessions, html):
         cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "nbrx", "speed", "rx", "tx",
               "pci", "arfcn", "ho", "pp", "rat", "rtt"],
         seg_cols=SEG_COLS,
+        st_cols=["t", "mbps", "rsrp", "sinr", "speed", "cell_changed", "rat", "after_ho"],
         ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp",
                  "rank", "nsame", "loss"],
         meta=dict(scope=scope, eyebrow="NetworkTrackerApp · " + eyebrow, title=title,
@@ -429,11 +481,43 @@ def build(scope, sessions, html):
                        added=ADDED.get(c, []),
                        files=[s["label"] for s in picked if s["ncols"] == c]) for c in used],
         sessions=picked,
+        # 섹터 판별 기준 (전 세션 기준, analysis/sector_rules.py가 만든다) — 리포트 그림 17
+        sector=json.load(open(SECTOR_JSON, encoding="utf-8")) if os.path.exists(SECTOR_JSON) else None,
     )
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     with open(out, "w", encoding="utf-8") as f:
         f.write(html.replace("/*__DATA__*/null", payload))
     print(f"  → {out} ({os.path.getsize(out) / 1024:.0f} KB, 세션 {len(picked)}개)")
+
+
+def build_index(sessions):
+    """viz_build/index.html — 리포트·결과 CSV·세션 목록을 한 화면에. 빌드할 때마다 세션 목록이 갱신된다."""
+    import datetime, html as H
+    with open(INDEX_TEMPLATE, encoding="utf-8") as f:
+        page = f.read()
+    rows = []
+    for s in sessions:
+        rows.append(
+            "      <tr><td>" + H.escape(s["label"]) + "</td><td>" + s["activity_ko"] + "</td><td>" + s["version"] + "</td>"
+            f"<td class=\"num\">{s['dur_min']:.1f}</td><td class=\"num\">{s['km']:.1f}</td><td class=\"num\">{len(s['events'])}</td>"
+            f"<td class=\"num\">{len(s['speedtests']) or '–'}</td>"
+            f"<td><a href=\"../trackingcsv/new/{H.escape(s['file'])}\">CSV</a></td></tr>")
+    n_act = lambda a: sum(1 for s in sessions if s["activity"] == a)
+    apps = [f"      <li><b>{v['name']}</b> ({c}개 항목) — {H.escape(v['summary'])}</li>" for c, v in sorted(VERSIONS.items())]
+    fill = {
+        "UPDATED": datetime.date.today().isoformat(),
+        "N_SESS": str(len(sessions)), "N_ALL": str(len(sessions)),
+        "HOURS": f"{sum(s['dur_min'] for s in sessions) / 60:.1f}",
+        "ROWS": f"{sum(s['rows'] for s in sessions):,}",
+        "HO": f"{sum(len(s['events']) for s in sessions):,}",
+        "N_CAR": str(n_act("car")), "N_SUBWAY": str(n_act("subway")), "N_WALKING": str(n_act("walking")),
+        "SESSION_ROWS": "\n".join(rows), "APP_ITEMS": "\n".join(apps),
+    }
+    for k, v in fill.items():
+        page = page.replace("{{" + k + "}}", v)
+    with open(INDEX_OUT, "w", encoding="utf-8") as f:
+        f.write(page)
+    print(f"  → {INDEX_OUT} (세션 {len(sessions)}개)")
 
 
 def main():
@@ -449,6 +533,7 @@ def main():
         html = f.read()
     for scope in OUTS:
         build(scope, sessions, html)
+    build_index(sessions)
 
 
 if __name__ == "__main__":

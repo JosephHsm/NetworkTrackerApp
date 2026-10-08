@@ -192,7 +192,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         가운데 원의 크기가 그 셀에 머문 시간(영향력)이다. 지도 위에 마우스를 올리기만 하면 오른쪽 상자에 그 점의 값이 바로 나오고, 누르면 그 값이 고정되면서
         <b>그 셀(파랑)과 같은 기지국의 다른 섹터(청록)</b>만 남고 나머지는 흐려진다.
         커서가 지도 안에 있을 때는 <b>휠로 확대·축소</b>되고, 밖으로 나가면 평소대로 페이지가 스크롤된다.
-        범례에서 <b>핸드오버·핑퐁 항목(점선 테두리)을 누르면 그 지점만</b> 남고, 다시 누르면 전체가 돌아온다.</p>
+        범례에서 <b>핸드오버·핑퐁 항목(점선 테두리)을 누르면 그 지점만</b> 남고, 다시 누르면 전체가 돌아온다.
+        <b>RSRP / SINR</b> 단추로 점 속을 SINR(신호 품질)로도 칠할 수 있다 — 같은 색 단계에서 진할수록 나쁘다.</p>
       <p class="plain"><b>쉽게 말하면</b> — 지나온 길 위에 신호가 좋았던 곳과 나빴던 곳을 색으로 칠한 지도다. 속이 진할수록 신호가 약한 곳이고,
         테두리 색이 바뀌면 붙어 있던 기지국이 바뀐 것이다. 지하철 세션은 땅속이라 GPS가 안 잡히므로, 역 위치를 기준으로 되짚어 계산한 좌표를 쓴다 — 그래서 차량 세션보다 위치가 거칠다.</p>
     </div>
@@ -201,6 +202,10 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         <button type="button" data-mode="both" aria-pressed="true">신호+셀</button>
         <button type="button" data-mode="rsrp" aria-pressed="false">신호 세기</button>
         <button type="button" data-mode="cell" aria-pressed="false">접속 셀</button>
+      </div>
+      <div class="seg" role="group" aria-label="신호 지표">
+        <button type="button" data-metric="rsrp" aria-pressed="true">RSRP</button>
+        <button type="button" data-metric="sinr" aria-pressed="false">SINR</button>
       </div>
       <label class="chk"><input type="checkbox" id="hullchk"> 셀 영향권</label>
       <div class="seg" role="group" aria-label="배경 지도" id="basemap"></div>
@@ -236,6 +241,22 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-body"><div id="c2"></div></div>
     <div class="read" id="r2"></div>
     <details><summary>세션별 표로 보기</summary><div class="tbl-wrap" id="t2"></div></details>
+  </section>
+
+  <section class="fig" id="f2s">
+    <div class="fig-head">
+      <div class="fig-num">그림 2-1 · 현상 (SINR)</div>
+      <h2>같은 시간축에서 SINR은 어떻게 변하는가</h2>
+      <p class="sub">그림 2와 똑같이 그리되 세로축만 <b>SINR</b>(신호가 잡음·옆 셀 간섭보다 몇 dB 센가)로 바꿨다. 선 색·띠·세로선·확대·커서는 그림 2와 함께 움직인다.
+        핸드오버는 주로 RSRP로 정하지만 실제로 받는 속도는 SINR에 더 좌우된다 — 그림 2에서 RSRP가 평평한데 여기서 SINR만 꺼지는 곳이 '신호는 센데 옆 셀 간섭이 큰' 곳이다.
+        <b>한계:</b> SINR은 폰이 5G 표시 상태일 때 주로 기록돼(5G 표시 중 86%, LTE-A 표시 중 1% 미만) 비어 있는 구간은 선이 끊긴다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 그림 2가 '목소리가 얼마나 큰가'라면 이건 '얼마나 또렷하게 들리는가'다. 셀을 바꾸는 세로선 근처에서 이 선이 어떻게 움직이는지 본다.
+        RSRP·SINR·실제 응답 속도의 관계는 그림 15에 정리했다.</p>
+    </div>
+    <div class="legend" id="lg2s"></div>
+    <div class="fig-body"><div id="c2s"></div></div>
+    <div class="read" id="r2s"></div>
+    <details><summary>세션별 표로 보기</summary><div class="tbl-wrap" id="t2s"></div></details>
   </section>
 
   <section class="fig" id="f3">
@@ -432,6 +453,86 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <div class="fig-body"><div class="chart-scroll"><svg id="c14"></svg></div></div>
     <div class="read" id="r14"></div>
     <details><summary>표로 보기</summary><div class="tbl-wrap" id="t14"></div></details>
+  </section>
+
+  <section class="fig" id="fsinr">
+    <div class="fig-head">
+      <div class="fig-num">그림 15 · RSRP와 SINR</div>
+      <h2>신호가 센 것과 깨끗한 것은 다른가 — RSRP·SINR·실제 응답 속도</h2>
+      <p class="sub">핸드오버는 주로 RSRP(신호 세기)로 정하지만, 실제로 받는 속도는 SINR(신호가 잡음·옆 셀 간섭보다 얼마나 센가)에 더 좌우된다.
+        왼쪽: 같은 RSRP 구간 안에서 <b>접속 셀이 같은 주파수의 제일 센 이웃보다 몇 dB 센가</b>(가로축)에 따라 SINR 중앙값(세로축)이 어떻게 달라지는지. 선 하나가 RSRP 구간 하나다.
+        오른쪽: 신호 지표 구간별 지연 시간(RTT) — 위는 SINR 구간, 아래는 비교용 RSRP 구간(그림 14와 같은 값). 점이 중앙값, 가로선이 가운데 50%, 주황 눈금이 상위 10%.
+        핸드오버 시각에 맞춘 SINR 변화는 그림 3 아래 칸에 있다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 목소리가 큰 것(RSRP)과 잘 들리는 것(SINR)은 다르다. 옆에서 다른 사람이 똑같이 크게 말하면(같은 주파수 이웃 셀) 아무리 커도 잘 안 들린다.
+        왼쪽 선들이 오른쪽으로 갈수록 올라가면, SINR은 신호 세기보다 '옆 셀과의 차이'가 정한다는 뜻이다.
+        <b>한계:</b> SINR은 폰이 5G 표시 상태일 때 주로 기록된다(5G 표시 중 86%, LTE-A 표시 중 1% 미만). 그래서 이 그림은 대부분 5G 표시 구간의 이야기다.
+        수신 속도는 OS가 몰아 받는 버스트라 신호와의 관계를 볼 수 없어(그림 6) 실제 성능은 RTT로 본다.</p>
+    </div>
+    <div class="legend" id="lgs"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="cs"></svg></div></div>
+    <div class="read" id="rs"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="ts"></div></details>
+  </section>
+
+  <section class="fig" id="fcdf">
+    <div class="fig-head">
+      <div class="fig-num">그림 16 · 누적 분포 (CDF)</div>
+      <h2>측정값의 90%는 어디까지 들어오는가</h2>
+      <p class="sub">값을 작은 것부터 늘어놓고, 그 값 이하인 측정이 몇 %인지를 이은 누적확률분포다. 맨 오른쪽 끝은 항상 100%다.
+        <b>점선(90%)과 선이 만나는 곳이 90번째 백분위수</b>이고, 그 자리에 값을 적었다. 묶음끼리 이 점이 좌우로 얼마나 벌어지는지가 분포의 차이다.
+        위 단추로 지표와 비교 묶음(이동수단 / 망 표시)을 바꾼다. 지연 시간과 셀 유지 시간은 꼬리가 길어 가로축을 로그로 그렸다. 그래프를 짚으면 그 값 이하 비율이 묶음마다 나온다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 선이 왼쪽에서 빨리 솟을수록 작은 값이 많다는 뜻이다. 위로 갈수록 선이 눕는 건 드물게 아주 큰 값이 있다는 뜻이다.
+        <b>RSRP·SINR은 작을수록 나쁘므로 나쁜 쪽은 아래 10% 지점</b>, RTT는 클수록 나쁘므로 <b>나쁜 쪽은 위 90% 지점</b>이다. 표에 10·50·90% 지점을 모두 적었다.</p>
+    </div>
+    <div class="map-tools">
+      <div class="seg" role="group" aria-label="CDF 지표" id="cdfmetric">
+        <button type="button" data-cm="rsrp" aria-pressed="true">RSRP</button>
+        <button type="button" data-cm="sinr" aria-pressed="false">SINR</button>
+        <button type="button" data-cm="rtt" aria-pressed="false">지연 시간 (RTT)</button>
+        <button type="button" data-cm="dwell" aria-pressed="false">셀 유지 시간</button>
+      </div>
+      <div class="seg" role="group" aria-label="CDF 비교 묶음" id="cdfgroup">
+        <button type="button" data-cg="act" aria-pressed="true">이동수단별 (한 수단이면 세션별)</button>
+        <button type="button" data-cg="rat" aria-pressed="false">망 표시별</button>
+      </div>
+    </div>
+    <div class="legend" id="lgc"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="cc"></svg></div></div>
+    <div class="read" id="rc"></div>
+    <details open><summary>백분위수 표</summary><div class="tbl-wrap" id="tc"></div></details>
+  </section>
+
+  <section class="fig" id="fsector">
+    <div class="fig-head">
+      <div class="fig-num">그림 17 · 섹터 판별 기준</div>
+      <h2>같은 기지국 안에서 섹터가 바뀐 것을 데이터로 가를 수 있는가</h2>
+      <p class="sub">기지국은 셀 ID(ECI)를 256으로 나눈 몫(eNB ID)으로 갈랐다. 나머지(LCID, 0~255)가 기지국 안의 셀 번호인데, 셀 하나가 곧 섹터 하나는 아니다 —
+        한 방향 안테나가 주파수마다 셀을 따로 열기 때문이다. 그래서 LCID 안에서 <b>무엇이 방향이고 무엇이 주파수인지</b>를 전 세션의 셀 목록으로 확인했다.
+        <b>이 그림의 숫자는 리포트 종류와 상관없이 전 세션 기준</b>이다(analysis/sector_rules.py).</p>
+      <p class="plain"><b>쉽게 말하면</b> — 기지국 하나는 여러 방향을 향한 안테나를 달고, 방향마다 주파수 여러 개를 쏜다.
+        폰이 기록하는 번호 중 <b>PCI가 '방향'을 알려준다</b>: 같은 기지국에서 PCI가 같으면 주파수만 다를 뿐 같은 방향 안테나다.</p>
+    </div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="cx"></svg></div></div>
+    <div class="read" id="rx"></div>
+    <div class="tbl-wrap" id="tx1" style="margin:0 26px 14px"></div>
+    <div class="tbl-wrap" id="tx2" style="margin:0 26px 20px"></div>
+  </section>
+
+  <section class="fig" id="fspeed">
+    <div class="fig-head">
+      <div class="fig-num">그림 18 · 속도 측정 (Speed Test)</div>
+      <h2>같은 순간의 RSRP·SINR과 실제 다운로드 속도</h2>
+      <p class="sub">앱 v1.3부터 정해진 간격마다, 그리고 셀이 바뀔 때마다 3초 동안 다운로드를 최대한 받아 그 순간의 실제 속도를 잰다(첫 0.5초는 TCP 느린 시작이라 뺐다).
+        측정 직전과 직후에 행을 하나씩 남겨, 그 두 행의 RSRP·SINR 평균과 속도를 한 점으로 짝지었다.
+        왼쪽은 SINR, 오른쪽은 RSRP를 가로축에 두고 같은 측정을 찍었다. 굵은 선은 구간별 중앙값, 속이 빈 점은 측정 도중 셀이 바뀐 경우다.
+        세로축(속도)은 차이가 몇 배씩 나서 로그 눈금이다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — '신호가 세면 빨라지는가'와 '신호가 깨끗하면 빨라지는가'를 나란히 놓고, 어느 쪽 선이 더 가파르게 올라가는지 본다.
+        RTT(그림 14)가 '바로 대답하는가'라면 이 그림은 '얼마나 많이 받는가'다.</p>
+    </div>
+    <div class="legend" id="lgsp"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="csp"></svg></div></div>
+    <div class="read" id="rsp"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="tsp"></div></details>
   </section>
 
   <section class="fig" id="f15">
@@ -675,6 +776,15 @@ let lastDrawR = null, redrawTimer = null; // 마지막으로 그린 점 크기 /
 // 약한 신호일수록 진하게 — 지도에서 찾고 싶은 건 신호가 나쁜 곳
 const RSRP_BINS = [[-Infinity, -110, "--q5", "−110 dBm 이하 (약함)"], [-110, -100, "--q4", "−110 ~ −100"], [-100, -90, "--q3", "−100 ~ −90"], [-90, -80, "--q2", "−90 ~ −80"], [-80, Infinity, "--q1", "−80 dBm 초과 (좋음)"]];
 const rsrpColor = v => { if (v == null) return css("--line-2"); const b = RSRP_BINS.find(b => v > b[0] && v <= b[1]) || RSRP_BINS[RSRP_BINS.length - 1]; return css(b[2]); };
+// SINR도 같은 색 단계를 쓴다 — 진할수록 나쁘다. 구간은 LTE 통상 등급(0 dB 이하 나쁨, 20 dB 초과 아주 좋음)에 맞췄다.
+const SINR_BINS = [[-Infinity, 0, "--q5", "0 dB 이하 (간섭 심함)"], [0, 5, "--q4", "0 ~ 5 dB"], [5, 10, "--q3", "5 ~ 10 dB"], [10, 20, "--q2", "10 ~ 20 dB"], [20, Infinity, "--q1", "20 dB 초과 (깨끗함)"]];
+let sigMetric = "rsrp";
+try { const v = localStorage.getItem("carviz.metric"); if (v === "rsrp" || v === "sinr") sigMetric = v; } catch (e) {}
+const sigBins = () => sigMetric === "sinr" ? SINR_BINS : RSRP_BINS;
+const sigColor = p => {
+  const v = p[sigMetric]; if (v == null) return css("--line-2");
+  const B = sigBins(), b = B.find(b => v > b[0] && v <= b[1]) || B[B.length - 1]; return css(b[2]);
+};
 const isDark = () => { const t = document.documentElement.getAttribute("data-theme"); return t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches); };
 
 function pointRows(p) {
@@ -758,21 +868,23 @@ function nearestPoint(latlng) {
 // 배경 지도 — 셋 다 키가 필요 없다.
 //  회색: Esri 캔버스. 점이 가장 잘 보이지만 한국은 13단계까지만 그림이 있어 그 위는 13단계 타일을 늘려 쓴다.
 //  상세: OSM 공식 타일. 19단계까지 선명하지만 파일을 더블클릭해 열면(file://, Referer 없음)
-//        "Access blocked" 이미지로 막힌다 → serve_reports.py(리포트_열기.bat)로 열 때만 켠다.
+//        "Access blocked" 이미지로 막힌다. 그래서 파일로 열 때는 같은 OSM 데이터를 그리는
+//        독일 OSM 커뮤니티 서버(tile.openstreetmap.de)로 바꾼다 — Referer 없이도 19단계까지 나온다(2026-10-08 확인).
+//        회색(Esri)은 한국 구간 원본이 13단계까지뿐이라 그 위로 확대하면 늘려 써서 흐리다.
 //  위성: Esri 위성사진. 19단계까지 나오고 file://에서도 된다.
 // (CARTO는 키 없이 "API KEY REQUIRED" 워터마크가 찍혀서 쓰지 않는다.)
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const FILE_MODE = location.protocol === "file:";
 const BASES = {
   gray: { label: "회색", url: () => ESRI + "Canvas/" + (isDark() ? "World_Dark_Gray_Base" : "World_Light_Gray_Base") + "/MapServer/tile/{z}/{y}/{x}",
           opt: { maxZoom: 19, maxNativeZoom: 13, attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors" } },
-  osm:  { label: "상세", url: () => "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  osm:  { label: "상세", url: () => FILE_MODE ? "https://tile.openstreetmap.de/{z}/{x}/{y}.png" : "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           opt: { maxZoom: 19, className: "base-osm", attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors" } },
   sat:  { label: "위성", url: () => ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}",
           opt: { maxZoom: 19, attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics" } },
 };
-const FILE_MODE = location.protocol === "file:";
-let base = FILE_MODE ? "gray" : "osm";
-try { const v = localStorage.getItem("carviz.base"); if (v in BASES && !(FILE_MODE && v === "osm")) base = v; } catch (e) {}
+let base = "osm";
+try { const v = localStorage.getItem("carviz.base"); if (v in BASES) base = v; } catch (e) {}
 try { const v = localStorage.getItem("carviz.mode"); if (v === "rsrp" || v === "cell" || v === "both") mapMode = v; } catch (e) {}
 try { showHull = localStorage.getItem("carviz.hull") === "1"; } catch (e) {}
 
@@ -781,11 +893,10 @@ function drawBaseButtons() {
   Object.entries(BASES).forEach(([k, b]) => {
     const btn = h("button", null, b.label); btn.type = "button";
     btn.setAttribute("aria-pressed", String(base === k));
-    if (FILE_MODE && k === "osm") { btn.disabled = true; btn.title = "파일을 직접 열면 OpenStreetMap이 지도를 막습니다"; }
     btn.addEventListener("click", () => { base = k; try { localStorage.setItem("carviz.base", k); } catch (e) {} setTiles(); });
     host.append(btn);
   });
-  $("#base-note").innerHTML = FILE_MODE ? "상세 지도는 <code>리포트_열기.bat</code>로 열 때만 나온다" : "";
+  $("#base-note").innerHTML = base === "gray" ? "회색 지도는 한국 구간이 13단계까지만 있어 크게 확대하면 흐려진다 — 확대해 볼 때는 '상세'나 '위성'" : "";
 }
 function setTiles() {
   drawBaseButtons();
@@ -877,8 +988,8 @@ function drawMap(fit) {
       const e = p.cell == null ? null : enbOf(p.cell);
       const isSel = hl && p.cell === hl.cell, kin = hl && e === hl.enb;
       let fill, stroke = ring, weight = 1, r = R, op = .95;
-      if (mapMode === "rsrp") fill = rsrpColor(p.rsrp);
-      else if (mapMode === "both") { fill = rsrpColor(p.rsrp); stroke = enbColor(e); weight = R >= 4.5 ? 2 : 1.4; }
+      if (mapMode === "rsrp") fill = sigColor(p);
+      else if (mapMode === "both") { fill = sigColor(p); stroke = enbColor(e); weight = R >= 4.5 ? 2 : 1.4; }
       else { fill = enbColor(e); if (run % 2 === 0) stroke = css("--ink-3"); }   // 접속 셀 보기: 셀이 바뀌면 테두리로 표시
       // 셀을 고르면 지도를 "그 셀 / 같은 기지국의 다른 섹터 / 나머지" 세 가지로만 칠한다.
       // 테두리 색만 바꾸면 눈에 띄지 않아서, 채움 색 자체를 바꾼다.
@@ -926,6 +1037,12 @@ function setSelection(next) {
   drawMap(false);
   drawTimeline();
 }
+function setMetric(m) {
+  sigMetric = m;
+  try { localStorage.setItem("carviz.metric", m); } catch (e) {}
+  document.querySelectorAll(".seg button[data-metric]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.metric === m)));
+  drawMap(false);
+}
 function setMode(m) {
   mapMode = m;
   try { localStorage.setItem("carviz.mode", m); } catch (e) {}
@@ -937,7 +1054,14 @@ function topEnbs(n) {
 }
 function drawMapLegend() {
   const items = [];
-  if (mapMode !== "cell") RSRP_BINS.forEach(b => items.push({ color: css(b[2]), label: b[3], kind: "dot" }));
+  if (mapMode !== "cell") {
+    sigBins().forEach(b => items.push({ color: css(b[2]), label: (sigMetric === "sinr" ? "SINR " : "") + b[3], kind: "dot" }));
+    // SINR은 5G 표시 상태에서 주로 기록된다 — 회색 점이 많으면 그 이유다
+    if (sigMetric === "sinr") {
+      const P = allPts().filter(p => p.lat != null), miss = P.filter(p => p.sinr == null).length;
+      items.push({ color: css("--line-2"), label: "SINR 기록 없음 (" + fmt(P.length ? 100 * miss / P.length : NaN, 0) + "%)", kind: "dot" });
+    }
+  }
   if (mapMode === "both") items.push({ color: "transparent", ring: css("--ink-3"), label: "테두리 = 붙어 있던 기지국(아래 색)", kind: "dot" });
   if (mapMode !== "rsrp") {
     topEnbs(8).forEach(e => items.push({ color: enbColor(e), label: "eNB " + e, kind: "dot" }));
@@ -1111,9 +1235,17 @@ function enbRunsOf(runs) {
   });
   return out;
 }
+// 그림 2(RSRP)와 그림 2-1(SINR)은 같은 함수로 지표만 바꿔 그린다 — 확대·커서·강조가 두 그림에서 같이 움직인다
+const TL_RSRP = { key: "rsrp", host: "#c2", lg: "#lg2", LO: -125, HI: -45, ticks: [-120, -100, -80, -60], unit: "dBm" };
+const TL_SINR = { key: "sinr", host: "#c2s", lg: "#lg2s", LO: -10, HI: 30, ticks: [0, 10, 20, 30], unit: "dB" };
 function drawTimeline() {
-  const host = $("#c2"); host.replaceChildren();
   tlCursors.length = 0;
+  drawTimelineFor(TL_RSRP);
+  drawTimelineFor(TL_SINR);
+  drawSinrTimelineText();
+}
+function drawTimelineFor(cfg) {
+  const host = $(cfg.host); host.replaceChildren();
   // 핸드오버 항목은 눌러서 그 종류만 남기는 단추다 (지도와 같이 움직인다)
   const lgItems = [
     { color: css("--s2"), label: "세로 실선 = 다른 기지국으로 이동", kind: "lk", pressed: evOnly === "inter", onClick: () => setEvOnly("inter") },
@@ -1122,7 +1254,7 @@ function drawTimeline() {
   ];
   topEnbs(8).forEach(e => lgItems.push({ color: enbColor(e), label: "eNB " + e, kind: "sw" }));
   if (enbRank.size > 8) lgItems.push({ color: css("--line-2"), label: "그 밖 기지국 " + (enbRank.size - 8) + "곳", kind: "sw" });
-  legend($("#lg2"), lgItems);
+  legend($(cfg.lg), lgItems);
 
   const tlRows = [];
   chosen().forEach(s => {
@@ -1146,12 +1278,14 @@ function drawTimeline() {
     prep(svg, W, H);
     const x = t => PL + (t - Z0) / (Z1 - Z0) * (W - PL - PR);
     const tAt = sx => Z0 + (sx - PL) / (W - PL - PR) * (Z1 - Z0);
-    const LO = -125, HI = -45, y = v => PT + (HI - v) / (HI - LO) * RH;
-    [-120, -100, -80, -60].forEach(v => {
+    const LO = cfg.LO, HI = cfg.HI, y = v => PT + (HI - Math.max(LO, Math.min(HI, v))) / (HI - LO) * RH;
+    cfg.ticks.forEach(v => {
       svg.append(el("line", { x1: PL, y1: y(v), x2: W - PR, y2: y(v), class: "grid" }));
       svg.append(el("text", { x: PL - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, v));
     });
-    svg.append(el("text", { x: PL - 8, y: PT - 3, class: "alab", "text-anchor": "end" }, "dBm"));
+    svg.append(el("text", { x: PL - 8, y: PT - 3, class: "alab", "text-anchor": "end" }, cfg.unit));
+    if (cfg.key === "sinr" && !s.P.some(p => p.sinr != null))
+      svg.append(el("text", { x: W - PR, y: PT + 14, class: "alab", "text-anchor": "end" }, "이 세션은 SINR 기록이 없다"));
     // 그래프 몸통은 잘라 그린다 — 확대하면 구간 밖 선·띠가 축 밖으로 삐져나가지 않게
     const clipId = "tlclip" + s.id, defs = el("defs", {}), cp = el("clipPath", { id: clipId });
     cp.append(el("rect", { x: PL, y: 0, width: W - PL - PR, height: H }));
@@ -1192,8 +1326,8 @@ function drawTimeline() {
       let d = "", prevT = null;
       for (let i = r.i0; i <= r.i1; i++) {
         const q = s.P[i];
-        if (q.rsrp == null) { prevT = null; continue; }
-        d += (prevT == null || q.t - prevT > 30 ? "M" : "L") + x(q.t).toFixed(1) + "," + y(q.rsrp).toFixed(1);
+        if (q[cfg.key] == null) { prevT = null; continue; }
+        d += (prevT == null || q.t - prevT > 30 ? "M" : "L") + x(q.t).toFixed(1) + "," + y(q[cfg.key]).toFixed(1);
         prevT = q.t;
       }
       if (!d) return;
@@ -1257,7 +1391,7 @@ function drawTimeline() {
     const zsel = el("rect", { x: 0, y: PT, width: 0, height: CBY + CBH - PT, class: "zoom-sel", opacity: 0 });
     svg.append(cross, cdot, zsel);
     // 지도에서 짚은 점도 여기에 표시되도록 크로스헤어를 등록해 둔다
-    tlCursors.push({ sid: s.id, x, y, cross, cdot, Z0, Z1 });
+    tlCursors.push({ sid: s.id, key: cfg.key, x, y, cross, cdot, Z0, Z1 });
     // 끌어서 구간 확대: 누른 채 좌우로 끌면 파란 상자가 그려지고, 놓으면 그 구간으로 확대된다.
     const hit = el("rect", { x: PL, y: 0, width: W - PL - PR, height: H, fill: "transparent", style: "cursor:crosshair;touch-action:pan-y" });
     const svgX = ev => { const bb = svg.getBoundingClientRect(); return Math.max(PL, Math.min(W - PR, (ev.clientX - bb.left) / bb.width * W)); };
@@ -1293,6 +1427,7 @@ function drawTimeline() {
     hit.addEventListener("pointerleave", () => { if (drag == null) { hideTip(); syncHover(null); } });
     svg.append(hit);
   });
+  if (cfg.key !== "rsrp") return;   // 아래 읽기·표는 그림 2(RSRP) 몫이다. 그림 2-1은 drawSinrTimelineText
   const E = allEv(), P = allPts();
   const dwell = []; chosen().forEach(s => { let t0 = 0; s.E.forEach(e => { dwell.push(e.t - t0); t0 = e.t; }); });
   const moving = P.filter(p => p.speed != null && p.speed >= 1), still = P.filter(p => p.speed != null && p.speed < 1);
@@ -1330,8 +1465,8 @@ function syncTimelineCursor(p) {
     const on = p != null && c.sid === p.s && p.t >= c.Z0 && p.t <= c.Z1;
     c.cross.setAttribute("opacity", on ? .6 : 0);
     if (on) { c.cross.setAttribute("x1", c.x(p.t)); c.cross.setAttribute("x2", c.x(p.t)); }
-    if (on && p.rsrp != null) {
-      c.cdot.setAttribute("cx", c.x(p.t)); c.cdot.setAttribute("cy", c.y(p.rsrp));
+    if (on && p[c.key] != null) {
+      c.cdot.setAttribute("cx", c.x(p.t)); c.cdot.setAttribute("cy", c.y(p[c.key]));
       c.cdot.setAttribute("fill", p.cell == null ? css("--ink-2") : enbColor(enbOf(p.cell)));
       c.cdot.setAttribute("opacity", 1);
     } else c.cdot.setAttribute("opacity", 0);
@@ -2150,6 +2285,395 @@ function drawFig14() {
       .concat(bins.map(b => ["핸드오버 기준", (b.k > 0 ? "+" : "") + b.k + "초", b.v.length, fmt(b.med, 0), "", "", fmt(b.p90, 0)])));
 }
 
+/* ---------- 그림 2-1 : SINR 타임라인 읽기 ---------- */
+function drawSinrTimelineText() {
+  const S = chosen(), P = allPts(), withS = P.filter(p => p.sinr != null);
+  const none = S.filter(s => !s.P.some(p => p.sinr != null));
+  // 신호는 센데(RSRP −90 dBm 초과) 품질이 나쁜(SINR 0 dB 이하) 순간 — RSRP만 보면 놓친다
+  const strong = withS.filter(p => p.rsrp != null && p.rsrp > -90), hidden = strong.filter(p => p.sinr <= 0);
+  const weak = withS.filter(p => p.rsrp != null && p.rsrp <= -100), weakOk = weak.filter(p => p.sinr >= 10);
+  const { bins } = alignedBins(), b30 = bins.find(b => b.sec === -30), b0 = bins.find(b => b.sec === 0);
+  setRead($("#r2s"), [
+    { b: "SINR이 기록된 측정은 " + P.length + "회 중 " + withS.length + "회(" + fmt(P.length ? 100 * withS.length / P.length : NaN, 0) + "%)다. " },
+    none.length ? "SINR이 아예 없는 세션: " + none.map(s => s.label).join(", ") + ". " : "",
+    strong.length >= 20 ? "RSRP가 −90 dBm보다 센데도 SINR이 0 dB 이하였던 순간이 " + fmt(100 * hidden.length / strong.length, 0) + "%다 — 그림 2만 보면 '신호 좋음'으로 읽히는 곳이다. " : "",
+    weak.length >= 20 ? "반대로 RSRP −100 dBm 이하로 약한데 SINR은 10 dB 이상 깨끗했던 순간도 " + fmt(100 * weakOk.length / weak.length, 0) + "%다. " : "",
+    b30 && b0 && !isNaN(b0.sinr) && !isNaN(b30.sinr) ? "핸드오버 30초 전부터 그 순간까지 평균 RSRP는 " + sgn(b0.rsrp - b30.rsrp) + " dB, SINR은 " + sgn(b0.sinr - b30.sinr) + " dB 변했다(그림 3)." : "",
+  ]);
+  table($("#t2s"), ["세션", "SINR 기록", "SINR 중앙값", "0 dB 이하", "20 dB 초과"],
+    S.map(s => { const v = s.P.map(p => p.sinr).filter(x => x != null);
+      return [s.label, fmt(s.P.length ? 100 * v.length / s.P.length : NaN, 0) + "%", v.length ? fmt(median(v), 0) + " dB" : "–",
+        v.length ? fmt(100 * v.filter(x => x <= 0).length / v.length, 0) + "%" : "–", v.length ? fmt(100 * v.filter(x => x > 20).length / v.length, 0) + "%" : "–"]; }));
+}
+
+/* ---------- 그림 15 : RSRP와 SINR, 그리고 실제 응답 ---------- */
+// 가로축: 접속 셀 − 같은 주파수 제일 센 이웃 (dB). 클수록 옆 셀 간섭이 약하다.
+const MARGIN_BANDS = [[-Infinity, 0, "0 이하"], [0, 3, "0 ~ 3"], [3, 6, "3 ~ 6"], [6, 10, "6 ~ 10"], [10, Infinity, "10 초과"]];
+const SR_RSRP = [[-Infinity, -100, "--q5", "RSRP −100 dBm 이하"], [-100, -90, "--q4", "−100 ~ −90"], [-90, -80, "--q3", "−90 ~ −80"], [-80, Infinity, "--q2", "−80 dBm 초과"]];
+const inBand = (v, b) => v != null && v > b[0] && v <= b[1];
+/** 이동 중(1 m/s 이상) 이웃한 두 측정(6초 이내) 사이의 RSRP·SINR 변화 */
+function stepDeltas() {
+  const out = [];
+  chosen().forEach(s => s.P.forEach((p, i) => {
+    const q = s.P[i - 1];
+    if (!q || p.t - q.t > 6 || p.speed == null || p.speed < 1) return;
+    if (p.rsrp == null || q.rsrp == null || p.sinr == null || q.sinr == null) return;
+    out.push({ dr: p.rsrp - q.rsrp, ds: p.sinr - q.sinr });
+  }));
+  return out;
+}
+function rowPanel(svg, rows, ox, top, PW, XMAX, title, unit) {
+  const ROW = 26, x = v => ox + Math.min(v, XMAX) / XMAX * PW;
+  svg.append(el("text", { x: ox - 120, y: top - 12, class: "plab" }, title));
+  for (let v = 0; v <= XMAX; v += XMAX > 200 ? 100 : 50) {
+    svg.append(el("line", { x1: x(v), y1: top - 4, x2: x(v), y2: top + rows.length * ROW, class: "grid" }));
+    svg.append(el("text", { x: x(v), y: top + rows.length * ROW + 15, class: "tick", "text-anchor": "middle" }, v));
+  }
+  rows.forEach((r, i) => {
+    const cy = top + i * ROW + ROW / 2;
+    svg.append(el("text", { x: ox - 10, y: cy + 4, class: "alab", "text-anchor": "end", style: "fill:var(--ink-2)" }, r.label));
+    if (r.n < 10) { svg.append(el("text", { x: ox, y: cy + 4, class: "alab" }, "표본 부족 (" + r.n + ")")); return; }
+    svg.append(el("line", { x1: x(r.q1), y1: cy, x2: x(r.q3), y2: cy, stroke: css("--s1"), "stroke-width": 2, "stroke-linecap": "round", opacity: .5 }));
+    svg.append(el("line", { x1: x(r.p90), y1: cy - 6, x2: x(r.p90), y2: cy + 6, stroke: css("--s2"), "stroke-width": 2 }));
+    svg.append(el("circle", { cx: x(r.med), cy, r: 4.5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }));
+    svg.append(el("text", { x: x(Math.min(r.p90, XMAX)) + 8, y: cy + 4, class: "dlab" }, (r.p90 > XMAX ? "▸ " : "") + fmt(r.med, 0) + " / " + fmt(r.p90, 0)));
+    const hit = el("rect", { x: ox - 120, y: cy - ROW / 2, width: PW + 160, height: ROW, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, title + " · " + r.label, [
+      { value: fmt(r.med, 0) + " " + unit, label: "RTT 중앙값 (표본 " + r.n + ")" },
+      { value: fmt(r.q1, 0) + " ~ " + fmt(r.q3, 0) + " " + unit, label: "가운데 50%" },
+      { value: fmt(r.p90, 0) + " " + unit, label: "상위 10% 경계" }]));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+  return top + rows.length * ROW;
+}
+function drawFigSinr() {
+  const svg = $("#cs"), P = allPts();
+  const W = 960, LX = 70, LW = 330, LT = 40, LH = 230;
+  const withS = P.filter(p => p.sinr != null && p.rsrp != null);
+  legend($("#lgs"), SR_RSRP.map(b => ({ color: css(b[2]), label: b[3], kind: "lk" }))
+    .concat([{ color: css("--s1"), label: "RTT 중앙값 · 가운데 50%", kind: "dot" }, { color: css("--s2"), label: "RTT 상위 10%", kind: "lk" }]));
+  if (withS.length < 30) {
+    prep(svg, W, 60);
+    svg.append(el("text", { x: 20, y: 34, class: "alab" }, "이 선택에는 SINR 기록이 거의 없다 (" + withS.length + "회) — SINR은 5G 표시 상태에서 주로 기록된다."));
+    $("#rs").textContent = ""; $("#ts").replaceChildren(); return;
+  }
+  // 왼쪽: RSRP 구간 × 이웃과의 차이 → SINR 중앙값
+  const grid = SR_RSRP.map(rb => ({ rb, cells: MARGIN_BANDS.map(mb => {
+    const v = withS.filter(p => p.nbr != null && inBand(p.rsrp, rb) && inBand(p.rsrp - p.nbr, mb)).map(p => p.sinr);
+    return { mb, n: v.length, med: v.length >= 15 ? median(v) : NaN };
+  }) }));
+  const RT = 40, rttP = P.filter(p => p.rtt != null);
+  const A = rttRows(rttP, SINR_BINS.map(b => [b[0], b[1], b[3]]), "sinr");
+  const B = rttRows(rttP, RTT_RSRP, "rsrp");
+  const XMAX = Math.min(300, Math.max(100, Math.ceil(Math.max(...A.concat(B).map(r => isNaN(r.p90) ? 0 : r.p90)) / 50) * 50));
+  const H = Math.max(LT + LH + 60, RT + 2 * (5 * 26) + 110);
+  prep(svg, W, H);
+  const allMed = grid.flatMap(g => g.cells.map(c => c.med)).filter(v => !isNaN(v));
+  const lo = Math.min(0, Math.floor(Math.min(...allMed) / 5) * 5), hi = Math.max(15, Math.ceil(Math.max(...allMed) / 5) * 5);
+  const lx = i => LX + (i + .5) / MARGIN_BANDS.length * LW, ly = v => LT + (hi - v) / (hi - lo) * LH;
+  svg.append(el("text", { x: LX, y: LT - 26, class: "plab" }, "같은 RSRP에서도 이웃과의 차이가 SINR을 정한다"));
+  svg.append(el("text", { x: LX - 8, y: LT - 10, class: "alab", "text-anchor": "end" }, "SINR dB"));
+  for (let v = lo; v <= hi; v += 5) {
+    svg.append(el("line", { x1: LX, y1: ly(v), x2: LX + LW, y2: ly(v), class: "grid" }));
+    svg.append(el("text", { x: LX - 8, y: ly(v) + 4, class: "tick", "text-anchor": "end" }, v));
+  }
+  MARGIN_BANDS.forEach((mb, i) => svg.append(el("text", { x: lx(i), y: LT + LH + 16, class: "tick", "text-anchor": "middle" }, mb[2])));
+  svg.append(el("text", { x: LX + LW / 2, y: LT + LH + 34, class: "alab", "text-anchor": "middle" }, "접속 셀 − 같은 주파수 제일 센 이웃 (dB) → 클수록 간섭 약함"));
+  grid.forEach(g => {
+    const pts = g.cells.map((c, i) => ({ c, i })).filter(o => !isNaN(o.c.med));
+    if (!pts.length) return;
+    const col = css(g.rb[2]);
+    svg.append(el("path", { d: "M" + pts.map(o => lx(o.i) + "," + ly(o.c.med)).join("L"), fill: "none", stroke: col, "stroke-width": 2.2, "stroke-linejoin": "round" }));
+    pts.forEach(o => {
+      const c = el("circle", { cx: lx(o.i), cy: ly(o.c.med), r: 4.5, fill: col, stroke: css("--surface"), "stroke-width": 2 });
+      c.addEventListener("pointermove", ev => showTip(ev, g.rb[3] + " · 이웃과의 차이 " + o.c.mb[2] + " dB",
+        [{ value: fmt(o.c.med, 1) + " dB", label: "SINR 중앙값 (표본 " + o.c.n + ")", color: col }]));
+      c.addEventListener("pointerleave", hideTip);
+      svg.append(c);
+    });
+  });
+  // 오른쪽: SINR 구간별 RTT, 비교용 RSRP 구간별 RTT
+  const RX = 640, RW = 220;
+  if (rttP.length >= 20) {
+    const yEnd = rowPanel(svg, A, RX, RT, RW, XMAX, "SINR 구간별 RTT (ms)", "ms");
+    rowPanel(svg, B, RX, yEnd + 52, RW, XMAX, "비교: RSRP 구간별 RTT (ms)", "ms");
+  } else svg.append(el("text", { x: RX - 120, y: RT + 20, class: "alab" }, "이 선택에는 지연 시간(rtt_ms) 기록이 없다."));
+
+  // 읽기
+  const rho = spearman(withS.map(p => p.rsrp), withS.map(p => p.sinr));
+  const mid = grid.find(g => g.rb[0] === -90), m0 = mid && mid.cells[0], m4 = mid && mid.cells[4];
+  const SD = stepDeltas(), big = (a, k) => a.filter(d => Math.abs(d[k]) >= 6).length / Math.max(a.length, 1);
+  const rhoD = spearman(SD.map(d => d.dr), SD.map(d => d.ds));
+  const { bins } = alignedBins(), b30 = bins.find(b => b.sec === -30), b0 = bins.find(b => b.sec === 0);
+  const sMin = bins.filter(b => !isNaN(b.sinr)).reduce((a, b) => (!a || b.sinr < a.sinr ? b : a), null);
+  const RXp = P.filter(p => p.rx != null && p.rx >= TRAFFIC && p.sinr != null);
+  const okA = A.filter(r => r.n >= 10), okB = B.filter(r => r.n >= 10);
+  setRead($("#rs"), [
+    { b: (Math.abs(rho) >= 0.5 ? "이 선택에서는 RSRP와 SINR이 대체로 같이 움직인다" : "RSRP와 SINR은 같이 움직이지 않는다")
+      + " — 측정 " + withS.length + "회에서 둘의 순위상관은 " + fmt(rho, 2) + "(" + strength(rho) + ")이다. " },
+    m0 && m4 && !isNaN(m0.med) && !isNaN(m4.med) ? "RSRP가 −90 ~ −80 dBm으로 같은 측정만 봐도, 같은 주파수 이웃이 접속 셀만큼 센 곳(차이 0 이하)은 SINR 중앙값 " + fmt(m0.med, 0)
+      + " dB, 이웃보다 10 dB 넘게 센 곳은 " + fmt(m4.med, 0) + " dB다 — SINR을 정하는 건 신호 세기보다 옆 셀 간섭이다. " : "",
+    SD.length >= 30 ? "움직이는 동안 이웃한 두 측정 사이에 RSRP가 6 dB 이상 바뀐 경우는 " + fmt(100 * big(SD, "dr"), 0) + "%, SINR은 " + fmt(100 * big(SD, "ds"), 0)
+      + "%이고, 두 변화의 상관은 " + fmt(rhoD, 2) + "이다 — 한쪽이 출렁일 때 다른 쪽은 대개 그대로다. " : "",
+    b30 && b0 && !isNaN(b0.sinr) ? "핸드오버 30초 전부터 그 순간까지 RSRP는 " + sgn(b0.rsrp - b30.rsrp) + " dB, SINR은 " + sgn(b0.sinr - b30.sinr)
+      + " dB 변했고, SINR이 가장 낮은 건 " + (sMin.sec > 0 ? "+" : "") + sMin.sec + "초(" + fmt(sMin.sinr, 1) + " dB)다 — 셀 경계는 RSRP보다 SINR에서 더 뚜렷하게 드러난다(그림 3). " : "",
+    okA.length >= 2 ? "SINR " + okA[0].label + " 구간의 RTT 상위 10%는 " + fmt(okA[0].p90, 0) + " ms, " + okA[okA.length - 1].label + " 구간은 " + fmt(okA[okA.length - 1].p90, 0) + " ms"
+      + (okB.length >= 2 ? "(RSRP로 가르면 " + okB[0].label + " " + fmt(okB[0].p90, 0) + " ms, " + okB[okB.length - 1].label + " " + fmt(okB[okB.length - 1].p90, 0) + " ms)" : "") + "다. 중앙값은 어느 쪽으로 갈라도 거의 같다 — 차이는 느린 순간에만 난다. " : "",
+    RXp.length >= 30 ? "수신 속도는 SINR과 상관 " + fmt(spearman(RXp.map(p => p.rx), RXp.map(p => p.sinr)), 2) + ", RSRP와 " + fmt(spearman(RXp.map(p => p.rx), RXp.map(p => p.rsrp)), 2)
+      + "로 둘 다 관계가 안 보인다 — 폰이 내려받는 양이 일정하지 않아 신호 탓을 가를 수 없다(측정 한계 ①)." : "",
+  ]);
+  const head = ["RSRP 구간"].concat(MARGIN_BANDS.map(b => "차이 " + b[2] + " dB"));
+  table($("#ts"), head, grid.map(g => [g.rb[3]].concat(g.cells.map(c => c.n < 15 ? "– (" + c.n + ")" : fmt(c.med, 1) + " dB (" + c.n + ")"))));
+}
+
+/* ---------- 그림 16 : 누적확률분포 (CDF) ---------- */
+const CDF_M = {
+  rsrp: { label: "RSRP", unit: "dBm", log: false, f: v => fmt(v, 0) + " dBm", bad: "low" },
+  sinr: { label: "SINR", unit: "dB", log: false, f: v => fmt(v, 0) + " dB", bad: "low" },
+  rtt: { label: "지연 시간 (RTT)", unit: "ms", log: true, f: v => fmt(v, 0) + " ms", bad: "high" },
+  dwell: { label: "셀 유지 시간", unit: "초", log: true, f: v => secTxt(v), bad: "low" },
+};
+let cdfMetric = "rsrp", cdfGroup = "act";
+try { const v = localStorage.getItem("carviz.cdfm"); if (v in CDF_M) cdfMetric = v; } catch (e) {}
+try { const v = localStorage.getItem("carviz.cdfg"); if (v === "act" || v === "rat") cdfGroup = v; } catch (e) {}
+function cdfGroups() {
+  const m = cdfMetric;
+  const vals = (S, keep) => m === "dwell"
+    ? S.flatMap(s => (s.G.cell || []).filter(x => !x.censored && x.dwell_s > 0).map(x => x.dwell_s))
+    : S.flatMap(s => s.P.filter(p => p[m] != null && (!keep || keep(p))).map(p => p[m]));
+  // 망 표시별은 측정 단위 지표만 — 유지 구간은 한 구간 안에서 망 표시가 바뀌기도 해서 하나로 못 나눈다
+  if (cdfGroup === "rat" && m !== "dwell")
+    return RAT_TYPES.map(([k, c, label]) => ({ name: label + " 표시", color: css(c), v: vals(chosen(), p => String(p.rat) === k) }));
+  const G = statGroups();
+  // 이동수단이 하나뿐인 리포트(차량·지하철·도보)는 세션끼리 비교한다
+  if (G.length === 1 && G[0].S.length > 1)
+    return G[0].S.map((s, i) => ({ name: s.label, color: css(ENB_PAL[i % ENB_PAL.length]), v: vals([s]) }));
+  return G.map(g => ({ name: g.name, color: g.color, v: vals(g.S) }));
+}
+function drawFigCdf() {
+  document.querySelectorAll("#cdfmetric button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cm === cdfMetric)));
+  document.querySelectorAll("#cdfgroup button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cg === cdfGroup)));
+  const M = CDF_M[cdfMetric], svg = $("#cc");
+  const G = cdfGroups().filter(g => g.v.length >= 10).map(g => {
+    const v = [...g.v].sort((a, b) => a - b);
+    return Object.assign(g, { v, p10: quant(v, .1), p50: quant(v, .5), p90: quant(v, .9), mean: mean(v) });
+  });
+  legend($("#lgc"), G.map(g => ({ color: g.color, label: g.name + " · " + g.v.length + (cdfMetric === "dwell" ? "구간" : "회"), kind: "lk" }))
+    .concat([{ color: css("--ink-3"), label: "점선 = 90% · 점 = 90번째 백분위수", kind: "lk" }]));
+  const W = 960, PL = 60, PR = 190, PT = 20, PH = 300, H = PT + PH + 52;
+  prep(svg, W, H);
+  if (!G.length) {
+    svg.setAttribute("viewBox", "0 0 960 60");
+    svg.append(el("text", { x: 20, y: 34, class: "alab" }, "이 선택에는 " + M.label + " 표본이 부족하다."));
+    $("#rc").textContent = ""; $("#tc").replaceChildren(); return;
+  }
+  const all = G.flatMap(g => g.v);
+  let lo = M.log ? Math.max(1, Math.min(...all)) : quant(all.slice().sort((a, b) => a - b), .002), hi = Math.max(...all);
+  if (!M.log) { lo = Math.floor(lo / 5) * 5; hi = Math.ceil(hi / 5) * 5; }
+  else { lo = Math.pow(10, Math.floor(Math.log10(lo))); hi = Math.pow(10, Math.ceil(Math.log10(hi))); }
+  const tx = M.log ? v => Math.log10(Math.max(v, lo)) : v => v, TL = tx(lo), TH = tx(hi);
+  const x = v => PL + (Math.min(Math.max(tx(v), TL), TH) - TL) / (TH - TL) * (W - PL - PR);
+  const xInv = sx => { const t = TL + (sx - PL) / (W - PL - PR) * (TH - TL); return M.log ? Math.pow(10, t) : t; };
+  const y = q => PT + (1 - q) * PH;
+  [0, .25, .5, .75, 1].forEach(q => {
+    svg.append(el("line", { x1: PL, y1: y(q), x2: W - PR, y2: y(q), class: "grid" }));
+    svg.append(el("text", { x: PL - 8, y: y(q) + 4, class: "tick", "text-anchor": "end" }, q * 100 + "%"));
+  });
+  svg.append(el("line", { x1: PL, y1: y(.9), x2: W - PR, y2: y(.9), stroke: css("--ink-3"), "stroke-width": 1.2, "stroke-dasharray": "5,4" }));
+  svg.append(el("text", { x: PL + 4, y: y(.9) - 5, class: "alab" }, "90%"));
+  const ticks = M.log ? (() => { const t = []; for (let d = lo; d <= hi; d *= 10) [1, 2, 5].forEach(k => { if (d * k >= lo && d * k <= hi) t.push(d * k); }); return t; })()
+    : (() => { const step = (hi - lo) > 60 ? 10 : 5, t = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) t.push(v); return t; })();
+  ticks.forEach(v => {
+    svg.append(el("line", { x1: x(v), y1: PT, x2: x(v), y2: PT + PH, class: "grid", opacity: .5 }));
+    svg.append(el("text", { x: x(v), y: PT + PH + 16, class: "tick", "text-anchor": "middle" }, cdfMetric === "dwell" ? secTxt(v) : v));
+  });
+  svg.append(el("text", { x: (PL + W - PR) / 2, y: PT + PH + 38, class: "alab", "text-anchor": "middle" }, M.label + " (" + M.unit + ")" + (M.log ? " · 로그 눈금" : "")));
+  G.forEach(g => {
+    const n = g.v.length, step = Math.max(1, Math.ceil(n / 500));
+    let d = "M" + x(g.v[0]).toFixed(1) + "," + y(0).toFixed(1);
+    for (let i = 0; i < n; i += step) d += "L" + x(g.v[i]).toFixed(1) + "," + y((i + 1) / n).toFixed(1);
+    d += "L" + x(g.v[n - 1]).toFixed(1) + "," + y(1).toFixed(1);
+    svg.append(el("path", { d, fill: "none", stroke: g.color, "stroke-width": 2.2, "stroke-linejoin": "round" }));
+    svg.append(el("circle", { cx: x(g.p90), cy: y(.9), r: 5, fill: g.color, stroke: css("--surface"), "stroke-width": 2 }));
+  });
+  // 오른쪽 여백에 90% 지점 값을 묶음별로 적는다 (점끼리 가까워도 글자가 겹치지 않게)
+  svg.append(el("text", { x: W - PR + 16, y: PT + 12, class: "plab" }, "90% 지점"));
+  G.forEach((g, i) => {
+    const yy = PT + 34 + i * 22;
+    svg.append(el("rect", { x: W - PR + 16, y: yy - 9, width: 10, height: 10, rx: 2, fill: g.color }));
+    svg.append(el("text", { x: W - PR + 32, y: yy, class: "dlab" }, g.name.replace(/ \(\d+\)$/, "") + "  " + M.f(g.p90)));
+  });
+  const cross = el("line", { x1: 0, y1: PT, x2: 0, y2: PT + PH, stroke: css("--ink"), "stroke-width": 1, opacity: 0 });
+  svg.append(cross);
+  const hit = el("rect", { x: PL, y: PT, width: W - PL - PR, height: PH, fill: "transparent" });
+  hit.addEventListener("pointermove", ev => {
+    const bb = svg.getBoundingClientRect(), sx = (ev.clientX - bb.left) / bb.width * W, v = xInv(sx);
+    cross.setAttribute("x1", sx); cross.setAttribute("x2", sx); cross.setAttribute("opacity", .5);
+    showTip(ev, M.f(v) + " 이하인 비율", G.map(g => {
+      let a = 0, b = g.v.length; while (a < b) { const m = (a + b) >> 1; if (g.v[m] <= v) a = m + 1; else b = m; }
+      return { color: g.color, value: fmt(100 * a / g.v.length, 0) + "%", label: g.name };
+    }));
+  });
+  hit.addEventListener("pointerleave", () => { hideTip(); cross.setAttribute("opacity", 0); });
+  svg.append(hit);
+
+  const nm = g => g.name.replace(/ \(\d+\)$/, "");
+  const by90 = [...G].sort((a, b) => a.p90 - b.p90), by10 = [...G].sort((a, b) => a.p10 - b.p10);
+  setRead($("#rc"), [
+    { b: M.label + "의 90% 지점은 " + G.map(g => nm(g) + " " + M.f(g.p90)).join(", ") + "이다. " },
+    G.length === 1 && M.bad === "low" && cdfMetric !== "dwell" ? "나쁜 쪽인 아래 10% 지점은 " + M.f(G[0].p10) + "이다. " : "",
+    G.length > 1 ? "90% 지점이 가장 낮은 묶음은 " + nm(by90[0]) + ", 가장 높은 묶음은 " + nm(by90[by90.length - 1]) + "로, 둘의 차이는 "
+      + (cdfMetric === "dwell" ? secTxt(by90[by90.length - 1].p90 - by90[0].p90) : fmt(by90[by90.length - 1].p90 - by90[0].p90, 0) + " " + (cdfMetric === "rsrp" ? "dB" : M.unit)) + "이다. " : "",
+ M.bad === "low" && cdfMetric !== "dwell" && G.length > 1 ? "나쁜 쪽(아래 10% 지점)은 " + by10.map(g => nm(g) + " " + M.f(g.p10)).join(", ") + " 순으로, 맨 앞 묶음이 가장 약한 순간을 겪었다. " : "",
+    cdfMetric === "rtt" ? "중앙값은 " + G.map(g => nm(g) + " " + M.f(g.p50)).join(", ") + "이다. 중앙값보다 90% 지점이 얼마나 더 멀리 있는지가 '가끔 확 느려지는' 정도다. " : "",
+    cdfMetric === "dwell" ? "중앙값(" + G.map(g => nm(g) + " " + M.f(g.p50)).join(", ") + ")에 비해 90% 지점이 몇 배 길다 — 대부분은 금방 갈아타고, 드물게 한 셀을 오래 붙잡는다. " : "",
+    cdfGroup === "rat" && cdfMetric === "dwell" ? "셀 유지 시간은 한 구간 안에서 망 표시가 바뀌기도 해 이동수단별로만 나눴다." : "",
+  ]);
+  table($("#tc"), ["묶음", "표본", "10% 지점", "50% (중앙값)", "90% 지점", "평균"],
+    G.map(g => [nm(g), g.v.length, M.f(g.p10), M.f(g.p50), M.f(g.p90), M.f(g.mean)]));
+}
+document.querySelectorAll("#cdfmetric button").forEach(b => b.addEventListener("click", () => {
+  cdfMetric = b.dataset.cm; try { localStorage.setItem("carviz.cdfm", cdfMetric); } catch (e) {}
+  drawFigCdf();
+}));
+document.querySelectorAll("#cdfgroup button").forEach(b => b.addEventListener("click", () => {
+  cdfGroup = b.dataset.cg; try { localStorage.setItem("carviz.cdfg", cdfGroup); } catch (e) {}
+  drawFigCdf();
+}));
+
+/* ---------- 그림 17 : 섹터 판별 기준 (전 세션, sector_rules.py) ---------- */
+function drawFigSector() {
+  const X = D.sector, svg = $("#cx");
+  if (!X) {
+    prep(svg, 960, 60);
+    svg.append(el("text", { x: 20, y: 34, class: "alab" }, "sector_rules.json이 없다 — python analysis/sector_rules.py를 먼저 돌린다."));
+    return;
+  }
+  // 위: ECI 구조. 아래: 예시 기지국 하나의 셀을 '주파수 × 섹터 번호' 칸에 놓아, 세로로 PCI가 같은지 보인다.
+  const ex = X.example, carriers = [[0, "B7 2.6 GHz", 3050], [1, "B5 850 MHz", 2600], [2, "B1 2.1 GHz", 100]];
+  const W = 960, H = 330;
+  prep(svg, W, H);
+  const bx = 70, by = 30, bw = 820;
+  svg.append(el("text", { x: bx, y: by - 10, class: "plab" }, "셀 ID (ECI, 28비트)"));
+  svg.append(el("rect", { x: bx, y: by, width: bw * 20 / 28, height: 34, rx: 4, fill: css("--s2"), opacity: .85 }));
+  svg.append(el("rect", { x: bx + bw * 20 / 28 + 3, y: by, width: bw * 8 / 28 - 3, height: 34, rx: 4, fill: css("--s1"), opacity: .85 }));
+  svg.append(el("text", { x: bx + bw * 10 / 28, y: by + 22, "text-anchor": "middle", fill: css("--surface"), style: "font-weight:600" }, "eNB ID (20비트) = ECI ÷ 256 → 기지국"));
+  svg.append(el("text", { x: bx + bw * 24 / 28, y: by + 22, "text-anchor": "middle", fill: css("--surface"), style: "font-weight:600" }, "LCID (8비트) = ECI % 256"));
+  svg.append(el("text", { x: bx + bw * 24 / 28, y: by + 54, "text-anchor": "middle", class: "dlab" }, "LCID = 6 × 주파수 블록 + 섹터 번호"));
+  if (!ex) return;
+  const gx = 190, gy = 120, cw = 112, ch = 40;
+  svg.append(el("text", { x: bx, y: gy - 22, class: "plab" }, "예: eNB " + ex.enb + "의 셀 — 칸 안은 LCID · PCI, 세로로 같은 열이 같은 방향 안테나"));
+  for (let k = 0; k < 6; k++) svg.append(el("text", { x: gx + k * cw + cw / 2, y: gy - 4, class: "tick", "text-anchor": "middle" }, "섹터 " + k));
+  carriers.forEach(([blk, name], r) => {
+    const yy = gy + r * (ch + 8);
+    svg.append(el("text", { x: gx - 12, y: yy + ch / 2 + 4, class: "alab", "text-anchor": "end", style: "fill:var(--ink-2)" }, name + " (LCID " + blk * 6 + "~" + (blk * 6 + 5) + ")"));
+    for (let k = 0; k < 6; k++) {
+      const c = ex.cells.find(c => c[0] === blk * 6 + k);
+      const pciCol = c ? ENB_PAL[ex.pcis.indexOf(c[1]) % ENB_PAL.length] : null;
+      svg.append(el("rect", { x: gx + k * cw + 3, y: yy, width: cw - 6, height: ch, rx: 4,
+        fill: c ? css(pciCol) : css("--surface-3"), opacity: c ? .9 : .5 }));
+      if (c) svg.append(el("text", { x: gx + k * cw + cw / 2, y: yy + ch / 2 + 4, "text-anchor": "middle", fill: css("--surface"),
+        style: "font-size:12px;font-weight:600" }, "LCID " + c[0] + " · PCI " + c[1]));
+    }
+  });
+  svg.append(el("text", { x: gx, y: gy + 3 * (ch + 8) + 18, class: "alab" }, "칸 색 = PCI. 같은 열(섹터 번호)의 칸이 같은 색이면 주파수만 다르고 방향은 같은 셀이다. 빈 칸은 측정 중 한 번도 잡지 않은 셀."));
+
+  const A = X.pci_lcid_agree, K = Object.fromEntries(X.handover_kinds.map(k => [k.kind, k]));
+  const intra = ["carrier", "sector", "sector_carrier"].reduce((a, k) => a + K[k].n, 0);
+  setRead($("#rx"), [
+    { b: "판별 규칙: ① ECI ÷ 256(eNB)이 바뀌면 다른 기지국. ② 같은 기지국에서 PCI가 바뀌면 섹터(방향) 이동. ③ 같은 기지국·같은 PCI에서 주파수만 바뀌면 같은 섹터 안의 주파수 이동. " },
+    "근거는 서로 독립인 두 단서가 맞물린다는 것이다: 같은 기지국에서 주파수가 다른 셀 쌍 " + A.pairs + "개 중 PCI가 같은 " + A.same_pci + "쌍의 " + fmt(A.pci_then_mod6, 0)
+      + "%가 LCID % 6(섹터 번호)도 같고, 섹터 번호가 같은 쌍의 " + fmt(A.mod6_then_pci, 0) + "%가 PCI도 같다. ",
+    "LCID 블록과 주파수는 " + X.lcid_blocks.map(b => b.lcid + " → " + b.band + " " + fmt(b.match, 0) + "%").join(", ") + " 맞는다(850 MHz 블록은 규칙이 약하다). LCID 18 이상 " + X.lcid_extra + "개 셀은 블록 밖이라 PCI 규칙만 쓴다. ",
+    "이 기준으로 핸드오버 " + X.n_handovers + "건을 나누면 다른 기지국 " + K.inter.n + "건, 같은 기지국 " + intra + "건이고, 같은 기지국 안에서는 섹터가 바뀐 경우(" + (K.sector.n + K.sector_carrier.n)
+      + "건)가 대부분이며 방향은 그대로 주파수만 바꾼 경우는 " + K.carrier.n + "건뿐이다. ",
+    "다른 기지국으로 넘어갔는데 PCI가 같은 경우는 " + X.inter_same_pci + "건으로, eNB 구분과 PCI 구분이 서로 엇갈리지 않는다. ",
+    "TA(기지국까지 거리)는 단서가 못 된다: 행의 대부분이 0~1(1칸 ≈ 78 m)이라, 바뀐 비율이 다른 기지국 " + fmt(K.inter.ta_changed, 0) + "%, 섹터 이동 " + fmt(K.sector.ta_changed, 0) + "%로 크게 다르지 않다. ",
+    "이 번호 규칙은 LG U+(MNC 06) 망에서 확인한 것이라 다른 사업자에는 그대로 맞지 않을 수 있다.",
+  ]);
+  table($("#tx1"), ["LCID 블록", "주로 쓰는 주파수", "셀 수", "그 주파수인 비율"],
+    X.lcid_blocks.map(b => [b.lcid, b.band + " (EARFCN " + b.arfcn + ")", b.cells, fmt(b.match, 1) + "%"])
+      .concat([["18 이상", "블록 밖 (추가 셀)", X.lcid_extra, "–"]]));
+  table($("#tx2"), ["핸드오버 종류", "건수", "비율", "TA 바뀜", "RSRP 변화 (중앙값)", "SINR 변화 (중앙값)", "속도 (km/h)", "핑퐁"],
+    X.handover_kinds.map(k => [k.ko, k.n, fmt(k.share, 1) + "%", fmt(k.ta_changed, 0) + "%", sgn(k.drsrp, 0) + " dB", k.n_sinr >= 5 ? sgn(k.dsinr, 0) + " dB" : "–",
+      fmt(k.speed_kmh, 0), fmt(k.pp, 0) + "%"]));
+}
+
+/* ---------- 그림 18 : 속도 측정 (v1.3) ---------- */
+const ST_RSRP = [[-Infinity, -100, "−100 이하"], [-100, -90, "−100 ~ −90"], [-90, -80, "−90 ~ −80"], [-80, Infinity, "−80 초과"]];
+const ST_SINR = [[-Infinity, 0, "0 이하"], [0, 5, "0 ~ 5"], [5, 10, "5 ~ 10"], [10, 20, "10 ~ 20"], [20, Infinity, "20 초과"]];
+function speedTests() {
+  const SC = Object.fromEntries((D.st_cols || []).map((c, i) => [c, i]));
+  return chosen().flatMap(s => (s.speedtests || []).map(a => ({ s: s.id, label: s.label, t: a[SC.t], mbps: a[SC.mbps], rsrp: a[SC.rsrp],
+    sinr: a[SC.sinr], speed: a[SC.speed], changed: !!a[SC.cell_changed], rat: a[SC.rat], afterHo: !!a[SC.after_ho] })));
+}
+function drawFigSpeed() {
+  const svg = $("#csp"), T = speedTests().filter(o => o.mbps != null && o.mbps > 0);
+  legend($("#lgsp"), [{ color: css("--s1"), label: "속도 측정 1회", kind: "dot" }, { color: "transparent", ring: css("--s2"), label: "측정 도중 셀이 바뀜", kind: "dot" },
+    { color: css("--ink-2"), label: "구간별 중앙값", kind: "lk" }]);
+  if (T.length < 5) {
+    prep(svg, 960, 60);
+    svg.append(el("text", { x: 20, y: 34, class: "alab" }, T.length
+      ? "속도 측정이 " + T.length + "회뿐이라 관계를 보기 어렵다 — 앱 v1.3에서 '속도 측정'을 켜고 더 모으면 채워진다."
+      : "이 선택에는 속도 측정 기록이 없다 — 앱 v1.3에서 '속도 측정' 스위치를 켜고 수집한 세션부터 나타난다."));
+    $("#rsp").textContent = ""; $("#tsp").replaceChildren(); return;
+  }
+  const W = 960, PT = 30, PH = 280, PW = 380, GAP = 90, PL = 70, H = PT + PH + 56;
+  prep(svg, W, H);
+  const lo = Math.max(0.1, Math.pow(10, Math.floor(Math.log10(Math.min(...T.map(o => o.mbps)))))), hi = Math.pow(10, Math.ceil(Math.log10(Math.max(...T.map(o => o.mbps)))));
+  const y = v => PT + (1 - (Math.log10(Math.max(v, lo)) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo))) * PH;
+  const yt = []; for (let d = lo; d <= hi; d *= 10) [1, 2, 5].forEach(k => { if (d * k >= lo && d * k <= hi) yt.push(d * k); });
+  function panel(ox, key, X0, X1, ticks, bands, title, unit) {
+    const x = v => ox + (Math.max(X0, Math.min(X1, v)) - X0) / (X1 - X0) * PW;
+    svg.append(el("text", { x: ox, y: PT - 12, class: "plab" }, title));
+    yt.forEach(v => {
+      svg.append(el("line", { x1: ox, y1: y(v), x2: ox + PW, y2: y(v), class: "grid" }));
+      svg.append(el("text", { x: ox - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, v));
+    });
+    ticks.forEach(v => svg.append(el("text", { x: x(v), y: PT + PH + 16, class: "tick", "text-anchor": "middle" }, v)));
+    svg.append(el("text", { x: ox + PW / 2, y: PT + PH + 36, class: "alab", "text-anchor": "middle" }, unit));
+    svg.append(el("text", { x: ox - 8, y: PT - 12 + 0, class: "alab", "text-anchor": "end" }, ""));
+    const P = T.filter(o => o[key] != null);
+    P.forEach(o => {
+      const c = el("circle", { cx: x(o[key]), cy: y(o.mbps), r: 4, fill: o.changed ? "transparent" : css("--s1"), stroke: o.changed ? css("--s2") : css("--surface"),
+        "stroke-width": o.changed ? 1.6 : 1, opacity: .8 });
+      c.addEventListener("pointermove", ev => showTip(ev, o.label + " · " + mmss(o.t), [
+        { value: fmt(o.mbps, 1) + " Mbps", label: "다운로드 속도" }, { value: fmt(o.rsrp, 0) + " dBm", label: "RSRP" },
+        { value: fmt(o.sinr, 1) + " dB", label: "SINR" }, { value: o.speed == null ? "–" : fmt(o.speed * 3.6, 0) + " km/h", label: "이동 속도" },
+        { value: o.changed ? "예" : "아니오", label: "측정 도중 셀 변경" },
+        { value: o.afterHo ? "핸드오버 직후" : "정기", label: "측정 이유" }]));
+      c.addEventListener("pointerleave", hideTip);
+      svg.append(c);
+    });
+    const rows = bands.map(b => { const v = P.filter(o => o[key] > b[0] && o[key] <= b[1]).map(o => o.mbps);
+      const mid = isFinite(b[0]) && isFinite(b[1]) ? (b[0] + b[1]) / 2 : isFinite(b[0]) ? b[0] + 5 : b[1] - 5;
+      return { label: b[2], n: v.length, med: median(v), p10: quant(v, .1), mid }; });
+    const ok = rows.filter(r => r.n >= 3);
+    if (ok.length >= 2) svg.append(el("path", { d: "M" + ok.map(r => x(r.mid) + "," + y(r.med)).join("L"), fill: "none", stroke: css("--ink-2"), "stroke-width": 2.5 }));
+    ok.forEach(r => svg.append(el("circle", { cx: x(r.mid), cy: y(r.med), r: 4.5, fill: css("--ink-2"), stroke: css("--surface"), "stroke-width": 2 })));
+    return { rows, rho: spearman(P.map(o => o[key]), P.map(o => o.mbps)), n: P.length };
+  }
+  svg.append(el("text", { x: PL - 8, y: PT - 12, class: "alab", "text-anchor": "end" }, "Mbps"));
+  const A = panel(PL, "sinr", -10, 30, [-10, 0, 10, 20, 30], ST_SINR, "SINR과 다운로드 속도", "SINR (dB)");
+  const B = panel(PL + PW + GAP, "rsrp", -120, -50, [-120, -110, -100, -90, -80, -70, -60, -50], ST_RSRP, "RSRP와 다운로드 속도", "RSRP (dBm)");
+  const v = T.map(o => o.mbps), ch = T.filter(o => o.changed), still = T.filter(o => !o.changed);
+  const okA = A.rows.filter(r => r.n >= 3), okB = B.rows.filter(r => r.n >= 3);
+  setRead($("#rsp"), [
+    { b: "속도 측정 " + T.length + "회의 다운로드 속도는 중앙값 " + fmt(median(v), 1) + " Mbps, 아래 10% " + fmt(quant(v, .1), 1) + " Mbps다. " },
+    "속도와의 순위상관은 SINR " + fmt(A.rho, 2) + "(" + strength(A.rho) + ", " + A.n + "회), RSRP " + fmt(B.rho, 2) + "(" + strength(B.rho) + ", " + B.n + "회)이다. ",
+    okA.length >= 2 ? "SINR " + okA[0].label + " dB 구간 중앙값 " + fmt(okA[0].med, 1) + " Mbps → " + okA[okA.length - 1].label + " dB 구간 " + fmt(okA[okA.length - 1].med, 1) + " Mbps. " : "",
+    okB.length >= 2 ? "RSRP " + okB[0].label + " dBm 구간 " + fmt(okB[0].med, 1) + " Mbps → " + okB[okB.length - 1].label + " dBm 구간 " + fmt(okB[okB.length - 1].med, 1) + " Mbps. " : "",
+    ch.length >= 3 ? "측정 도중 셀이 바뀐 " + ch.length + "회는 중앙값 " + fmt(median(ch.map(o => o.mbps)), 1) + " Mbps로, 안 바뀐 경우(" + fmt(median(still.map(o => o.mbps)), 1) + " Mbps)와 비교된다. " : "",
+    (() => { const ho = T.filter(o => o.afterHo), iv = T.filter(o => !o.afterHo);
+      return ho.length >= 3 && iv.length >= 3 ? "셀이 바뀐 직후 새 셀에서 잰 " + ho.length + "회는 중앙값 " + fmt(median(ho.map(o => o.mbps)), 1)
+        + " Mbps, 정기 측정 " + iv.length + "회는 " + fmt(median(iv.map(o => o.mbps)), 1) + " Mbps다 — 핸드오버 직후 새 셀이 바로 제 속도를 내는지 본다. " : ""; })(),
+    "SINR은 5G 표시 상태에서 주로 기록되므로 SINR 쪽 점은 RSRP 쪽보다 적을 수 있다.",
+  ]);
+  table($("#tsp"), ["지표", "구간", "측정 수", "속도 중앙값 (Mbps)", "아래 10% (Mbps)"],
+    A.rows.map(r => ["SINR (dB)", r.label, r.n, fmt(r.med, 1), fmt(r.p10, 1)]).concat(B.rows.map(r => ["RSRP (dBm)", r.label, r.n, fmt(r.med, 1), fmt(r.p10, 1)])));
+}
+
 /* ---------- 부록 : 측정 버전 ---------- */
 function drawVersions() {
   const vs = D.versions || [];
@@ -2191,11 +2715,15 @@ function renderAll(fit) {
   if (pinned && !chosen().some(x => x.id === pinned.p.s)) pinned = null;
   hover = null;
   drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig3b(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
-  drawFig8(); drawFig10(); drawFig11(); drawFig12(); drawFig13(); drawFig14(); drawVersions();
+  drawFig8(); drawFig10(); drawFig11(); drawFig12(); drawFig13(); drawFig14(); drawFigSinr(); drawFigCdf(); drawFigSector(); drawFigSpeed(); drawVersions();
 }
 document.querySelectorAll(".seg button[data-mode]").forEach(b => {
   b.setAttribute("aria-pressed", String(b.dataset.mode === mapMode));
   b.addEventListener("click", () => setMode(b.dataset.mode));
+});
+document.querySelectorAll(".seg button[data-metric]").forEach(b => {
+  b.setAttribute("aria-pressed", String(b.dataset.metric === sigMetric));
+  b.addEventListener("click", () => setMetric(b.dataset.metric));
 });
 const hullBox = $("#hullchk");
 if (hullBox) {

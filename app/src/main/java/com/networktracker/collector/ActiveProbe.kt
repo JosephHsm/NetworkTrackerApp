@@ -13,6 +13,8 @@ import java.net.InetSocketAddress
 import java.net.URL
 import java.util.ArrayDeque
 import java.util.Locale
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /**
  * 능동 측정(active measurement) 프로브.
@@ -45,6 +47,16 @@ import java.util.Locale
  *
  * 데이터 소모: 다운·업 각각 시간당 약 216MB (둘 다 켜면 432MB).
  * SESSION_BYTE_CAP 도달 시 부하만 자동 중지되고 RTT와 수집은 계속된다.
+ *
+ * 3. 속도 측정(Speed Test, v1.3): speedTestIntervalMs마다 다운로드를 페이싱 없이 SPEEDTEST_MS 동안 최대한 받는다.
+ *    지속 부하는 목표(0.48 Mbps)에 묶여 있어 망 용량을 못 보고(망이 멀쩡하면 늘 목표치),
+ *    TrafficStats 수신 속도는 폰이 받는 양에 좌우돼 신호와의 관계를 가를 수 없었다(2026-10 리포트 그림 6·15).
+ *    그래서 "이 순간 이 셀에서 받을 수 있는 최대 속도"를 직접 잰다.
+ *    - 첫 바이트 뒤 SPEEDTEST_WARMUP_MS는 TCP 느린 시작이라 속도 계산에서 뺀다.
+ *    - 시작 직전과 끝난 직후에 서비스가 행을 하나씩 더 기록한다(collect_trigger = speedtest_start / speedtest).
+ *      그래서 같은 몇 초 구간의 RSRP·SINR과 실제 다운로드 속도를 한 쌍으로 비교할 수 있다.
+ *    - 데이터 소모는 망 속도에 비례한다: 50 Mbps 망에서 1회 약 19MB, 60초 간격이면 시간당 약 1.1GB.
+ *      SPEEDTEST_BYTE_CAP(세션당)에 닿으면 속도 측정만 멈춘다.
  */
 class ActiveProbe(context: Context) {
 
@@ -64,7 +76,28 @@ class ActiveProbe(context: Context) {
         /** 실측 속도를 내는 창 — 이 구간 동안 실제로 오간 바이트로 계산한다. */
         private const val RATE_WINDOW_MS = 1_000L
         const val SESSION_BYTE_CAP = 1_000L * 1024 * 1024   // 1 GB (다운+업 합산)
+
+        /** 속도 측정 한 번의 길이 (첫 바이트부터). */
+        private const val SPEEDTEST_MS = 3_000L
+        /** 이 구간은 TCP 느린 시작이라 속도 계산에서 뺀다. */
+        private const val SPEEDTEST_WARMUP_MS = 500L
+        /** 한 번에 요청하는 양 — 3초 안에 다 받으면(≥130 Mbps) 거기서 끝난다. */
+        private const val SPEEDTEST_REQ_BYTES = 50_000_000L
+        private const val SPEEDTEST_URL = "https://speed.cloudflare.com/__down?bytes=$SPEEDTEST_REQ_BYTES"
+        const val SPEEDTEST_BYTE_CAP = 2_000L * 1024 * 1024  // 2 GB — 지속 부하 한도와 따로 센다
+        /** 핸드오버 측정은 직전 측정이 끝나고 이만큼 지나야 한다 — 핑퐁 때 연달아 받지 않도록. */
+        private const val HANDOVER_MIN_GAP_MS = 10_000L
     }
+
+    /** 속도 측정 한 번의 결과. 실패하면 mbps가 null이고 error에 이유가 남는다. */
+    data class SpeedTestResult(
+        val mbps: Double?,          // 워밍업 뒤 구간의 평균 다운로드 속도
+        val bytes: Long,            // 받은 전체 바이트 (워밍업 포함)
+        val durationMs: Long,       // 첫 바이트부터 끝까지
+        val ttfbMs: Long?,          // 요청 ~ 첫 바이트
+        val error: String? = null,
+        val reason: String = "interval"   // "interval"(정기) | "handover"(셀이 바뀐 직후)
+    )
 
     private val cm = context.applicationContext
         .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -83,6 +116,16 @@ class ActiveProbe(context: Context) {
     @Volatile var rttStatus = "시작 전"; private set
     @Volatile var dlStatus = "꺼짐"; private set
     @Volatile var ulStatus = "꺼짐"; private set
+    @Volatile var stStatus = "꺼짐"; private set
+    @Volatile var speedTestBytesUsed = 0L; private set
+    @Volatile var lastSpeedTest: SpeedTestResult? = null; private set
+
+    /** 속도 측정 직전·직후에 불린다(측정 스레드). 서비스가 이때 행을 하나씩 더 기록한다. */
+    @Volatile var onSpeedTestStart: (() -> Unit)? = null
+    @Volatile var onSpeedTestDone: ((SpeedTestResult) -> Unit)? = null
+    @Volatile private var stThread: Thread? = null
+    private val stRequests = LinkedBlockingQueue<String>()
+    private var stCount = 0; private var stFail = 0
 
     private var rttTargetIdx = 0
     private var rttOk = 0; private var rttFail = 0
@@ -118,7 +161,8 @@ class ActiveProbe(context: Context) {
         }
     }
 
-    fun start(collectIntervalMs: Long, downloadEnabled: Boolean, uploadEnabled: Boolean) {
+    /** @param speedTestIntervalMs 0이면 속도 측정을 하지 않는다 */
+    fun start(collectIntervalMs: Long, downloadEnabled: Boolean, uploadEnabled: Boolean, speedTestIntervalMs: Long = 0L) {
         if (running) return
         running = true
         dlEnabled = downloadEnabled
@@ -129,6 +173,8 @@ class ActiveProbe(context: Context) {
         requestError = null
         rttOk = 0; rttFail = 0; dlFail = 0; ulFail = 0
         dlRate.reset(); ulRate.reset()
+        speedTestBytesUsed = 0L; lastSpeedTest = null; stCount = 0; stFail = 0
+        stStatus = if (speedTestIntervalMs > 0) "첫 측정 대기 중" else "꺼짐 (스위치 OFF)"
         rttStatus = "셀룰러 망 요청 중"
         dlStatus = if (downloadEnabled) "연결 중" else "꺼짐 (스위치 OFF)"
         ulStatus = if (uploadEnabled) "연결 중" else "꺼짐 (스위치 OFF)"
@@ -155,6 +201,9 @@ class ActiveProbe(context: Context) {
         if (uploadEnabled) {
             ulThread = Thread({ steadyLoop(down = false) }, "ActiveProbe-UL").also { it.start() }
         }
+        if (speedTestIntervalMs > 0) {
+            stThread = Thread({ speedTestLoop(speedTestIntervalMs) }, "ActiveProbe-ST").also { it.start() }
+        }
     }
 
     fun stop() {
@@ -166,12 +215,12 @@ class ActiveProbe(context: Context) {
         rttThread = null; rttHandler = null
         // 부하 루프는 running=false를 보고 스스로 빠져나온다. 소켓 읽기/쓰기에 걸려 있을 수 있어
         // 인터럽트로 깨우되, 타임아웃이 있으므로 끝을 기다리지는 않는다.
-        dlThread?.interrupt(); ulThread?.interrupt()
-        dlThread = null; ulThread = null
+        dlThread?.interrupt(); ulThread?.interrupt(); stThread?.interrupt()
+        dlThread = null; ulThread = null; stThread = null
     }
 
     /** 화면 표시용 세 줄 요약. */
-    fun statusText(): String = "RTT: $rttStatus\nDL : $dlStatus\nUL : $ulStatus"
+    fun statusText(): String = "RTT: $rttStatus\nDL : $dlStatus\nUL : $ulStatus\nST : $stStatus"
 
     // ── 측정 구현 ─────────────────────────────────────────────────────────────
 
@@ -310,6 +359,112 @@ class ActiveProbe(context: Context) {
                 ulStatus = "실패 — HTTP $code (끊김 ${ulFail}회)"
                 sleepMs(1_000L)
             }
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    /**
+     * 핸드오버가 감지되면 서비스가 부른다 — 새 셀에서 바로 속도를 잰다.
+     * 직전 측정이 끝난 지 HANDOVER_MIN_GAP_MS가 안 됐으면 건너뛴다(핑퐁 때 연달아 받지 않도록).
+     */
+    fun requestSpeedTest(reason: String) {
+        if (stThread == null) return
+        stRequests.offer(reason)
+    }
+
+    /**
+     * 속도 측정 루프 — 세션 시작 10초 뒤 첫 측정, 이후 intervalMs마다, 그리고 핸드오버 때마다.
+     * 어느 쪽으로 쟀든 다음 정기 측정은 그 측정 시점부터 intervalMs 뒤다.
+     */
+    private fun speedTestLoop(intervalMs: Long) {
+        stRequests.clear()
+        if (!sleepMs(10_000L)) return
+        var reason = "interval"
+        var lastEnd = 0L
+        while (running) {
+            val t0 = System.currentTimeMillis()
+            if (speedTestBytesUsed >= SPEEDTEST_BYTE_CAP) {
+                stStatus = "중지 — 세션 한도 ${SPEEDTEST_BYTE_CAP / 1_048_576}MB 도달"
+                return
+            }
+            val net = cellular()
+            val result = (if (net == null) {
+                SpeedTestResult(null, 0, 0, null, noNetworkReason())
+            } else {
+                onSpeedTestStart?.invoke()
+                // 시작 행이 먼저 기록되도록 잠깐 기다린다 (수집은 메인 스레드에서 돈다)
+                if (!sleepMs(300L)) return
+                runCatching { runSpeedTest(net) }
+                    .getOrElse { e -> SpeedTestResult(null, 0, 0, null, "${e.javaClass.simpleName}: ${e.message}") }
+            }).copy(reason = reason)
+            if (!running) return
+            lastSpeedTest = result
+            lastEnd = System.currentTimeMillis()
+            if (result.mbps != null) stCount++ else stFail++
+            stStatus = result.mbps?.let {
+                String.format(Locale.US, "정상 %.1f Mbps [%s] (%.1fMB/%.1f초, %d회·실패 %d회, %dMB 사용)",
+                    it, if (reason == "handover") "핸드오버" else "정기", result.bytes / 1e6, result.durationMs / 1000.0,
+                    stCount, stFail, speedTestBytesUsed / 1_048_576)
+            } ?: "실패 — ${result.error} (성공 $stCount / 실패 $stFail)"
+            // 망이 없어 시작 행을 안 남겼으면 끝 행도 남기지 않는다
+            if (net != null) onSpeedTestDone?.invoke(result)
+
+            // 다음 측정까지 기다린다. 기다리는 동안 핸드오버 요청이 오면 바로 깬다.
+            // 측정 중에 쌓인 요청(측정 도중의 핸드오버)은 버린다 — 그 셀은 이미 방금 쟀다.
+            stRequests.clear()
+            reason = "interval"
+            val due = t0 + intervalMs
+            while (running) {
+                val left = due - System.currentTimeMillis()
+                if (left <= 0) break
+                val req = try { stRequests.poll(left, TimeUnit.MILLISECONDS) } catch (e: InterruptedException) { return }
+                if (req != null && System.currentTimeMillis() - lastEnd >= HANDOVER_MIN_GAP_MS) { reason = req; break }
+            }
+        }
+    }
+
+    /** 페이싱 없이 SPEEDTEST_MS 동안 받을 수 있는 만큼 받는다. */
+    private fun runSpeedTest(net: Network): SpeedTestResult {
+        stStatus = "측정 중..."
+        val conn = net.openConnection(URL(SPEEDTEST_URL)) as HttpURLConnection
+        conn.connectTimeout = IO_TIMEOUT_MS
+        conn.readTimeout = IO_TIMEOUT_MS
+        conn.useCaches = false
+        val tReq = System.nanoTime()
+        try {
+            val code = conn.responseCode
+            if (code != HttpURLConnection.HTTP_OK) return SpeedTestResult(null, 0, 0, null, "HTTP $code")
+            val buf = ByteArray(64 * 1024)
+            var total = 0L
+            var afterWarm = 0L
+            var tFirst = 0L
+            var tWarm = 0L
+            var tLast = 0L
+            conn.inputStream.use { input ->
+                while (running) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    val now = System.nanoTime()
+                    if (tFirst == 0L) { tFirst = now; tWarm = now + SPEEDTEST_WARMUP_MS * 1_000_000L }
+                    total += n
+                    speedTestBytesUsed += n
+                    if (now >= tWarm) afterWarm += n
+                    tLast = now
+                    if ((now - tFirst) / 1_000_000L >= SPEEDTEST_MS) break
+                }
+            }
+            if (tFirst == 0L) return SpeedTestResult(null, 0, 0, null, "받은 데이터 없음")
+            val durMs = (tLast - tFirst) / 1_000_000L
+            val warmMs = (tLast - tWarm) / 1_000_000L
+            // 워밍업 전에 다 받아버린 아주 빠른 경우는 전체 구간으로 계산한다
+            val mbps = when {
+                warmMs >= 200 && afterWarm > 0 -> afterWarm * 8.0 / 1_000.0 / warmMs
+                durMs > 0 -> total * 8.0 / 1_000.0 / durMs
+                else -> null
+            }
+            return SpeedTestResult(mbps, total, durMs, (tFirst - tReq) / 1_000_000L,
+                if (mbps == null) "측정 구간이 너무 짧음" else null)
         } finally {
             conn.disconnect()
         }

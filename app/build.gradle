@@ -18,8 +18,8 @@ android {
         applicationId "com.networktracker"
         minSdk 29          // Android 10+ — CellInfoNr, foregroundServiceType
         targetSdk 34
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.3"
 
         // 따옴표를 감싸 넣어도 동작하도록 앞뒤 따옴표/공백 제거
         def kakaoKey = localProps.getProperty('kakao.rest.api.key', '')

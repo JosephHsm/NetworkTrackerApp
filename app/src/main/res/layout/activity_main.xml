@@ -80,6 +80,35 @@
         android:textSize="11sp"
         android:paddingBottom="8dp" />
 
+    <!-- 속도 측정(Speed Test): 주기마다 3초간 페이싱 없이 다운로드해 실제 최대 속도를 잰다 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_speedtest"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="속도 측정 (3초 다운로드)"
+            android:checked="false"
+            android:textSize="13sp" />
+
+        <Spinner
+            android:id="@+id/spinner_speedtest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="데이터는 망 속도에 비례: 50 Mbps면 1회 약 19MB, 60초 간격이면 시간당 약 1.1GB. 세션당 2GB에 닿으면 속도 측정만 멈춘다."
+        android:textSize="11sp"
+        android:paddingBottom="8dp" />
+
     <!-- 지하 구간 수동 역 태그 (로깅 중에만 활성) -->
     <LinearLayout
         android:layout_width="match_parent"

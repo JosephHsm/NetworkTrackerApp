@@ -1,0 +1,200 @@
+{
+ "generated": "analysis/sector_rules.py",
+ "n_cells": 1082,
+ "n_enb": 374,
+ "lcid_blocks": [
+  {
+   "lcid": "0~5",
+   "arfcn": 3050,
+   "band": "B7 2.6GHz",
+   "cells": 525,
+   "match": 95.2
+  },
+  {
+   "lcid": "6~11",
+   "arfcn": 2600,
+   "band": "B5 850MHz",
+   "cells": 73,
+   "match": 64.4
+  },
+  {
+   "lcid": "12~17",
+   "arfcn": 100,
+   "band": "B1 2.1GHz",
+   "cells": 383,
+   "match": 97.7
+  }
+ ],
+ "lcid_extra": 101,
+ "example": {
+  "enb": 205090,
+  "cells": [
+   [
+    0,
+    221,
+    3050
+   ],
+   [
+    1,
+    43,
+    3050
+   ],
+   [
+    2,
+    118,
+    3050
+   ],
+   [
+    3,
+    89,
+    3050
+   ],
+   [
+    4,
+    441,
+    3050
+   ],
+   [
+    5,
+    80,
+    3050
+   ],
+   [
+    12,
+    221,
+    100
+   ],
+   [
+    13,
+    43,
+    100
+   ],
+   [
+    15,
+    89,
+    100
+   ],
+   [
+    16,
+    441,
+    100
+   ],
+   [
+    17,
+    80,
+    100
+   ]
+  ],
+  "pcis": [
+   43,
+   80,
+   89,
+   118,
+   221,
+   441
+  ]
+ },
+ "pci_lcid_agree": {
+  "pairs": 467,
+  "same_pci": 146,
+  "same_mod6": 139,
+  "both": 138,
+  "pci_then_mod6": 94.5,
+  "mod6_then_pci": 99.3
+ },
+ "pci_dup_same_arf": 1,
+ "handover_kinds": [
+  {
+   "kind": "inter",
+   "ko": "다른 기지국",
+   "n": 902,
+   "share": 49.9,
+   "ta_changed": 54.2,
+   "ta_ge2": 18.2,
+   "drsrp": -1.0,
+   "abs_drsrp": 5.0,
+   "dsinr": -1.0,
+   "abs_dsinr": 3.0,
+   "n_sinr": 651,
+   "speed_kmh": 35.2,
+   "pp": 16.5,
+   "mod6_same": 18.8
+  },
+  {
+   "kind": "carrier",
+   "ko": "같은 섹터 · 주파수만",
+   "n": 47,
+   "share": 2.6,
+   "ta_changed": 43.5,
+   "ta_ge2": 13.0,
+   "drsrp": 3.0,
+   "abs_drsrp": 7.0,
+   "dsinr": 0.5,
+   "abs_dsinr": 1.0,
+   "n_sinr": 16,
+   "speed_kmh": 42.9,
+   "pp": 2.1,
+   "mod6_same": 78.7
+  },
+  {
+   "kind": "sector",
+   "ko": "섹터만 (같은 주파수)",
+   "n": 846,
+   "share": 46.8,
+   "ta_changed": 40.6,
+   "ta_ge2": 7.2,
+   "drsrp": -1.0,
+   "abs_drsrp": 5.0,
+   "dsinr": -2.0,
+   "abs_dsinr": 4.0,
+   "n_sinr": 695,
+   "speed_kmh": 36.9,
+   "pp": 17.7,
+   "mod6_same": 3.3
+  },
+  {
+   "kind": "sector_carrier",
+   "ko": "섹터 + 주파수",
+   "n": 13,
+   "share": 0.7,
+   "ta_changed": 50.0,
+   "ta_ge2": 20.0,
+   "drsrp": 5.0,
+   "abs_drsrp": 9.0,
+   "dsinr": -3.0,
+   "abs_dsinr": 6.0,
+   "n_sinr": 6,
+   "speed_kmh": 61.4,
+   "pp": 0.0,
+   "mod6_same": 0.0
+  }
+ ],
+ "n_handovers": 1808,
+ "inter_same_pci": 0,
+ "by_activity": {
+  "car": {
+   "inter": 580,
+   "carrier": 40,
+   "sector": 418,
+   "sector_carrier": 8
+  },
+  "home": {
+   "inter": 12,
+   "carrier": 0,
+   "sector": 0,
+   "sector_carrier": 0
+  },
+  "subway": {
+   "inter": 280,
+   "carrier": 6,
+   "sector": 421,
+   "sector_carrier": 5
+  },
+  "walking": {
+   "inter": 30,
+   "carrier": 1,
+   "sector": 7,
+   "sector_carrier": 0
+  }
+ }
+}

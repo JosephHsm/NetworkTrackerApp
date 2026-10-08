@@ -49,6 +49,8 @@ class NetworkDataCollector(private val context: Context) {
     @Volatile var externalRttMs: Int? = null
     @Volatile var externalDlMbps: Double? = null
     @Volatile var externalUlMbps: Double? = null
+    // 속도 측정 결과 — "speedtest" 행 한 번에만 실린다. collect() 1회 소비 후 클리어
+    @Volatile var pendingSpeedTest: ActiveProbe.SpeedTestResult? = null
     // 수동 역 태그 앵커 — collect() 1회 소비 후 클리어
     @Volatile var pendingAnchor: KakaoStationResolver.StationResult? = null
     // 직전 tick의 이웃셀 JSON — 핸드오버 행에 pre-HO 이웃 리스트로 기록
@@ -560,6 +562,10 @@ class NetworkDataCollector(private val context: Context) {
         val anchor = pendingAnchor
         pendingAnchor = null
 
+        // 속도 측정 결과 소비 (speedtest 행에만 1회)
+        val st = pendingSpeedTest
+        pendingSpeedTest = null
+
         // 지속 부하 실측 속도 — 버스트가 아니라 계속 흐르므로 매 행 그대로 기록한다
         val dlMbps = externalDlMbps
         val ulMbps = externalUlMbps
@@ -633,7 +639,12 @@ class NetworkDataCollector(private val context: Context) {
             anchorLat           = anchor?.lat,
             anchorLon           = anchor?.lon,
             wifiScanJson        = wifiSnap?.json ?: "",
-            prevNeighborsJson   = prevNbrJson
+            prevNeighborsJson   = prevNbrJson,
+            speedtestDlMbps     = st?.mbps,
+            speedtestBytes      = st?.bytes,
+            speedtestMs         = st?.durationMs,
+            speedtestTtfbMs     = st?.ttfbMs,
+            speedtestReason     = st?.reason ?: ""
         )
     }
 

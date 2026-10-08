@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>이동 네트워크 측정 결과</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#111519; --ink-2:#4b5462; --ink-3:#7d8794;
+  --line:#dbe0e7; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --e3:#9a55d6;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px -14px rgba(16,24,40,.16);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f;
+  --line:#242b35; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --e3:#b276e6;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f;
+  --line:#242b35; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --e3:#b276e6;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,"Malgun Gothic",sans-serif;line-height:1.65}
+.wrap{max-width:1000px;margin:0 auto;padding:44px 16px 80px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.2;font-weight:600;letter-spacing:-.02em;margin:10px 0 0}
+h2{font-size:18px;font-weight:600;margin:0 0 4px}
+.dek{color:var(--ink-2);max-width:66ch;margin:12px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px;margin-top:22px}
+.card p{color:var(--ink-2);margin:6px 0 0;font-size:14.5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
+a.tile{display:block;text-decoration:none;color:inherit;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;border-left:4px solid var(--c,var(--s1))}
+a.tile:hover{border-color:var(--c,var(--s1))}
+a.tile b{display:block;font-size:15.5px}
+a.tile span{font-size:13px;color:var(--ink-3)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:20px}
+.stat{background:var(--surface);padding:12px 14px}
+.stat .k{font-size:12px;color:var(--ink-3)}
+.stat .v{font-size:24px;font-weight:600}
+.tbl{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--ink-3);font-weight:500}
+td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
+ul{margin:8px 0 0;padding-left:20px;color:var(--ink-2);font-size:14.5px}
+li{margin:3px 0}
+a{color:var(--s1)}
+code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">NetworkTrackerApp · 결과 모아보기</div>
+  <h1>이동 중 휴대폰은 어느 셀에 붙고, 무엇이 속도를 정하는가</h1>
+  <p class="dek">안드로이드 앱으로 차량·지하철·도보 이동 중 LTE/5G 신호, 접속 셀, 핸드오버, 지연 시간, 다운로드 속도를 5초마다 기록하고 분석한 결과다.
+    아래 리포트는 모두 같은 데이터로 만들었고, 그래프 위에 마우스를 올리면 값이 바로 나온다. 마지막 갱신 {{UPDATED}}.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="k">측정 세션</div><div class="v">{{N_SESS}}</div></div>
+    <div class="stat"><div class="k">측정 시간</div><div class="v">{{HOURS}}<span style="font-size:13px;color:var(--ink-3)"> 시간</span></div></div>
+    <div class="stat"><div class="k">측정 횟수</div><div class="v">{{ROWS}}</div></div>
+    <div class="stat"><div class="k">핸드오버</div><div class="v">{{HO}}</div></div>
+  </div>
+
+  <div class="card">
+    <h2>리포트</h2>
+    <p>그림 1 지도부터 그림 18 속도 측정까지 같은 구성이다. 이동수단별 리포트는 그 수단의 세션끼리 비교한다.</p>
+    <div class="grid">
+      <a class="tile" href="report_all.html" style="--c:var(--ink-2)"><b>전체 세션</b><span>{{N_ALL}}개 세션 · 이동수단끼리 비교</span></a>
+      <a class="tile" href="report_car.html" style="--c:var(--s1)"><b>차량</b><span>{{N_CAR}}개 세션</span></a>
+      <a class="tile" href="report_subway.html" style="--c:var(--s2)"><b>지하철</b><span>{{N_SUBWAY}}개 세션 · 역 위치로 보정한 좌표</span></a>
+      <a class="tile" href="report_walking.html" style="--c:var(--s3)"><b>도보</b><span>{{N_WALKING}}개 세션</span></a>
+      <a class="tile" href="handover_basics.html" style="--c:var(--e3)"><b>부록 · 핸드오버 기준</b><span>3GPP A1~A5 이벤트와 우리 측정 대조</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>결과 데이터 (CSV)</h2>
+    <p>리포트 숫자와 같은 계산으로 낸 표다. 엑셀에서 바로 열린다.</p>
+    <ul>
+      <li><a href="../analysis_output/stats/summary.csv">summary.csv</a> — 이동수단별 셀·기지국 유지 시간·거리 요약</li>
+      <li><a href="../analysis_output/stats/cell_segments.csv">cell_segments.csv</a> — 셀 유지 구간 (행 = 한 셀에 붙어 있던 구간)</li>
+      <li><a href="../analysis_output/stats/enb_segments.csv">enb_segments.csv</a> — 기지국 유지 구간</li>
+      <li><a href="../analysis_output/stats/handover_types.csv">handover_types.csv</a> — 이동수단별 핸드오버 종류</li>
+      <li><a href="../analysis_output/stats/sector_handovers.csv">sector_handovers.csv</a> — 핸드오버별 기지국·섹터·주파수 변경 판별 (그림 17)</li>
+      <li><a href="../analysis_output/stats/rat_share.csv">rat_share.csv</a> — 세션별 5G/LTE-A/LTE 표시 시간 비율</li>
+      <li>측정 원본: <a href="https://github.com/JosephHsm/NetworkTrackerApp/tree/master/trackingcsv/new">trackingcsv/new</a> (세션당 CSV 1개, 컬럼 설명은 각 리포트 맨 아래 '측정 버전')</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>세션 목록</h2>
+    <div class="tbl"><table>
+      <tr><th>세션</th><th>이동수단</th><th>앱 버전</th><th style="text-align:right">측정(분)</th><th style="text-align:right">거리(km)</th><th style="text-align:right">핸드오버</th><th style="text-align:right">속도 측정</th><th>원본</th></tr>
+{{SESSION_ROWS}}
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>앱</h2>
+    <p>측정 앱 소스는 <a href="https://github.com/JosephHsm/NetworkTrackerApp/tree/master/app">app/</a>에 있다. 앱 버전마다 기록하는 항목이 다르며, 차이는 각 리포트 맨 아래 '측정 버전' 표에 있다.</p>
+    <ul>
+{{APP_ITEMS}}
+    </ul>
+  </div>
+</div>
+</body>
+</html>
