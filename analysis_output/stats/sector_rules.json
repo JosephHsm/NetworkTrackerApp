@@ -1,13 +1,13 @@
 {
  "generated": "analysis/sector_rules.py",
- "n_cells": 1082,
+ "n_cells": 1080,
  "n_enb": 374,
  "lcid_blocks": [
   {
    "lcid": "0~5",
    "arfcn": 3050,
    "band": "B7 2.6GHz",
-   "cells": 525,
+   "cells": 523,
    "match": 95.2
   },
   {
@@ -95,30 +95,30 @@
   ]
  },
  "pci_lcid_agree": {
-  "pairs": 467,
-  "same_pci": 146,
-  "same_mod6": 139,
+  "pairs": 464,
+  "same_pci": 145,
+  "same_mod6": 138,
   "both": 138,
-  "pci_then_mod6": 94.5,
-  "mod6_then_pci": 99.3
+  "pci_then_mod6": 95.2,
+  "mod6_then_pci": 100.0
  },
  "pci_dup_same_arf": 1,
  "handover_kinds": [
   {
    "kind": "inter",
    "ko": "다른 기지국",
-   "n": 902,
-   "share": 49.9,
-   "ta_changed": 54.2,
-   "ta_ge2": 18.2,
+   "n": 900,
+   "share": 49.8,
+   "ta_changed": 54.1,
+   "ta_ge2": 18.3,
    "drsrp": -1.0,
    "abs_drsrp": 5.0,
    "dsinr": -1.0,
    "abs_dsinr": 3.0,
-   "n_sinr": 651,
-   "speed_kmh": 35.2,
-   "pp": 16.5,
-   "mod6_same": 18.8
+   "n_sinr": 649,
+   "speed_kmh": 35.3,
+   "pp": 16.4,
+   "mod6_same": 18.9
   },
   {
    "kind": "carrier",
@@ -169,7 +169,7 @@
    "mod6_same": 0.0
   }
  ],
- "n_handovers": 1808,
+ "n_handovers": 1806,
  "inter_same_pci": 0,
  "by_activity": {
   "car": {
@@ -179,7 +179,7 @@
    "sector_carrier": 8
   },
   "home": {
-   "inter": 12,
+   "inter": 10,
    "carrier": 0,
    "sector": 0,
    "sector_carrier": 0
