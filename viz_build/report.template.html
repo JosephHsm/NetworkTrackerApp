@@ -229,7 +229,8 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         기지국 띠는 그대로인데 셀 띠만 갈라지면 같은 기지국 안에서 섹터만 바꾼 것이다.
         세로선은 핸드오버 순간으로, <b>실선(굵음)이 다른 기지국</b>, <b>점선이 같은 기지국의 섹터 변경</b>이다. 검은 삼각형은 핑퐁(30초 안에 직전 셀로 복귀)이다.
         <b>기지국 띠 한 칸 안에서도 섹터는 바뀐다</b> — 지도에서 셀을 고르면 그 칸에 테두리가 생기니 어느 구간인지 보고 읽어야 한다.
-        섹터 번호는 칸 안에 적었고, 칸이 좁아 번호가 들어가지 않으면 생략된다 — 그때는 지도나 그래프를 짚어 오른쪽 상자에서 확인한다.
+        아래 띠의 칸 안에는 <b>셀 ID</b>를 적었다. 칸이 좁으면 끝 번호(셀 ID를 256으로 나눈 나머지)만, 그마저 안 들어가면 생략된다 — 그때는 지도나 그래프를 짚어 오른쪽 상자에서 확인한다.
+        셀 ID를 256으로 나눈 몫이 기지국 번호라, 같은 색 칸끼리는 셀 ID 앞자리가 같다.
         그래프 위에 마우스를 올리면 그 순간의 값이 그림 1 오른쪽 상자와 지도에 함께 나타나고, <b>반대로 지도를 짚으면 그 지점이 이 그래프에 세로선으로 표시된다.</b>
         <b>그래프를 좌우로 끌면 그 구간만 확대</b>되고(지도도 그 구간만 남는다), 더블클릭하거나 '전체 보기'를 누르면 돌아온다.
         범례의 <b>점선 테두리 항목을 누르면 그 종류의 핸드오버만</b> 지도와 이 그래프에 남는다.</p>
@@ -510,12 +511,15 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
         한 방향 안테나가 주파수마다 셀을 따로 열기 때문이다. 그래서 LCID 안에서 <b>무엇이 방향이고 무엇이 주파수인지</b>를 전 세션의 셀 목록으로 확인했다.
         <b>이 그림의 숫자는 리포트 종류와 상관없이 전 세션 기준</b>이다(analysis/sector_rules.py).</p>
       <p class="plain"><b>쉽게 말하면</b> — 기지국 하나는 여러 방향을 향한 안테나를 달고, 방향마다 주파수 여러 개를 쏜다.
-        폰이 기록하는 번호 중 <b>PCI가 '방향'을 알려준다</b>: 같은 기지국에서 PCI가 같으면 주파수만 다를 뿐 같은 방향 안테나다.</p>
+        폰이 기록하는 번호 중 <b>PCI가 '방향'을 알려준다</b>: 같은 기지국에서 PCI가 같으면 주파수만 다를 뿐 같은 방향 안테나다.
+        맨 아래에는 폰이 알려주지 않는 <b>이웃 셀의 셀 ID를 어떻게 추정했는지</b>와 그 정확도를 적었다.</p>
     </div>
     <div class="fig-body"><div class="chart-scroll"><svg id="cx"></svg></div></div>
     <div class="read" id="rx"></div>
     <div class="tbl-wrap" id="tx1" style="margin:0 26px 14px"></div>
     <div class="tbl-wrap" id="tx2" style="margin:0 26px 20px"></div>
+    <div class="read" id="rx2"></div>
+    <div class="tbl-wrap" id="tx3" style="margin:0 26px 20px"></div>
   </section>
 
   <section class="fig" id="fspeed">
@@ -591,6 +595,11 @@ const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) =>
 const quant = (a, q) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), i = (s.length - 1) * q, lo = Math.floor(i); return s[lo] + (s[Math.ceil(i)] - s[lo]) * (i - lo); };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 const enbOf = c => Math.floor(c / 256), secOf = c => c % 256;
+// 화면에는 셀 ID를 앞에 쓰고 기지국은 괄호로 붙인다. 색은 계속 기지국 단위라 같은 색 = 같은 기지국.
+const cellTxt = c => c == null ? "–" : "셀 " + c + " (기지국 " + enbOf(c) + ")";
+// 같은 주파수 최강 이웃의 셀 ID — 폰이 안 줘서 우리 접속 기록으로 추정한 값이다(neighbor_eci.py)
+const nbrTxt = p => p.nbrCell == null ? "셀 ID 모름" : "셀 " + p.nbrCell + (p.nbrConf === 1 ? " (추정)" : " (추정·근접)")
+  + (p.cell != null ? (enbOf(p.nbrCell) === enbOf(p.cell) ? " · 같은 기지국" : " · 다른 기지국") : "");
 const mmss = s => { s = Math.round(s); const m = Math.floor(s / 60); return m + "분 " + String(s % 60).padStart(2, "0") + "초"; };
 function spearman(xs, ys) {
   const n = xs.length; if (n < 5) return NaN;
@@ -667,6 +676,7 @@ const SESS = D.sessions.map(s => {
     s: s.id, t: a[C.t], lat: a[C.lat], lon: a[C.lon], cell: a[C.cell], rsrp: a[C.rsrp], sinr: a[C.sinr],
     rsrq: a[C.rsrq], nbr: a[C.nbr], nbrx: a[C.nbrx], speed: a[C.speed], rx: a[C.rx], tx: a[C.tx], pci: a[C.pci],
     arfcn: a[C.arfcn], ho: a[C.ho], pp: a[C.pp], rat: a[C.rat], rtt: a[C.rtt],
+    nbrCell: a[C.nbr_cell], nbrConf: a[C.nbr_conf],
   }));
   // 표본 하나가 대표하는 시간(다음 표본까지, 최대 10초) — 체류 시간·분당 핸드오버 계산용
   P.forEach((p, i) => { const nx = P[i + 1]; p.dt = nx ? Math.min(Math.max(nx.t - p.t, 0), 10) : 5; });
@@ -791,11 +801,11 @@ function pointRows(p) {
   return [
     { value: fmt(p.rsrp) + " dBm", label: "RSRP" },
     { value: fmt(p.sinr, 1) + " dB", label: "SINR" },
-    { value: fmt(p.nbr) + " dBm", label: "제일 센 이웃 셀 (같은 주파수)" },
+    { value: fmt(p.nbr) + " dBm", label: "제일 센 이웃 셀 (같은 주파수) · " + nbrTxt(p) },
     { value: p.speed == null ? "–" : fmt(p.speed * 3.6, 0) + " km/h", label: "이동 속도" },
     { value: fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps", label: "수신 / 송신" },
     { value: p.rtt == null ? "–" : fmt(p.rtt) + " ms", label: "지연 시간 (RTT)" },
-    { value: p.cell == null ? "–" : "eNB " + enbOf(p.cell) + " · 섹터 " + secOf(p.cell), label: "PCI " + fmt(p.pci) },
+    { value: cellTxt(p.cell), label: "PCI " + fmt(p.pci) + " · ARFCN " + fmt(p.arfcn) },
   ];
 }
 function initMap() {
@@ -838,7 +848,7 @@ function tipTitle(o) {
 }
 function evRows(ev) {
   return [
-    { value: "eNB " + enbOf(ev.from) + "·" + secOf(ev.from) + " → " + enbOf(ev.to) + "·" + secOf(ev.to), label: ev.same ? "(같은 기지국)" : "(다른 기지국)" },
+    { value: "셀 " + ev.from + " → 셀 " + ev.to, label: ev.same ? "(같은 기지국 " + enbOf(ev.to) + ")" : "(기지국 " + enbOf(ev.from) + " → " + enbOf(ev.to) + ")" },
     { value: fmt(ev.prev) + " → " + fmt(ev.nw) + " dBm", label: "RSRP" },
     { value: ev.speed == null ? "–" : fmt(ev.speed * 3.6, 0) + " km/h", label: "이동 속도" },
   ];
@@ -943,7 +953,7 @@ function drawHulls() {
       opacity: dim ? .3 : .9, fillColor: c, fillOpacity: dim ? .1 : .3,
     });
     m.on("mouseover", e => { L.DomEvent.stop(e); showTip(e.originalEvent, "셀 " + f.cell + " 영향권", [
-      { value: "eNB " + enbOf(f.cell) + " · 섹터 " + secOf(f.cell), label: "", color: c },
+      { value: "기지국 " + enbOf(f.cell), label: "", color: c },
       { value: mmss(f.sec), label: "머문 시간" },
       { value: f.pts.length + "회", label: "측정" },
       { value: fmt(median(f.rsrp)) + " dBm", label: "RSRP 중앙값" },
@@ -1064,7 +1074,7 @@ function drawMapLegend() {
   }
   if (mapMode === "both") items.push({ color: "transparent", ring: css("--ink-3"), label: "테두리 = 붙어 있던 기지국(아래 색)", kind: "dot" });
   if (mapMode !== "rsrp") {
-    topEnbs(8).forEach(e => items.push({ color: enbColor(e), label: "eNB " + e, kind: "dot" }));
+    topEnbs(8).forEach(e => items.push({ color: enbColor(e), label: "셀 " + e * 256 + "~ (기지국 " + e + ")", kind: "dot" }));
     if (enbRank.size > 8) items.push({ color: css("--line-2"), label: "그 밖 기지국 " + (enbRank.size - 8) + "곳", kind: "dot" });
   }
   // 핸드오버 항목은 눌러서 그 종류만 남기는 단추다 (그림 2와 같이 움직인다)
@@ -1144,7 +1154,8 @@ function drawInspect() {
     insRow(blk, "수신 / 송신", fmt(p.rx, 2) + " / " + fmt(p.tx, 2) + " Mbps");
     insRow(blk, "지연 시간 (RTT)", p.rtt == null ? "–" : fmt(p.rtt) + " ms");
     insRow(blk, "셀 ID", p.cell == null ? "–" : String(p.cell));
-    insRow(blk, "기지국 · 섹터", p.cell == null ? "–" : "eNB " + enbOf(p.cell) + " · " + secOf(p.cell));
+    insRow(blk, "기지국 (셀 ID ÷ 256)", p.cell == null ? "–" : String(enbOf(p.cell)));
+    insRow(blk, "제일 센 이웃 셀 ID", nbrTxt(p));
     insRow(blk, "PCI · ARFCN", fmt(p.pci) + " · " + fmt(p.arfcn));
     if (o.ev) insRow(blk, "이 순간", (o.ev.pp ? "핑퐁 " : "") + (o.ev.same ? "섹터 변경" : "기지국 변경")
       + " (" + fmt(o.ev.prev) + "→" + fmt(o.ev.nw) + ")");
@@ -1166,12 +1177,12 @@ function drawInspect() {
   const sw = h("span", "swatch"); sw.style.background = enbColor(hl.enb);
   t.append(sw, document.createTextNode("셀 " + me.cell));
   cb.append(t);
-  insRow(cb, "기지국 · 섹터", "eNB " + hl.enb + " · " + secOf(me.cell));
+  insRow(cb, "기지국 (셀 ID ÷ 256)", String(hl.enb));
   insRow(cb, "PCI · ARFCN", fmt(me.pci) + " · " + fmt(me.arfcn));
   insRow(cb, "머문 시간 합계", mmss(me.sec));
   insRow(cb, "접속 횟수", me.runs + "번");
   insRow(cb, "RSRP 중앙값", fmt(median(me.rsrp)) + " dBm");
-  insRow(cb, "같은 기지국 다른 섹터", sib.length ? sib.length + "개" : "없음");
+  insRow(cb, "같은 기지국 다른 셀", sib.length ? sib.length + "개" : "없음");
   // 그림 2에서 이 셀이 어느 구간인지 — 같은 기지국 안에서도 섹터가 바뀌므로 시각까지 알려준다
   const spans = cellSpans(hl.cell);
   spans.slice(0, 3).forEach((sp, i) => insRow(cb, i === 0 ? "붙어 있던 때" : " ",
@@ -1252,7 +1263,7 @@ function drawTimelineFor(cfg) {
     { color: css("--s1"), label: "세로 점선 = 같은 기지국 · 섹터만 변경", kind: "lk", pressed: evOnly === "intra", onClick: () => setEvOnly("intra") },
     { color: "transparent", label: "핑퐁 (30초 안에 직전 셀로 복귀)", kind: "tri", pressed: evOnly === "pp", onClick: () => setEvOnly("pp") },
   ];
-  topEnbs(8).forEach(e => lgItems.push({ color: enbColor(e), label: "eNB " + e, kind: "sw" }));
+  topEnbs(8).forEach(e => lgItems.push({ color: enbColor(e), label: "셀 " + e * 256 + "~ (기지국 " + e + ")", kind: "sw" }));
   if (enbRank.size > 8) lgItems.push({ color: css("--line-2"), label: "그 밖 기지국 " + (enbRank.size - 8) + "곳", kind: "sw" });
   legend($(cfg.lg), lgItems);
 
@@ -1366,7 +1377,9 @@ function drawTimelineFor(cfg) {
       if (r.cell != null) {
         // 글자가 실제로 들어갈 폭이 되고, 앞 라벨과 겹치지 않을 때만 쓴다
         const vx0 = Math.max(x0, PL), vx1 = Math.min(x0 + w, W - PR);
-        const txt = String(secOf(r.cell)), need = txt.length * 6.2 + 4, cx = (vx0 + vx1) / 2;
+        // 셀 ID 전체가 들어가면 그대로, 아니면 끝 번호(셀 ID % 256)만 쓴다
+        const full = String(r.cell), short = String(secOf(r.cell)), cx = (vx0 + vx1) / 2;
+        const txt = vx1 - vx0 >= full.length * 6.2 + 4 ? full : short, need = txt.length * 6.2 + 4;
         if (vx1 - vx0 >= need && cx - need / 2 >= labelEnd) {
           g.append(el("text", { x: cx, y: CBY + CBH - 4, "text-anchor": "middle",
             fill: css("--surface"), style: "font-size:10px;font-weight:600" }, txt));
@@ -1377,7 +1390,7 @@ function drawTimelineFor(cfg) {
         + "L" + x0 + "," + (EBY - 8) + "Z", fill: css("--ink"), opacity: .85 }));
     });
     svg.append(gl);
-    svg.append(el("text", { x: PL - 8, y: CBY + CBH, class: "alab", "text-anchor": "end" }, "섹터"));
+    svg.append(el("text", { x: PL - 8, y: CBY + CBH, class: "alab", "text-anchor": "end" }, "셀"));
     tlRows.push({ s, runs, eruns });
     // 시간 축 — 보이는 구간 길이에 맞춰 눈금 간격을 고른다
     const span = (Z1 - Z0) / 60;
@@ -2420,6 +2433,14 @@ function drawFigSinr() {
       + " dB 변했고, SINR이 가장 낮은 건 " + (sMin.sec > 0 ? "+" : "") + sMin.sec + "초(" + fmt(sMin.sinr, 1) + " dB)다 — 셀 경계는 RSRP보다 SINR에서 더 뚜렷하게 드러난다(그림 3). " : "",
     okA.length >= 2 ? "SINR " + okA[0].label + " 구간의 RTT 상위 10%는 " + fmt(okA[0].p90, 0) + " ms, " + okA[okA.length - 1].label + " 구간은 " + fmt(okA[okA.length - 1].p90, 0) + " ms"
       + (okB.length >= 2 ? "(RSRP로 가르면 " + okB[0].label + " " + fmt(okB[0].p90, 0) + " ms, " + okB[okB.length - 1].label + " " + fmt(okB[okB.length - 1].p90, 0) + " ms)" : "") + "다. 중앙값은 어느 쪽으로 갈라도 거의 같다 — 차이는 느린 순간에만 난다. " : "",
+    (() => {
+      // 같은 주파수 최강 이웃의 셀 ID(추정)로 간섭원을 가른다 — 같은 기지국의 옆 섹터인가, 다른 기지국인가
+      const NB = withS.filter(p => p.nbrCell != null && p.cell != null);
+      const same = NB.filter(p => enbOf(p.nbrCell) === enbOf(p.cell)).map(p => p.sinr), other = NB.filter(p => enbOf(p.nbrCell) !== enbOf(p.cell)).map(p => p.sinr);
+      return same.length >= 20 && other.length >= 20 ? "같은 주파수 제일 센 이웃의 셀 ID를 추정해 보면, 그 이웃이 같은 기지국의 다른 셀일 때 SINR 중앙값 " + fmt(median(same), 1)
+        + " dB(" + same.length + "회), 다른 기지국일 때 " + fmt(median(other), 1) + " dB(" + other.length + "회)다 — "
+        + (Math.abs(median(same) - median(other)) >= 2 ? "간섭원이 어디인지에 따라 품질이 갈린다" : "간섭원이 같은 기지국이든 다른 기지국이든 품질 차이는 크지 않다") + "(셀 ID 추정은 그림 17). " : "";
+    })(),
     RXp.length >= 30 ? "수신 속도는 SINR과 상관 " + fmt(spearman(RXp.map(p => p.rx), RXp.map(p => p.sinr)), 2) + ", RSRP와 " + fmt(spearman(RXp.map(p => p.rx), RXp.map(p => p.rsrp)), 2)
       + "로 둘 다 관계가 안 보인다 — 폰이 내려받는 양이 일정하지 않아 신호 탓을 가를 수 없다(측정 한계 ①)." : "",
   ]);
@@ -2595,9 +2616,35 @@ function drawFigSector() {
   table($("#tx1"), ["LCID 블록", "주로 쓰는 주파수", "셀 수", "그 주파수인 비율"],
     X.lcid_blocks.map(b => [b.lcid, b.band + " (EARFCN " + b.arfcn + ")", b.cells, fmt(b.match, 1) + "%"])
       .concat([["18 이상", "블록 밖 (추가 셀)", X.lcid_extra, "–"]]));
+  drawNbrEci();
   table($("#tx2"), ["핸드오버 종류", "건수", "비율", "TA 바뀜", "RSRP 변화 (중앙값)", "SINR 변화 (중앙값)", "속도 (km/h)", "핑퐁"],
     X.handover_kinds.map(k => [k.ko, k.n, fmt(k.share, 1) + "%", fmt(k.ta_changed, 0) + "%", sgn(k.drsrp, 0) + " dB", k.n_sinr >= 5 ? sgn(k.dsinr, 0) + " dB" : "–",
       fmt(k.speed_kmh, 0), fmt(k.pp, 0) + "%"]));
+}
+
+/** 그림 17 아래: 이웃 셀 ID 추정 (전 세션, neighbor_eci.py) */
+function drawNbrEci() {
+  const N = D.nbr_eci;
+  if (!N) { $("#rx2").textContent = ""; $("#tx3").replaceChildren(); return; }
+  const O = N.opencellid;
+  setRead($("#rx2"), [
+    { b: "이웃 셀의 셀 ID: 폰은 이웃 셀에 대해 PCI·주파수·신호만 알려주고 셀 ID는 주지 않는다(기록된 이웃 " + N.neighbor_obs.toLocaleString() + "건 전부 비어 있음). " },
+    "그래서 우리가 접속했던 셀(셀 ID·PCI·주파수·위치를 다 앎)로 메웠다: 이웃이 보인 자리에서 " + (N.radius_m / 1000) + " km 안에 같은 PCI·주파수로 접속했던 셀이 하나뿐이면 그 셀,"
+      + " 여럿이면 가장 가까운 셀이 두 번째보다 " + N.nearest_ratio + "배 이상 가까울 때만 그 셀로 본다. ",
+    "이렇게 이웃 관측의 " + fmt(N.est_share, 0) + "%에 셀 ID를 붙였다(나머지는 한 번도 접속해 본 적 없는 셀이라 모른다). ",
+    "정확도는 핸드오버로 확인했다 — 직전에 이웃이던 셀은 다음 순간 접속 셀이 되어 진짜 셀 ID가 드러난다. 그 세션을 빼고 나머지 세션만으로 추정한 " + N.val_estimated + "건 중 "
+      + N.val_correct + "건(" + fmt(N.val_accuracy, 0) + "%)이 맞았다. 지도·그림 2에서 '제일 센 이웃 셀 ID'로 보이는 값이 이것이다. ",
+    O ? "OpenCellID(opencellid.org)도 조사했지만 쓸 수 없었다: 한국 전체 " + O.kr_cells.toLocaleString() + "개 셀 중 LG U+ LTE는 " + O.lgu_lte + "개뿐이고 PCI 칸은 "
+      + (O.pci_filled ? O.pci_filled + "개만" : "모두 0으로") + " 채워져 있으며, 우리가 접속한 셀 " + O.our_cells.toLocaleString() + "개 중 등록된 건 " + O.our_found + "개("
+      + fmt(100 * O.our_found / O.our_cells, 0) + "%)다." : "",
+  ]);
+  const vd = N.val_detail || {};
+  table($("#tx3"), ["이웃 셀 ID 추정", "건수", "비고"], [
+    ["이웃 관측", N.neighbor_obs.toLocaleString(), "전 세션 neighbors_json"],
+    ["셀 ID 추정 — 후보 하나", N.est_unique.toLocaleString(), (N.radius_m / 1000) + " km 안에 같은 PCI·주파수 접속 셀이 하나"],
+    ["셀 ID 추정 — 가장 가까움", N.est_nearest.toLocaleString(), "후보 여럿, 1등이 2등보다 " + N.nearest_ratio + "배 이상 가까움"],
+    ["검증 (핸드오버)", N.val_handovers.toLocaleString(), "추정 " + N.val_estimated + " · 정답 " + N.val_correct + " · 오답 " + ((vd.unique_wrong || 0) + (vd.nearest_wrong || 0))],
+  ].concat(O ? [["OpenCellID LG U+ LTE", O.lgu_lte, "PCI 채워진 셀 " + O.pci_filled + " · 우리 셀 중 등록 " + O.our_found + "/" + O.our_cells]] : []));
 }
 
 /* ---------- 그림 18 : 속도 측정 (v1.3) ---------- */

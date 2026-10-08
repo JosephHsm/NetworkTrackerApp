@@ -25,3 +25,7 @@ app/build/
 # Python (analysis/ 분석 스크립트)
 __pycache__/
 *.pyc
+
+# OpenCellID 토큰·내려받은 DB (공개 저장소에 올리지 않는다)
+reference/opencellid/key.txt
+reference/opencellid/*.csv.gz

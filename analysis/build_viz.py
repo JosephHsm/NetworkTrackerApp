@@ -17,12 +17,14 @@ import numpy as np
 import pandas as pd
 
 import cell_stats
+import neighbor_eci
 
 TEMPLATE = "viz_build/report.template.html"
 INDEX_TEMPLATE = "viz_build/index.template.html"   # 교수님용 첫 화면 (리포트·CSV·세션 목록 모음)
 INDEX_OUT = "viz_build/index.html"
 MAPMATCH_DIR = "analysis_output"
 SECTOR_JSON = "analysis_output/stats/sector_rules.json"
+NBR_JSON = "analysis_output/stats/neighbor_eci.json"
 OUTS = {
     "all":     ("viz_build/report_all.html",     "전체 세션",   "이동하는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
     "car":     ("viz_build/report_car.html",     "차량 세션",   "차로 달리는 동안 폰은 어디에 붙고, 무엇이 속도를 정하는가"),
@@ -304,7 +306,34 @@ def make_bins(t, ho, pp, rsrp, rx, cell):
     return out
 
 
-def load(s, idx):
+def session_coords(df, use_mm):
+    """지도·거리 계산에 쓰는 좌표 → (lat, lon, map_ok, frozen, coord_src). 이웃 셀 추정도 같은 좌표를 쓴다."""
+    lat_raw = pd.to_numeric(df["latitude"], errors="coerce")
+    lon_raw = pd.to_numeric(df["longitude"], errors="coerce")
+    frozen = frozen_mask(lat_raw, lon_raw)
+    if use_mm:
+        # 지하철: 역 보정 좌표를 쓴다. 땅속 GPS는 얼어 있거나 기지국 기반이라 못 쓴다.
+        lat = pd.to_numeric(df["lat_mm"], errors="coerce")
+        lon = pd.to_numeric(df["lon_mm"], errors="coerce")
+        return lat, lon, lat.notna() & lon.notna(), frozen, "역 보정 (맵매칭)"
+    acc = pd.to_numeric(df["gps_accuracy_m"], errors="coerce")
+    stale = col(df, "location_source").astype(str).str.startswith("stale")
+    return lat_raw, lon_raw, lat_raw.notna() & (acc <= MAP_MAX_ACC_M) & ~stale & ~frozen, frozen, "GPS"
+
+
+def build_nbr_index():
+    """전 세션의 접속 기록(셀 ID·PCI·EARFCN·위치)으로 이웃 셀 ID 추정 색인을 만든다."""
+    obs = []
+    for s in SESSIONS:
+        df, use_mm, *_ = load_frame(s)
+        lat, lon, ok, _, _ = session_coords(df, use_mm)
+        obs += zip([os.path.basename(s["path"])] * len(df), pd.to_numeric(df["serving_cell_id"], errors="coerce"),
+                   pd.to_numeric(col(df, "serving_pci"), errors="coerce"),
+                   pd.to_numeric(col(df, "serving_freq_arfcn"), errors="coerce"), lat.where(ok), lon.where(ok))
+    return neighbor_eci.Index(obs)
+
+
+def load(s, idx, nbr_index=None):
     df, use_mm, raw_min, cut_head, cut_tail = load_frame(s)
     t0 = int(df["timestamp"].iloc[0])
     t = (df["timestamp"] - t0) / 1000.0
@@ -341,22 +370,16 @@ def load(s, idx):
     nbrx = pd.Series([best_neighbor(j, p, a, False)
                       for j, p, a in zip(df["neighbors_json"], s_pci, s_arf)])
 
-    lat_raw = pd.to_numeric(df["latitude"], errors="coerce")
-    lon_raw = pd.to_numeric(df["longitude"], errors="coerce")
-    frozen = frozen_mask(lat_raw, lon_raw)
+    lat, lon, map_ok, frozen, coord_src = session_coords(df, use_mm)
 
-    if use_mm:
-        # 지하철: 역 보정 좌표를 쓴다. 땅속 GPS는 얼어 있거나 기지국 기반이라 못 쓴다.
-        lat = pd.to_numeric(df["lat_mm"], errors="coerce")
-        lon = pd.to_numeric(df["lon_mm"], errors="coerce")
-        map_ok = lat.notna() & lon.notna()
-        coord_src = "역 보정 (맵매칭)"
-    else:
-        acc = pd.to_numeric(df["gps_accuracy_m"], errors="coerce")
-        stale = col(df, "location_source").astype(str).str.startswith("stale")
-        lat, lon = lat_raw, lon_raw
-        map_ok = lat.notna() & (acc <= MAP_MAX_ACC_M) & ~stale & ~frozen
-        coord_src = "GPS"
+    # 같은 주파수 최강 이웃의 셀 ID 추정 (폰은 이웃의 셀 ID를 안 준다 — neighbor_eci.py)
+    nbr_cell, nbr_conf = [None] * len(df), [0] * len(df)
+    if nbr_index is not None:
+        for i, (js, p, a) in enumerate(zip(df["neighbors_json"], s_pci, s_arf)):
+            b = neighbor_eci.strongest_same_freq(js, p, a) if isinstance(js, str) else None
+            res = nbr_index.infer(b[0], b[1], lat[i] if map_ok[i] else np.nan, lon[i] if map_ok[i] else np.nan) if b else None
+            if res:
+                nbr_cell[i], nbr_conf[i] = res[0], 1 if res[1] == "unique" else 2
 
     short_win = (df["timestamp"].diff() / 1000.0 <= MIN_RATE_WINDOW_S).to_numpy()
     rx = pd.to_numeric(col(df, "mobile_rx_bitrate_Mbps", "rx_bitrate_Mbps"), errors="coerce").mask(short_win)
@@ -383,6 +406,7 @@ def load(s, idx):
             r(nbr[i], 0), r(nbrx[i], 0), r(speed[i], 1), r(rx[i], 3), r(tx[i], 3),
             r(col(df, "serving_pci")[i], 0), r(col(df, "serving_freq_arfcn")[i], 0),
             1 if ho[i] else 0, 1 if pp[i] else 0, int(rat[i]), r(rtt[i], 0),
+            nbr_cell[i], nbr_conf[i],
         ])
 
     # 핸드오버 직전에 보이던 이웃 목록: v1.1은 그 행에 남아 있고(prev_neighbors_json),
@@ -461,7 +485,7 @@ def build(scope, sessions, html):
     used = sorted({s["ncols"] for s in picked})
     data = dict(
         cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "nbrx", "speed", "rx", "tx",
-              "pci", "arfcn", "ho", "pp", "rat", "rtt"],
+              "pci", "arfcn", "ho", "pp", "rat", "rtt", "nbr_cell", "nbr_conf"],
         seg_cols=SEG_COLS,
         st_cols=["t", "mbps", "rsrp", "sinr", "speed", "cell_changed", "rat", "after_ho"],
         ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp",
@@ -475,6 +499,8 @@ def build(scope, sessions, html):
         sessions=picked,
         # 섹터 판별 기준 (전 세션 기준, analysis/sector_rules.py가 만든다) — 리포트 그림 17
         sector=json.load(open(SECTOR_JSON, encoding="utf-8")) if os.path.exists(SECTOR_JSON) else None,
+        # 이웃 셀 ID 추정 검증·범위와 OpenCellID 조사 (neighbor_eci.py) — 그림 17
+        nbr_eci=json.load(open(NBR_JSON, encoding="utf-8")) if os.path.exists(NBR_JSON) else None,
     )
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     with open(out, "w", encoding="utf-8") as f:
@@ -513,7 +539,8 @@ def build_index(sessions):
 
 
 def main():
-    sessions = [load(s, i) for i, s in enumerate(SESSIONS)]
+    nbr_index = build_nbr_index()
+    sessions = [load(s, i, nbr_index) for i, s in enumerate(SESSIONS)]
     for s in sessions:
         cut = ""
         if s["cut_head"] or s["cut_tail"]:

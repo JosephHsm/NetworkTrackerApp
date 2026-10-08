@@ -1,0 +1,28 @@
+{
+ "generated": "analysis/neighbor_eci.py",
+ "radius_m": 2000,
+ "nearest_ratio": 2.0,
+ "neighbor_obs": 71313,
+ "est_unique": 20087,
+ "est_nearest": 1315,
+ "est_share": 30.0,
+ "val_handovers": 1794,
+ "val_estimated": 678,
+ "val_correct": 652,
+ "val_accuracy": 96.2,
+ "val_detail": {
+  "none": 1116,
+  "unique_ok": 611,
+  "unique_wrong": 26,
+  "nearest_ok": 41
+ },
+ "opencellid": {
+  "kr_cells": 8350,
+  "lgu_lte": 893,
+  "pci_filled": 0,
+  "our_cells": 1080,
+  "our_found": 11,
+  "our_enb": 374,
+  "our_enb_found": 12
+ }
+}
