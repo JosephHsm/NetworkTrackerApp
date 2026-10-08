@@ -2385,7 +2385,7 @@ function drawFigSinr() {
   const allMed = grid.flatMap(g => g.cells.map(c => c.med)).filter(v => !isNaN(v));
   const lo = Math.min(0, Math.floor(Math.min(...allMed) / 5) * 5), hi = Math.max(15, Math.ceil(Math.max(...allMed) / 5) * 5);
   const lx = i => LX + (i + .5) / MARGIN_BANDS.length * LW, ly = v => LT + (hi - v) / (hi - lo) * LH;
-  svg.append(el("text", { x: LX, y: LT - 26, class: "plab" }, "같은 RSRP에서도 이웃과의 차이가 SINR을 정한다"));
+  svg.append(el("text", { x: LX, y: LT - 26, class: "plab" }, "이웃과의 신호 차이별 SINR 중앙값 (선 = RSRP 구간)"));
   svg.append(el("text", { x: LX - 8, y: LT - 10, class: "alab", "text-anchor": "end" }, "SINR dB"));
   for (let v = lo; v <= hi; v += 5) {
     svg.append(el("line", { x1: LX, y1: ly(v), x2: LX + LW, y2: ly(v), class: "grid" }));
