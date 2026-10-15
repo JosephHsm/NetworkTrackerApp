@@ -311,6 +311,23 @@ td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color
     <details><summary>표로 보기</summary><div class="tbl-wrap" id="t4"></div></details>
   </section>
 
+  <section class="fig" id="f4b">
+    <div class="fig-head">
+      <div class="fig-num">그림 5-2 · 가설 3 보충</div>
+      <h2>직전 신호 세기에 따라 핸드오버의 득실이 갈리는가<span class="verdict" id="v4b"></span></h2>
+      <p class="sub">핸드오버 직전 RSRP를 다섯 구간으로 나눠, 구간마다 <b>핸드오버 때의 RSRP 변화</b>(연속한 두 측정의 차이)와
+        <b>같은 구간에서 핸드오버 없이 다음 측정으로 넘어갈 때의 변화(대조군)</b>를 나란히 놓았다. 두 값의 차이가 핸드오버의 순효과다.
+        셀 정보가 8초 넘게 갱신되지 않은 측정(직전 값 재사용)과 10초 넘게 벌어진 쌍은 뺐다.</p>
+      <p class="plain"><b>쉽게 말하면</b> — 신호는 원래 약하면 다음엔 조금 오르고, 세면 조금 내리는 경향이 있다.
+        그래서 "갈아탔더니 올랐다"만 보면 갈아탄 덕인지 원래 오를 참이었는지 모른다. <b>안 갈아탔을 때(회색)보다 더 오르면</b> 갈아탄 덕이고,
+        더 내리면 갈아타서 손해를 본 것이다. 전체 평균이 0 근처로 보여도, 약할 때의 이득과 셀 때의 손해가 서로 지워진 것일 수 있다.</p>
+    </div>
+    <div class="legend" id="lg4b"></div>
+    <div class="fig-body"><div class="chart-scroll"><svg id="c4b"></svg></div></div>
+    <div class="read" id="r4b"></div>
+    <details><summary>표로 보기</summary><div class="tbl-wrap" id="t4b"></div></details>
+  </section>
+
   <section class="fig" id="f5">
     <div class="fig-head">
       <div class="fig-num">그림 6 · 측정 항목 연관성</div>
@@ -676,7 +693,7 @@ const SESS = D.sessions.map(s => {
     s: s.id, t: a[C.t], lat: a[C.lat], lon: a[C.lon], cell: a[C.cell], rsrp: a[C.rsrp], sinr: a[C.sinr],
     rsrq: a[C.rsrq], nbr: a[C.nbr], nbrx: a[C.nbrx], speed: a[C.speed], rx: a[C.rx], tx: a[C.tx], pci: a[C.pci],
     arfcn: a[C.arfcn], ho: a[C.ho], pp: a[C.pp], rat: a[C.rat], rtt: a[C.rtt],
-    nbrCell: a[C.nbr_cell], nbrConf: a[C.nbr_conf],
+    nbrCell: a[C.nbr_cell], nbrConf: a[C.nbr_conf], stale: C.stale == null ? 0 : a[C.stale],
   }));
   // 표본 하나가 대표하는 시간(다음 표본까지, 최대 10초) — 체류 시간·분당 핸드오버 계산용
   P.forEach((p, i) => { const nx = P[i + 1]; p.dt = nx ? Math.min(Math.max(nx.t - p.t, 0), 10) : 5; });
@@ -1720,6 +1737,91 @@ function drawFig4() {
   table($("#t4"), ["변화(dB)", "비율(%)", "건수", "같은 기지국"], bins.filter(k => k.n).map(k => [k.b === -1 ? "0" : sgn(k.b + 1, 0) + " 부근", fmt(k.n / E.length * 100, 1), k.n, k.same]));
 }
 
+/* ---------- 그림 5-2 : 직전 RSRP 구간별 핸드오버 순효과 (대조군 비교) ---------- */
+// 연속한 두 측정(같은 세션, 10초 안, 둘 다 새로 갱신된 값)의 RSRP 차이를 직전 RSRP 구간으로 묶는다.
+// 핸드오버가 끼면 핸드오버 쌍, 아니면 대조군. analysis/ho_review.py의 delta_table과 같은 계산이다.
+const PRE_BINS = [
+  ["−105 이하", -Infinity, -105], ["−105 ~ −95", -105, -95], ["−95 ~ −85", -95, -85],
+  ["−85 ~ −75", -85, -75], ["−75 초과", -75, Infinity],
+];
+function preBinStats() {
+  const B = PRE_BINS.map(([name]) => ({ name, ho: [], ctrl: [] }));
+  chosen().forEach(s => {
+    const P = s.P;
+    for (let i = 1; i < P.length; i++) {
+      const a = P[i - 1], b = P[i];
+      if (a.rsrp == null || b.rsrp == null || a.stale || b.stale || b.t - a.t > 10) continue;
+      const k = PRE_BINS.findIndex(([, lo, hi]) => a.rsrp > lo && a.rsrp <= hi);
+      if (k < 0) continue;
+      (b.ho ? B[k].ho : B[k].ctrl).push(b.rsrp - a.rsrp);
+    }
+  });
+  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+  B.forEach(g => {
+    g.n = g.ho.length; g.nc = g.ctrl.length; g.hm = mean(g.ho); g.cm = mean(g.ctrl); g.net = g.hm - g.cm;
+    g.up = g.n ? g.ho.filter(v => v >= 3).length / g.n : NaN; g.down = g.n ? g.ho.filter(v => v <= -3).length / g.n : NaN;
+  });
+  return B;
+}
+function drawFig4b() {
+  const svg = $("#c4b"), B = preBinStats();
+  legend($("#lg4b"), [{ color: css("--s1"), label: "핸드오버 때 변화", kind: "sw" },
+    { color: css("--cell-a"), label: "핸드오버 없을 때 변화 (대조군)", kind: "sw" }]);
+  const nAll = B.reduce((x, g) => x + g.n, 0);
+  const W = 960, PL = 104, PR = 200, PT = 26, RH = 44, GAP = 14, PB = 40;
+  const H = PT + B.length * (RH + GAP) + PB;
+  prep(svg, W, H);
+  if (nAll < 5) { svg.append(el("text", { x: PL, y: H / 2, class: "alab" }, "핸드오버 전후 RSRP 표본이 부족하다")); $("#r4b").textContent = ""; $("#v4b").textContent = "판단 불가"; return; }
+  const vals = B.flatMap(g => [g.hm, g.cm]).filter(v => !isNaN(v));
+  const LIM = Math.max(6, Math.ceil(Math.max(...vals.map(Math.abs)) / 3) * 3);
+  const x = v => PL + (v + LIM) / (2 * LIM) * (W - PL - PR);
+  const STEP = LIM > 9 ? 6 : 3;
+  for (let v = -Math.floor(LIM / STEP) * STEP; v <= LIM; v += STEP) {
+    svg.append(el("line", { x1: x(v), y1: PT - 6, x2: x(v), y2: H - PB, class: "grid" }));
+    svg.append(el("text", { x: x(v), y: H - PB + 18, class: "tick", "text-anchor": "middle" }, (v > 0 ? "+" : "") + v));
+  }
+  svg.append(el("line", { x1: x(0), y1: PT - 6, x2: x(0), y2: H - PB, stroke: css("--ink-3"), "stroke-width": 1 }));
+  svg.append(el("text", { x: W - PR + 14, y: PT - 10, class: "dlab" }, "순효과 (핸드오버 − 대조군)"));
+  B.forEach((g, i) => {
+    const y = PT + i * (RH + GAP), bh = (RH - 4) / 2;
+    svg.append(el("text", { x: PL - 10, y: y + RH / 2 - 3, class: "dlab", "text-anchor": "end" }, g.name));
+    svg.append(el("text", { x: PL - 10, y: y + RH / 2 + 12, class: "tick", "text-anchor": "end" }, g.n + "건"));
+    [[g.hm, css("--s1"), 0], [g.cm, css("--cell-a"), bh + 4]].forEach(([v, col, dy]) => {
+      if (isNaN(v)) return;
+      const x0 = Math.min(x(0), x(v)), w = Math.max(Math.abs(x(v) - x(0)), 1);
+      svg.append(el("rect", { x: x0, y: y + dy, width: w, height: bh, rx: 3, fill: col }));
+      svg.append(el("text", { x: v >= 0 ? x(v) + 5 : x(v) - 5, y: y + dy + bh / 2 + 4, class: "tick",
+        "text-anchor": v >= 0 ? "start" : "end" }, sgn(v, 1)));
+    });
+    if (!isNaN(g.net)) svg.append(el("text", { x: W - PR + 14, y: y + RH / 2 + 5,
+      style: "font-size:15px;font-weight:600", fill: g.net >= 1 ? css("--s1") : g.net <= -1 ? css("--neg") : css("--ink-2") },
+      sgn(g.net, 1) + " dB"));
+    const hit = el("rect", { x: PL, y, width: W - PL - PR, height: RH, fill: "transparent" });
+    hit.addEventListener("pointermove", ev => showTip(ev, "직전 RSRP " + g.name + " dBm", [
+      { color: css("--s1"), value: sgn(g.hm, 1) + " dB", label: "핸드오버 " + g.n + "건 평균" },
+      { color: css("--cell-a"), value: sgn(g.cm, 1) + " dB", label: "대조군 " + g.nc + "쌍 평균" },
+      { value: sgn(g.net, 1) + " dB", label: "순효과" },
+      { value: fmt(100 * g.up, 0) + "% / " + fmt(100 * g.down, 0) + "%", label: "3 dB 이상 좋아짐 / 나빠짐" }]));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.append(hit);
+  });
+  svg.append(el("text", { x: W - PR, y: H - 6, class: "alab", "text-anchor": "end" }, "다음 측정 RSRP − 직전 측정 RSRP (dB)"));
+
+  const weak = B.slice(0, 2), strong = B.slice(3), sum = (a, k) => a.reduce((x, g) => x + g[k], 0);
+  const wavg = (a, k) => { const n = sum(a, "n"); return n ? a.reduce((x, g) => x + (isNaN(g[k]) ? 0 : g[k] * g.n), 0) / n : NaN; };
+  const wNet = wavg(weak, "net"), sNet = wavg(strong, "net");
+  $("#v4b").textContent = isNaN(wNet) || isNaN(sNet) ? "판단 불가" : wNet >= 1 && sNet <= -1 ? "그렇다" : "뚜렷하지 않다";
+  setRead($("#r4b"), [
+    { b: "직전 RSRP가 −95 dBm 이하일 때 핸드오버 " + sum(weak, "n") + "건의 순효과는 평균 " + sgn(wavg(weak, "net"), 1) + " dB, " },
+    { b: "−85 dBm보다 셀 때 " + sum(strong, "n") + "건은 " + sgn(wavg(strong, "net"), 1) + " dB였다. " },
+    "약할 때 갈아타면 이득이고, 이미 좋을 때 갈아타면 오히려 신호가 떨어졌다. ",
+    "−85 dBm보다 센 상태의 핸드오버가 전체 " + nAll + "건 중 " + fmt(100 * sum(strong, "n") / nAll, 0) + "%라서, 그림 5처럼 전체를 한데 모으면 이득과 손해가 지워져 0 근처로 보인다. ",
+    "순효과는 같은 직전 RSRP 구간의 '그냥 다음 측정' 변화를 빼서 평균 회귀를 덜어낸 값이다.",
+  ]);
+  table($("#t4b"), ["직전 RSRP (dBm)", "핸드오버", "핸드오버 때 평균 (dB)", "대조군 쌍", "대조군 평균 (dB)", "순효과 (dB)", "3 dB↑ 좋아짐", "3 dB↓ 나빠짐"],
+    B.map(g => [g.name, g.n, sgn(g.hm, 1), g.nc, sgn(g.cm, 1), sgn(g.net, 1), fmt(100 * g.up, 0) + "%", fmt(100 * g.down, 0) + "%"]));
+}
+
 /* ---------- 그림 5 : 신호 ↔ 데이터 속도 ---------- */
 function drawFig5() {
   const svg = $("#c5"), P = allPts();
@@ -2761,7 +2863,7 @@ function renderAll(fit) {
   if (hl && !allPts().some(p => p.cell === hl.cell)) hl = null;
   if (pinned && !chosen().some(x => x.id === pinned.p.s)) pinned = null;
   hover = null;
-  drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig3b(); drawFig4(); drawFig5(); drawFig6(); drawFig7();
+  drawMap(fit); drawFig1Text(); drawTimeline(); drawFig3(); drawFig3b(); drawFig4(); drawFig4b(); drawFig5(); drawFig6(); drawFig7();
   drawFig8(); drawFig10(); drawFig11(); drawFig12(); drawFig13(); drawFig14(); drawFigSinr(); drawFigCdf(); drawFigSector(); drawFigSpeed(); drawVersions();
 }
 document.querySelectorAll(".seg button[data-mode]").forEach(b => {

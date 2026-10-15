@@ -39,6 +39,7 @@ ACTIVITY_KO = {"car": "차량", "subway": "지하철", "walking": "도보", "hom
 
 MAP_MAX_ACC_M = 50       # 지도에 찍을 GPS 정확도 상한
 PINGPONG_S = 30          # 30초 안에 직전 셀로 돌아오면 핑퐁
+STALE_MS = 8000          # allCellInfo가 이보다 오래되면 새 측정이 아니라 직전 값 재사용(동결)
 BIN_S = 30 * 60          # 구간 길이 — 30분
 # 이보다 짧은 구간은 30분 환산이 과도한 외삽이라 신뢰도를 낮춰 표시한다.
 # 5분으로 잡은 이유: 9.9분/49건(8/4)·8.7분/31건(9/9)은 이벤트가 충분해 비율 추정이 멀쩡한 반면,
@@ -171,6 +172,13 @@ VERSIONS = {
                 "'그 순간 그 셀에서 받을 수 있는 최대 속도'를 잰다(첫 0.5초는 TCP 느린 시작이라 뺀다). "
                 "측정 직전(speedtest_start)과 직후(speedtest)에 행이 하나씩 더 남아, 같은 몇 초의 RSRP·SINR과 속도를 짝지을 수 있다. "
                 "셀이 바뀔 때마다 새 셀에서도 바로 잰다(speedtest_reason = handover, 직전 측정 10초 안이면 건너뜀).",
+        missing=["prev_neighbors_age_ms (직전 이웃 목록 나이)"],
+    ),
+    80: dict(
+        name="v1.4",
+        summary="셀 정보를 1초마다 새로 받아 둔다(행은 그대로 정기 간격). 정기 행은 1초 안쪽의 셀 정보를 쓰고 — v1.3까지는 "
+                "직전 tick에 요청한 결과라 늘 약 5초 묵어 있었다 — 핸드오버 행의 직전 이웃 목록도 1초 안쪽 것이 된다. "
+                "그 목록의 나이를 prev_neighbors_age_ms로 남긴다. 직전 목록에 없던 셀로 옮겨간 핸드오버(v1.3까지 32%)를 줄이려는 변경이다.",
         missing=[],
     ),
 }
@@ -180,6 +188,7 @@ ADDED = {
          "wifi_scan_json", "prev_neighbors_json"],
     74: ["probe_ul_mbps"],
     79: ["speedtest_dl_mbps", "speedtest_bytes", "speedtest_ms", "speedtest_ttfb_ms", "speedtest_reason"],
+    80: ["prev_neighbors_age_ms"],
 }
 
 
@@ -390,6 +399,7 @@ def load(s, idx, nbr_index=None):
     speed = speed.where(~frozen)
 
     rat = cell_stats.rat_code(col(df, "override_network_type"))
+    stale = (pd.to_numeric(col(df, "cell_info_age_ms"), errors="coerce") > STALE_MS).to_numpy()
 
     def r(v, nd):
         return None if pd.isna(v) else round(float(v), nd)
@@ -406,7 +416,7 @@ def load(s, idx, nbr_index=None):
             r(nbr[i], 0), r(nbrx[i], 0), r(speed[i], 1), r(rx[i], 3), r(tx[i], 3),
             r(col(df, "serving_pci")[i], 0), r(col(df, "serving_freq_arfcn")[i], 0),
             1 if ho[i] else 0, 1 if pp[i] else 0, int(rat[i]), r(rtt[i], 0),
-            nbr_cell[i], nbr_conf[i],
+            nbr_cell[i], nbr_conf[i], 1 if stale[i] else 0,
         ])
 
     # 핸드오버 직전에 보이던 이웃 목록: v1.1은 그 행에 남아 있고(prev_neighbors_json),
@@ -485,7 +495,7 @@ def build(scope, sessions, html):
     used = sorted({s["ncols"] for s in picked})
     data = dict(
         cols=["t", "lat", "lon", "cell", "rsrp", "sinr", "rsrq", "nbr", "nbrx", "speed", "rx", "tx",
-              "pci", "arfcn", "ho", "pp", "rat", "rtt", "nbr_cell", "nbr_conf"],
+              "pci", "arfcn", "ho", "pp", "rat", "rtt", "nbr_cell", "nbr_conf", "stale"],
         seg_cols=SEG_COLS,
         st_cols=["t", "mbps", "rsrp", "sinr", "speed", "cell_changed", "rat", "after_ho"],
         ev_cols=["t", "from", "to", "same_enb", "rsrp_prev", "rsrp_new", "speed", "pp",
