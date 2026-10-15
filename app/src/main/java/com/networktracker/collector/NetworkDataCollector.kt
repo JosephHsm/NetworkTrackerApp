@@ -53,8 +53,17 @@ class NetworkDataCollector(private val context: Context) {
     @Volatile var pendingSpeedTest: ActiveProbe.SpeedTestResult? = null
     // 수동 역 태그 앵커 — collect() 1회 소비 후 클리어
     @Volatile var pendingAnchor: KakaoStationResolver.StationResult? = null
-    // 직전 tick의 이웃셀 JSON — 핸드오버 행에 pre-HO 이웃 리스트로 기록
+    // 직전 tick의 이웃셀 JSON과 그 측정 시각(elapsedRealtime) — 1초 버퍼가 비었을 때 pre-HO 이웃 리스트로 쓴다
     private var lastNeighborsJson = "[]"
+    private var lastNeighborsAtMs = 0L
+
+    // ── v1.4 셀 정보 1초 버퍼 ────────────────────────────────────────────────
+    // 서비스가 1초마다 requestCellInfoUpdate를 부르고, 응답(과 CellInfoListener 알림)을 여기 담아 둔다.
+    // collect()는 이것과 OS 캐시(allCellInfo) 중 더 새로 측정된 쪽을 쓴다 — v1.3까지는 tick 끝에 요청하고
+    // 다음 tick에 캐시를 읽어서, 정기 행의 셀 정보가 늘 약 5초 묵어 있었다(cell_info_age_ms 중앙값 5001).
+    private var freshCells: List<CellInfo>? = null
+    // 서빙셀이 아직 lastCellId인 가장 최근 목록 — 핸드오버 행의 prev_neighbors_json (1초 안쪽의 pre-HO 스냅샷)
+    private var preHoCells: List<CellInfo>? = null
 
     // 전체 Rx/Tx (Wi-Fi + 셀룰러)
     private var prevRxBytes       = TrafficStats.getTotalRxBytes()
@@ -277,6 +286,7 @@ class NetworkDataCollector(private val context: Context) {
             }
 
             override fun onCellInfoChanged(cellInfos: List<CellInfo>) {
+                onFreshCells(cellInfos)
                 val newId = extractServingId(cellInfos)
                 if (newId.isNotEmpty() && newId != lastCellId) onCellChangeDetected?.invoke()
             }
@@ -295,6 +305,20 @@ class NetworkDataCollector(private val context: Context) {
             }
         }
         return ""
+    }
+
+    /** 셀 목록이 측정된 시각 (elapsedRealtime 기준 ms). API 30+: timestampMillis, API 29: getTimeStamp()(ns) */
+    private fun measuredAtMs(cells: List<CellInfo>?): Long? = cells?.firstOrNull()?.let { c ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) c.timestampMillis
+        else @Suppress("DEPRECATION") (c.timeStamp / 1_000_000L)
+    }
+
+    /** 새로 받은 셀 목록을 버퍼에 담는다 — 메인 스레드(mainExecutor)에서만 불린다. */
+    private fun onFreshCells(cells: List<CellInfo>) {
+        val at = measuredAtMs(cells) ?: return
+        if (at < (measuredAtMs(freshCells) ?: Long.MIN_VALUE)) return   // 늦게 도착한 옛 응답
+        freshCells = cells
+        if (lastCellId.isNotEmpty() && extractServingId(cells) == lastCellId) preHoCells = cells
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -384,16 +408,26 @@ class NetworkDataCollector(private val context: Context) {
         var nrNeighborCount     = 0; var lteNeighborCount = 0; var neighborCount = 0
 
         // 이웃셀을 (rsrp, JSONObject) 쌍으로 수집한 뒤 RSRP 내림차순 정렬
-        data class NbrEntry(val rsrp: Int, val json: JSONObject)
         val nbrList = mutableListOf<NbrEntry>()
 
-        // 이웃셀 최강 RSRP 추적
+        // 이웃셀 최강 RSRP 추적 (LTE·NR만 — WCDMA/GSM은 목록에만 넣는다)
         var bestNbrRsrp: Int? = null; var bestNbrPci: Int? = null; var bestNbrArfcn: Int? = null
+        fun addNeighbor(e: NbrEntry) {
+            nbrList.add(e)
+            if (e.forBest && e.rsrp != Int.MIN_VALUE && (bestNbrRsrp == null || e.rsrp > bestNbrRsrp!!)) {
+                bestNbrRsrp = e.rsrp; bestNbrPci = e.pci; bestNbrArfcn = e.arfcn
+            }
+        }
 
         // allCellInfo는 비용 있는 binder 호출이라 한 행에서 한 번만 읽고 재사용한다.
         // (두 번 읽으면 신선도 계산과 셀 파싱이 서로 다른 시점의 스냅샷을 볼 수 있다)
-        val cellInfoList: List<CellInfo>? =
+        // 1초 버퍼(freshCells)가 OS 캐시보다 새로 측정된 것이면 그쪽을 쓴다.
+        val cachedCells: List<CellInfo>? =
             if (hasLocation()) runCatching { tel.allCellInfo }.getOrNull() else null
+        val bufferedCells = freshCells
+        val cellInfoList: List<CellInfo>? =
+            if ((measuredAtMs(bufferedCells) ?: Long.MIN_VALUE) > (measuredAtMs(cachedCells) ?: Long.MIN_VALUE))
+                bufferedCells else cachedCells
 
         // allCellInfo 데이터 신선도 — 클수록 stale (정상: <5000ms)
         // API 30+: timestampMillis(ms), API 29: getTimeStamp()(ns, deprecated)
@@ -434,29 +468,7 @@ class NetworkDataCollector(private val context: Context) {
                             cell.cellIdentity.mccString?.let { mcc = it }
                             cell.cellIdentity.mncString?.let { mnc = it }
                         } else {
-                            val nRsrp   = sig.rsrp.valid()
-                            val nPci    = cell.cellIdentity.pci.valid()
-                            val nEarfcn = cell.cellIdentity.earfcn.valid()
-                            // 최강 이웃셀 갱신
-                            if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
-                                bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nEarfcn
-                            }
-                            val json = JSONObject().apply {
-                                put("type",   "LTE")
-                                putOpt("cell_id", id.ifEmpty { null })
-                                put("pci",    nPci.toJsonOrNull())
-                                put("earfcn", nEarfcn.toJsonOrNull())
-                                put("tac",    cell.cellIdentity.tac.toJsonOrNull())
-                                put("rsrp",   sig.rsrp.toJsonOrNull())
-                                put("rsrq",   sig.rsrq.toJsonOrNull())
-                                put("rssi",   sig.rssi.toJsonOrNull())
-                                put("snr",    sig.rssnr.toJsonOrNull())
-                                put("ta",     sig.timingAdvance.toJsonOrNull())
-                                put("level",  sig.level)
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    put("bands", cell.cellIdentity.bands.joinToString(","))
-                            }
-                            nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                            neighborEntry(cell)?.let { addNeighbor(it) }
                             lteNeighborCount++; neighborCount++
                         }
                     }
@@ -483,51 +495,15 @@ class NetworkDataCollector(private val context: Context) {
                             identity.mccString?.let { mcc = it }
                             identity.mncString?.let { mnc = it }
                         } else {
-                            val nRsrp   = sig.ssRsrp.valid()
-                            val nPci    = identity.pci.valid()
-                            val nArfcn  = identity.nrarfcn.valid()
-                            if (nRsrp != null && (bestNbrRsrp == null || nRsrp > bestNbrRsrp!!)) {
-                                bestNbrRsrp = nRsrp; bestNbrPci = nPci; bestNbrArfcn = nArfcn
-                            }
-                            val json = JSONObject().apply {
-                                put("type",     "NR(5G)")
-                                putOpt("nci",      nci.ifEmpty { null })
-                                put("pci",      nPci.toJsonOrNull())
-                                put("arfcn",    nArfcn.toJsonOrNull())
-                                put("tac",      identity.tac.toJsonOrNull())
-                                put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
-                                put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
-                                put("ss_sinr",  sig.ssSinr.toJsonOrNull())
-                                put("csi_rsrp", sig.csiRsrp.toJsonOrNull())
-                                put("csi_rsrq", sig.csiRsrq.toJsonOrNull())
-                                put("csi_sinr", sig.csiSinr.toJsonOrNull())
-                                put("level",    sig.level)
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    put("bands", identity.bands.joinToString(","))
-                            }
-                            nbrList.add(NbrEntry(nRsrp ?: Int.MIN_VALUE, json))
+                            neighborEntry(cell)?.let { addNeighbor(it) }
                             nrNeighborCount++; neighborCount++
                         }
                     }
                     is CellInfoWcdma -> if (!serving) {
-                        nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
-                            put("type",   "WCDMA")
-                            put("cid",    cell.cellIdentity.cid)
-                            put("psc",    cell.cellIdentity.psc)
-                            put("uarfcn", cell.cellIdentity.uarfcn)
-                            put("dbm",    cell.cellSignalStrength.dbm)
-                            put("level",  cell.cellSignalStrength.level)
-                        })); neighborCount++
+                        neighborEntry(cell)?.let { addNeighbor(it) }; neighborCount++
                     }
                     is CellInfoGsm -> if (!serving) {
-                        nbrList.add(NbrEntry(cell.cellSignalStrength.dbm, JSONObject().apply {
-                            put("type",  "GSM")
-                            put("cid",   cell.cellIdentity.cid)
-                            put("arfcn", cell.cellIdentity.arfcn)
-                            put("bsic",  cell.cellIdentity.bsic)
-                            put("dbm",   cell.cellSignalStrength.dbm)
-                            put("level", cell.cellSignalStrength.level)
-                        })); neighborCount++
+                        neighborEntry(cell)?.let { addNeighbor(it) }; neighborCount++
                     }
                 }
             }
@@ -538,6 +514,10 @@ class NetworkDataCollector(private val context: Context) {
         // 이웃셀 RSRP 내림차순 정렬 후 JSONArray 구성
         nbrList.sortByDescending { it.rsrp }
         val neighbors = JSONArray().also { arr -> nbrList.forEach { arr.put(it.json) } }
+
+        // 핸드오버 직전 목록 후보: 1초 버퍼 중 서빙셀이 아직 이전 셀(lastCellId)인 가장 최근 것.
+        // checkHandover()가 lastCellId를 바꾸기 전에 골라 둔다.
+        val preHo = preHoCells?.takeIf { lastCellId.isNotEmpty() && extractServingId(it) == lastCellId }
 
         val ho = checkHandover(servingCellId, now, rsrp, rsrq)
 
@@ -550,10 +530,26 @@ class NetworkDataCollector(private val context: Context) {
         val cellDurationS = if (lastHandoverMs > 0L) (now - lastHandoverMs) / 1000L else 0L
         val hoCount30s    = cellHistory.count { (_, ts) -> (now - ts) < 30_000L }
 
-        // 핸드오버 행에는 직전 tick의 이웃 리스트(pre-HO 스냅샷)를 함께 기록
-        val neighborsStr    = neighbors.toString()
-        val prevNbrJson     = if (ho.handover) lastNeighborsJson else ""
-        lastNeighborsJson   = neighborsStr
+        // 핸드오버 행에는 직전 이웃 리스트(pre-HO 스냅샷)와 그 나이를 함께 기록한다.
+        // 1초 버퍼의 것이 직전 tick 목록보다 새로우면 그것을, 아니면 직전 tick 목록을 쓴다.
+        val neighborsStr = neighbors.toString()
+        val nowRt        = SystemClock.elapsedRealtime()
+        var prevNbrJson  = ""
+        var prevNbrAgeMs: Long? = null
+        if (ho.handover) {
+            val preHoAt = measuredAtMs(preHo)
+            if (preHo != null && preHoAt != null && preHoAt > lastNeighborsAtMs) {
+                prevNbrJson  = neighborsJsonOf(preHo)
+                prevNbrAgeMs = nowRt - preHoAt
+            } else {
+                prevNbrJson  = lastNeighborsJson
+                prevNbrAgeMs = if (lastNeighborsAtMs > 0L) nowRt - lastNeighborsAtMs else null
+            }
+        }
+        lastNeighborsJson = neighborsStr
+        lastNeighborsAtMs = measuredAtMs(cellInfoList) ?: 0L
+        // 이번 목록은 지금 서빙셀(= 갱신된 lastCellId) 기준 — 다음 핸드오버의 직전 목록 후보
+        if (cellInfoList != null && servingCellId.isNotEmpty() && servingCellId == lastCellId) preHoCells = cellInfoList
 
         // Wi-Fi 핑거프린트 스냅샷
         val wifiSnap = wifiScanner.snapshot()
@@ -640,6 +636,7 @@ class NetworkDataCollector(private val context: Context) {
             anchorLon           = anchor?.lon,
             wifiScanJson        = wifiSnap?.json ?: "",
             prevNeighborsJson   = prevNbrJson,
+            prevNeighborsAgeMs  = prevNbrAgeMs,
             speedtestDlMbps     = st?.mbps,
             speedtestBytes      = st?.bytes,
             speedtestMs         = st?.durationMs,
@@ -648,16 +645,97 @@ class NetworkDataCollector(private val context: Context) {
         )
     }
 
+    // ── 이웃셀 JSON ───────────────────────────────────────────────────────────
+
+    /** 이웃셀 한 개 — rsrp는 정렬용(없으면 Int.MIN_VALUE), forBest는 best_nbr_* 후보 여부(LTE·NR) */
+    private data class NbrEntry(val rsrp: Int, val pci: Int?, val arfcn: Int?, val forBest: Boolean, val json: JSONObject)
+
+    /** 서빙이 아닌 셀 하나를 neighbors_json 항목으로 — 정기 행과 1초 버퍼의 pre-HO 목록이 같은 형식을 쓴다. */
+    private fun neighborEntry(cell: CellInfo): NbrEntry? = when (cell) {
+        is CellInfoLte -> {
+            val sig     = cell.cellSignalStrength
+            val id      = cell.cellIdentity.ci.validToString()
+            val nPci    = cell.cellIdentity.pci.valid()
+            val nEarfcn = cell.cellIdentity.earfcn.valid()
+            NbrEntry(sig.rsrp.valid() ?: Int.MIN_VALUE, nPci, nEarfcn, true, JSONObject().apply {
+                put("type",   "LTE")
+                putOpt("cell_id", id.ifEmpty { null })
+                put("pci",    nPci.toJsonOrNull())
+                put("earfcn", nEarfcn.toJsonOrNull())
+                put("tac",    cell.cellIdentity.tac.toJsonOrNull())
+                put("rsrp",   sig.rsrp.toJsonOrNull())
+                put("rsrq",   sig.rsrq.toJsonOrNull())
+                put("rssi",   sig.rssi.toJsonOrNull())
+                put("snr",    sig.rssnr.toJsonOrNull())
+                put("ta",     sig.timingAdvance.toJsonOrNull())
+                put("level",  sig.level)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                    put("bands", cell.cellIdentity.bands.joinToString(","))
+            })
+        }
+        is CellInfoNr -> {
+            val sig      = cell.cellSignalStrength as CellSignalStrengthNr
+            val identity = cell.cellIdentity      as CellIdentityNr
+            val nci    = identity.nci.validToString()
+            val nPci   = identity.pci.valid()
+            val nArfcn = identity.nrarfcn.valid()
+            NbrEntry(sig.ssRsrp.valid() ?: Int.MIN_VALUE, nPci, nArfcn, true, JSONObject().apply {
+                put("type",     "NR(5G)")
+                putOpt("nci",      nci.ifEmpty { null })
+                put("pci",      nPci.toJsonOrNull())
+                put("arfcn",    nArfcn.toJsonOrNull())
+                put("tac",      identity.tac.toJsonOrNull())
+                put("ss_rsrp",  sig.ssRsrp.toJsonOrNull())
+                put("ss_rsrq",  sig.ssRsrq.toJsonOrNull())
+                put("ss_sinr",  sig.ssSinr.toJsonOrNull())
+                put("csi_rsrp", sig.csiRsrp.toJsonOrNull())
+                put("csi_rsrq", sig.csiRsrq.toJsonOrNull())
+                put("csi_sinr", sig.csiSinr.toJsonOrNull())
+                put("level",    sig.level)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                    put("bands", identity.bands.joinToString(","))
+            })
+        }
+        is CellInfoWcdma -> NbrEntry(cell.cellSignalStrength.dbm, null, null, false, JSONObject().apply {
+            put("type",   "WCDMA")
+            put("cid",    cell.cellIdentity.cid)
+            put("psc",    cell.cellIdentity.psc)
+            put("uarfcn", cell.cellIdentity.uarfcn)
+            put("dbm",    cell.cellSignalStrength.dbm)
+            put("level",  cell.cellSignalStrength.level)
+        })
+        is CellInfoGsm -> NbrEntry(cell.cellSignalStrength.dbm, null, null, false, JSONObject().apply {
+            put("type",  "GSM")
+            put("cid",   cell.cellIdentity.cid)
+            put("arfcn", cell.cellIdentity.arfcn)
+            put("bsic",  cell.cellIdentity.bsic)
+            put("dbm",   cell.cellSignalStrength.dbm)
+            put("level", cell.cellSignalStrength.level)
+        })
+        else -> null
+    }
+
+    /** 셀 목록 → neighbors_json 문자열 (서빙 제외, RSRP 내림차순) */
+    private fun neighborsJsonOf(cells: List<CellInfo>): String {
+        val arr = JSONArray()
+        cells.filter { !it.isRegistered }.mapNotNull { neighborEntry(it) }
+            .sortedByDescending { it.rsrp }.forEach { arr.put(it.json) }
+        return arr.toString()
+    }
+
     // ── 헬퍼 ─────────────────────────────────────────────────────────────────
 
-    /** 다음 collect()가 신선한 allCellInfo를 쓰도록 모뎀에 갱신 요청 (API 29+, 비동기) */
+    /**
+     * 모뎀에 셀 정보 갱신 요청 (API 29+, 비동기). 서비스가 1초마다 부른다.
+     * 응답은 1초 버퍼(freshCells / preHoCells)에 담겨 collect()와 핸드오버 행의 직전 이웃 목록에 쓰인다.
+     */
     @SuppressLint("MissingPermission")
     fun refreshCellInfo() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && hasLocation()) {
             runCatching {
                 tel.requestCellInfoUpdate(context.mainExecutor,
                     object : TelephonyManager.CellInfoCallback() {
-                        override fun onCellInfo(cellInfos: MutableList<CellInfo>) {}
+                        override fun onCellInfo(cellInfos: MutableList<CellInfo>) { onFreshCells(cellInfos) }
                         override fun onError(errorCode: Int, detail: Throwable?) {}
                     })
             }

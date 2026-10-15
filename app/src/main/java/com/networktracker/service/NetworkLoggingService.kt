@@ -28,6 +28,7 @@ class NetworkLoggingService : Service() {
         const val EXTRA_SPEEDTEST_MS = "speedtest_interval_ms"
         const val EXTRA_STATION_NAME = "station_name"
         const val DEFAULT_INTERVAL   = 5_000L
+        private const val CELL_REFRESH_MS = 1_000L   // 셀 정보 갱신 요청 간격 (v1.4 1초 버퍼)
         private const val CHANNEL_ID = "nt_channel"
         private const val NOTIF_ID   = 1001
 
@@ -72,8 +73,16 @@ class NetworkLoggingService : Service() {
         override fun run() {
             lastCollectMs = System.currentTimeMillis()
             doCollect("periodic")
-            collector.refreshCellInfo()   // 다음 tick 전에 모뎀 셀 정보 갱신 요청
             handler.postDelayed(this, intervalMs)
+        }
+    }
+
+    // v1.4: 셀 정보만 1초마다 새로 받아 둔다 — CSV 행은 위 tick 간격대로 쓰고, 응답은 collector의 1초 버퍼에 담긴다.
+    // 정기 행은 1초 안쪽의 셀 정보를, 핸드오버 행은 1초 안쪽의 직전 이웃 목록을 쓰게 된다.
+    private val cellRefresh = object : Runnable {
+        override fun run() {
+            collector.refreshCellInfo()
+            handler.postDelayed(this, CELL_REFRESH_MS)
         }
     }
 
@@ -190,7 +199,9 @@ class NetworkLoggingService : Service() {
             }
         }
 
+        collector.refreshCellInfo()      // 첫 행 전에 한 번 받아 둔다
         handler.post(tick)
+        handler.postDelayed(cellRefresh, CELL_REFRESH_MS)
         isRunning = true
         return START_NOT_STICKY
     }
@@ -200,6 +211,7 @@ class NetworkLoggingService : Service() {
         lastRecord = null
         probeStatus = ""
         handler.removeCallbacks(tick)
+        handler.removeCallbacks(cellRefresh)
         collector.onCellChangeDetected = null
         probe.onSpeedTestStart = null
         probe.onSpeedTestDone = null

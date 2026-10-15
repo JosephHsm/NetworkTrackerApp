@@ -107,7 +107,11 @@ data class NetworkRecord(
     val speedtestMs: Long? = null,
     val speedtestTtfbMs: Long? = null,
     // 왜 쟀는가: "interval"(정기) | "handover"(셀이 바뀐 직후, 새 셀의 속도)
-    val speedtestReason: String = ""
+    val speedtestReason: String = "",
+
+    // ── v1.4 핸드오버 행에만: prev_neighbors_json이 몇 ms 전에 측정된 목록인가 ──────
+    // 1초 버퍼에서 왔으면 대개 1초 안쪽, 버퍼가 비어 직전 tick 목록을 썼으면 수 초.
+    val prevNeighborsAgeMs: Long? = null
 ) {
     fun toCsvRow(): String {
         val dt           = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(timestamp))
@@ -197,7 +201,8 @@ data class NetworkRecord(
             append(speedtestBytes    ?: "");              append(',')
             append(speedtestMs       ?: "");              append(',')
             append(speedtestTtfbMs   ?: "");              append(',')
-            append(speedtestReason)
+            append(speedtestReason);                      append(',')
+            append(prevNeighborsAgeMs ?: "")
         }
     }
 
@@ -227,6 +232,7 @@ data class NetworkRecord(
             "wifi_ap_count,wifi_scan_age_s," +
             "anchor_station,anchor_lat,anchor_lon," +
             "wifi_scan_json,prev_neighbors_json," +
-            "speedtest_dl_mbps,speedtest_bytes,speedtest_ms,speedtest_ttfb_ms,speedtest_reason"
+            "speedtest_dl_mbps,speedtest_bytes,speedtest_ms,speedtest_ttfb_ms,speedtest_reason," +
+            "prev_neighbors_age_ms"
     }
 }
