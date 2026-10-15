@@ -140,6 +140,15 @@ SESSIONS = [
          label="10/4 도보", activity="walking",
          note="activity 태그 누락 — 1.1 m/s 일정. 원본 끝 2분 40초는 멈춰 선 채 종료를 누르지 않은 구간이라 잘랐다",
          keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261015_093714_home.csv",
+         label="10/15 09:37 정지", activity="home",
+         note="집 실내 고정(v1.2 앱). 39분 내내 서빙셀 1개·핸드오버 0건. SINR이 두 구간(09:47~09:57, 10:00~10:15) 비었는데 "
+              "그 구간만 셀 정보 갱신이 느려졌다(나이 중앙값 2.9초 → 5.3~7.5초) — 트래픽·신호는 그대로",
+         keep=None, trim_reason=""),
+    dict(path="trackingcsv/new/network_log_20261015_101549_home.csv",
+         label="10/15 10:15 정지", activity="home",
+         note="바로 이어서 같은 자리에서 21분(v1.2 앱). 서빙셀 1개·핸드오버 0건, SINR 빈칸 0%",
+         keep=None, trim_reason=""),
 ]
 
 # 앱 버전별 기록 항목. 컬럼 수로 판별한다.

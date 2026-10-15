@@ -65,9 +65,9 @@ code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--sur
     아래 리포트는 모두 같은 데이터로 만들었고, 그래프 위에 마우스를 올리면 값이 바로 나온다. 마지막 갱신 2026-10-15.</p>
 
   <div class="stats">
-    <div class="stat"><div class="k">측정 세션</div><div class="v">26</div></div>
-    <div class="stat"><div class="k">측정 시간</div><div class="v">12.1<span style="font-size:13px;color:var(--ink-3)"> 시간</span></div></div>
-    <div class="stat"><div class="k">측정 횟수</div><div class="v">9,962</div></div>
+    <div class="stat"><div class="k">측정 세션</div><div class="v">28</div></div>
+    <div class="stat"><div class="k">측정 시간</div><div class="v">13.1<span style="font-size:13px;color:var(--ink-3)"> 시간</span></div></div>
+    <div class="stat"><div class="k">측정 횟수</div><div class="v">10,679</div></div>
     <div class="stat"><div class="k">핸드오버</div><div class="v">1,794</div></div>
   </div>
 
@@ -75,7 +75,7 @@ code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--sur
     <h2>리포트</h2>
     <p>그림 1 지도부터 그림 18 속도 측정까지 같은 구성이다. 이동수단별 리포트는 그 수단의 세션끼리 비교한다.</p>
     <div class="grid">
-      <a class="tile" href="report_all.html" style="--c:var(--ink-2)"><b>전체 세션</b><span>26개 세션 · 이동수단끼리 비교</span></a>
+      <a class="tile" href="report_all.html" style="--c:var(--ink-2)"><b>전체 세션</b><span>28개 세션 · 이동수단끼리 비교</span></a>
       <a class="tile" href="report_car.html" style="--c:var(--s1)"><b>차량</b><span>14개 세션</span></a>
       <a class="tile" href="report_subway.html" style="--c:var(--s2)"><b>지하철</b><span>8개 세션 · 역 위치로 보정한 좌표</span></a>
       <a class="tile" href="report_walking.html" style="--c:var(--s3)"><b>도보</b><span>3개 세션</span></a>
@@ -127,6 +127,8 @@ code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--sur
       <tr><td>10/1 14:31 차량</td><td>차량</td><td>v1.2</td><td class="num">38.5</td><td class="num">10.0</td><td class="num">101</td><td class="num">–</td><td><a href="../trackingcsv/new/network_log_20261001_143101_car.csv">CSV</a></td></tr>
       <tr><td>10/2 도보</td><td>도보</td><td>v1.2</td><td class="num">13.2</td><td class="num">1.1</td><td class="num">16</td><td class="num">–</td><td><a href="../trackingcsv/new/network_log_20261002_150542_walking.csv">CSV</a></td></tr>
       <tr><td>10/4 도보</td><td>도보</td><td>v1.2</td><td class="num">11.1</td><td class="num">0.9</td><td class="num">6</td><td class="num">–</td><td><a href="../trackingcsv/new/network_log_20261004_141602_walking.csv">CSV</a></td></tr>
+      <tr><td>10/15 09:37 정지</td><td>정지</td><td>v1.2</td><td class="num">38.5</td><td class="num">0.3</td><td class="num">0</td><td class="num">–</td><td><a href="../trackingcsv/new/network_log_20261015_093714_home.csv">CSV</a></td></tr>
+      <tr><td>10/15 10:15 정지</td><td>정지</td><td>v1.2</td><td class="num">21.2</td><td class="num">0.1</td><td class="num">0</td><td class="num">–</td><td><a href="../trackingcsv/new/network_log_20261015_101549_home.csv">CSV</a></td></tr>
     </table></div>
   </div>
 
@@ -138,6 +140,7 @@ code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--sur
       <li><b>v1.1</b> (73개 항목) — 61개에 12개가 더해졌다. 지하 측위 보강(기압·위치 출처·역 태그·Wi-Fi 지문)과 능동 측정 프로브(지연 시간·다운로드)가 들어왔다.</li>
       <li><b>v1.2</b> (74개 항목) — 능동 프로브가 30초 단위 버스트(2MB/30초)에서 지속 부하로 바뀌었다(다운·업 각각 초당 0.06MB = 0.48 Mbps). 업로드는 실제로 고르게 나가 송신 속도가 96%의 순간에 0.4 Mbps 이상으로 찍힌다. 다운로드는 앱이 천천히 읽어도 OS 수신 버퍼가 먼저 몰아 받아, 망에서는 여전히 버스트로 오간다 — 그래서 probe_dl_mbps는 버퍼에서 읽은 속도라 망 상태와 무관하게 목표치 근처에 머문다(분석에 쓰지 않는다).</li>
       <li><b>v1.3</b> (79개 항목) — 속도 측정(Speed Test)이 들어왔다. 정해진 간격(30초~2분)마다 3초 동안 페이싱 없이 다운로드해 &#x27;그 순간 그 셀에서 받을 수 있는 최대 속도&#x27;를 잰다(첫 0.5초는 TCP 느린 시작이라 뺀다). 측정 직전(speedtest_start)과 직후(speedtest)에 행이 하나씩 더 남아, 같은 몇 초의 RSRP·SINR과 속도를 짝지을 수 있다. 셀이 바뀔 때마다 새 셀에서도 바로 잰다(speedtest_reason = handover, 직전 측정 10초 안이면 건너뜀).</li>
+      <li><b>v1.4</b> (80개 항목) — 셀 정보를 1초마다 새로 받아 둔다(행은 그대로 정기 간격). 정기 행은 1초 안쪽의 셀 정보를 쓰고 — v1.3까지는 직전 tick에 요청한 결과라 늘 약 5초 묵어 있었다 — 핸드오버 행의 직전 이웃 목록도 1초 안쪽 것이 된다. 그 목록의 나이를 prev_neighbors_age_ms로 남긴다. 직전 목록에 없던 셀로 옮겨간 핸드오버(v1.3까지 32%)를 줄이려는 변경이다.</li>
     </ul>
   </div>
 </div>

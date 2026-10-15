@@ -1,0 +1,43 @@
+{
+ "n": 1806,
+ "positives": 280,
+ "pos_rate": 0.155,
+ "sessions": 26,
+ "auc_logreg_cv": 0.727,
+ "auc_single": {
+  "체류 시간만": 0.583,
+  "이번 HO가 복귀인가만": 0.658,
+  "목표 셀 여유(dB)만": 0.525
+ },
+ "block": {
+  "top10": {
+   "pp_caught": 0.25,
+   "normal_blocked": 0.072
+  },
+  "top20": {
+   "pp_caught": 0.468,
+   "normal_blocked": 0.151
+  },
+  "top30": {
+   "pp_caught": 0.582,
+   "normal_blocked": 0.248
+  }
+ },
+ "coef": {
+  "is_return": 0.57,
+  "inter_freq": -0.562,
+  "rsrq_new": -0.284,
+  "rsrp_prev": -0.237,
+  "tgt_seen": 0.214,
+  "act_subway": -0.186,
+  "rsrp_new": 0.177,
+  "dwell": 0.168,
+  "tgt_margin": 0.122,
+  "rsrq_prev": 0.109,
+  "same_enb": 0.09,
+  "tgt_top": 0.076,
+  "act_car": 0.071,
+  "ho30": 0.037,
+  "act_walking": 0.017
+ }
+}
