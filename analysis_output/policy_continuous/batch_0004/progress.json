@@ -1,0 +1,6 @@
+{
+  "fold": 4,
+  "family": "DQN+GRU",
+  "trials": 40,
+  "seconds": 334.25889348983765
+}

@@ -1,0 +1,53 @@
+{
+  "anchor_config": {
+    "reward": [
+      3.0,
+      5.0,
+      0.1
+    ],
+    "policy_lr": 0.0003,
+    "q_alpha": 0.1,
+    "cql_alpha": 0.1,
+    "forecast": {
+      "hidden": 16,
+      "lr": 0.002,
+      "depth": 3,
+      "trees": 80,
+      "tree_lr": 0.05
+    },
+    "rule": {
+      "hyst": 3.0,
+      "pen": 6.0,
+      "a2": null
+    }
+  },
+  "candidate_config": {
+    "reward": [
+      9.0,
+      5.0,
+      0.3
+    ],
+    "policy_lr": 0.0001,
+    "q_alpha": 0.3,
+    "cql_alpha": 0.03,
+    "forecast": {
+      "hidden": 16,
+      "lr": 0.003,
+      "depth": 4,
+      "trees": 80,
+      "tree_lr": 0.03
+    },
+    "rule": {
+      "hyst": 3.0,
+      "pen": 6.0,
+      "a2": -95.0
+    }
+  },
+  "confirmation_seeds": [
+    910047,
+    910083,
+    910101,
+    910137,
+    910173
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "round": 1,
+  "complete_pairs": 45,
+  "screening_configurations": 180,
+  "confirmation_configurations": 90,
+  "policy_fit_count": 720,
+  "validation_sessions_only": true,
+  "forecast_training_sessions_only": true,
+  "paired_confirmation_seeds": true,
+  "initial_dqn_anchor_controls_equal": true,
+  "source_snapshots_verified": true,
+  "updates": 26
+}

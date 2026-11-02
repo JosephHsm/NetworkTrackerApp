@@ -1,0 +1,1154 @@
+[
+  {
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.1
+      ],
+      "policy_lr": 0.0003,
+      "q_alpha": 0.1,
+      "cql_alpha": 0.1,
+      "forecast": {
+        "hidden": 16,
+        "lr": 0.002,
+        "depth": 3,
+        "trees": 80,
+        "tree_lr": 0.05
+      },
+      "rule": {
+        "hyst": 3.0,
+        "pen": 6.0,
+        "a2": null
+      }
+    },
+    "seeds": [
+      910047,
+      910083,
+      910101,
+      910137,
+      910173
+    ],
+    "delta": {
+      "ho_reduction": 0.4762105263157894,
+      "pp_reduction": 1.0,
+      "weak_delta_pp": 0.6808829031051256,
+      "rsrp_loss": 2.3093901982790896,
+      "gap": 2.4997381219603443,
+      "forced": 231.2
+    },
+    "seed_sd": {
+      "ho_reduction": 0.013096699802101729,
+      "pp_reduction": 0.0,
+      "weak_delta_pp": 0.13847179590962772,
+      "rsrp_loss": 0.14497121752046965,
+      "gap": 0.15317556069438937,
+      "forced": 9.57601169589929
+    },
+    "seed_results": [
+      {
+        "seed": 910047,
+        "delta": {
+          "ho_reduction": 0.4905263157894737,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.8978675645342311,
+          "rsrp_loss": 2.4653946876169073,
+          "gap": 2.667414889637112,
+          "forced": 242
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 81,
+              "pp": 0,
+              "forced": 81,
+              "rows": 528,
+              "weak105": 13,
+              "rsrp_sum": -43823,
+              "gap_sum": 1651
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 34,
+              "rows": 492,
+              "weak105": 3,
+              "rsrp_sum": -39242,
+              "gap_sum": 1317
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 32,
+              "pp": 0,
+              "forced": 32,
+              "rows": 607,
+              "weak105": 21,
+              "rsrp_sum": -52334,
+              "gap_sum": 1316
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 41,
+              "pp": 0,
+              "forced": 41,
+              "rows": 259,
+              "weak105": 2,
+              "rsrp_sum": -19457,
+              "gap_sum": 895
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 48,
+              "pp": 0,
+              "forced": 48,
+              "rows": 391,
+              "weak105": 19,
+              "rsrp_sum": -34520,
+              "gap_sum": 1672
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 6,
+              "pp": 0,
+              "forced": 6,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11302,
+              "gap_sum": 279
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5355110168457031,
+        "validation_seconds": 0.011933088302612305,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5474758148193359
+      },
+      {
+        "seed": 910083,
+        "delta": {
+          "ho_reduction": 0.48631578947368426,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.6734006734006737,
+          "rsrp_loss": 2.3931911709689473,
+          "gap": 2.5952113729891506,
+          "forced": 235
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 81,
+              "pp": 0,
+              "forced": 80,
+              "rows": 528,
+              "weak105": 13,
+              "rsrp_sum": -43819,
+              "gap_sum": 1647
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 34,
+              "rows": 492,
+              "weak105": 3,
+              "rsrp_sum": -39242,
+              "gap_sum": 1317
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 33,
+              "pp": 0,
+              "forced": 31,
+              "rows": 607,
+              "weak105": 15,
+              "rsrp_sum": -52278,
+              "gap_sum": 1260
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 41,
+              "pp": 0,
+              "forced": 40,
+              "rows": 259,
+              "weak105": 2,
+              "rsrp_sum": -19441,
+              "gap_sum": 879
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 48,
+              "pp": 0,
+              "forced": 47,
+              "rows": 391,
+              "weak105": 19,
+              "rsrp_sum": -34462,
+              "gap_sum": 1614
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 7,
+              "pp": 0,
+              "forced": 3,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11243,
+              "gap_sum": 220
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5302615165710449,
+        "validation_seconds": 0.011703014373779297,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5419917106628418
+      },
+      {
+        "seed": 910101,
+        "delta": {
+          "ho_reduction": 0.45894736842105266,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.5611672278338945,
+          "rsrp_loss": 2.1021324354657622,
+          "gap": 2.284698840254396,
+          "forced": 218
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 82,
+              "pp": 0,
+              "forced": 79,
+              "rows": 528,
+              "weak105": 13,
+              "rsrp_sum": -43741,
+              "gap_sum": 1569
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 34,
+              "rows": 492,
+              "weak105": 3,
+              "rsrp_sum": -39242,
+              "gap_sum": 1317
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 28,
+              "rows": 607,
+              "weak105": 15,
+              "rsrp_sum": -52183,
+              "gap_sum": 1165
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 43,
+              "pp": 0,
+              "forced": 35,
+              "rows": 259,
+              "weak105": 1,
+              "rsrp_sum": -19102,
+              "gap_sum": 540
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 56,
+              "pp": 0,
+              "forced": 36,
+              "rows": 391,
+              "weak105": 17,
+              "rsrp_sum": -34097,
+              "gap_sum": 1197
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 8,
+              "pp": 0,
+              "forced": 6,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11342,
+              "gap_sum": 319
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5200185775756836,
+        "validation_seconds": 0.012087106704711914,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5321331024169922
+      },
+      {
+        "seed": 910137,
+        "delta": {
+          "ho_reduction": 0.46736842105263154,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.5611672278338945,
+          "rsrp_loss": 2.225215114104003,
+          "gap": 2.40778151889263,
+          "forced": 225
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 82,
+              "pp": 0,
+              "forced": 81,
+              "rows": 528,
+              "weak105": 13,
+              "rsrp_sum": -43831,
+              "gap_sum": 1659
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 34,
+              "rows": 492,
+              "weak105": 3,
+              "rsrp_sum": -39242,
+              "gap_sum": 1317
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 33,
+              "pp": 0,
+              "forced": 31,
+              "rows": 607,
+              "weak105": 15,
+              "rsrp_sum": -52285,
+              "gap_sum": 1267
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 43,
+              "pp": 0,
+              "forced": 35,
+              "rows": 259,
+              "weak105": 1,
+              "rsrp_sum": -19174,
+              "gap_sum": 612
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 55,
+              "pp": 0,
+              "forced": 39,
+              "rows": 391,
+              "weak105": 17,
+              "rsrp_sum": -34209,
+              "gap_sum": 1309
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 6,
+              "pp": 0,
+              "forced": 5,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11295,
+              "gap_sum": 272
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5329866409301758,
+        "validation_seconds": 0.01201319694519043,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5450263023376465
+      },
+      {
+        "seed": 910173,
+        "delta": {
+          "ho_reduction": 0.47789473684210526,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.7108118219229331,
+          "rsrp_loss": 2.3610175832398,
+          "gap": 2.5435839880284323,
+          "forced": 236
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 81,
+              "pp": 0,
+              "forced": 81,
+              "rows": 528,
+              "weak105": 13,
+              "rsrp_sum": -43823,
+              "gap_sum": 1651
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 34,
+              "pp": 0,
+              "forced": 34,
+              "rows": 492,
+              "weak105": 3,
+              "rsrp_sum": -39242,
+              "gap_sum": 1317
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 32,
+              "pp": 0,
+              "forced": 32,
+              "rows": 607,
+              "weak105": 21,
+              "rsrp_sum": -52334,
+              "gap_sum": 1316
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 41,
+              "pp": 0,
+              "forced": 39,
+              "rows": 259,
+              "weak105": 1,
+              "rsrp_sum": -19409,
+              "gap_sum": 847
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 54,
+              "pp": 0,
+              "forced": 44,
+              "rows": 391,
+              "weak105": 15,
+              "rsrp_sum": -34289,
+              "gap_sum": 1389
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 6,
+              "pp": 0,
+              "forced": 6,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11302,
+              "gap_sum": 279
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5381481647491455,
+        "validation_seconds": 0.01178741455078125,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5499634742736816
+      }
+    ],
+    "role": "anchor",
+    "stage": "confirmation"
+  },
+  {
+    "config": {
+      "reward": [
+        3.0,
+        15.0,
+        0.1
+      ],
+      "policy_lr": 0.0005,
+      "q_alpha": 0.05,
+      "cql_alpha": 0.3,
+      "forecast": {
+        "hidden": 32,
+        "lr": 0.002,
+        "depth": 3,
+        "trees": 160,
+        "tree_lr": 0.05
+      },
+      "rule": {
+        "hyst": 6.0,
+        "pen": 6.0,
+        "a2": -90.0
+      }
+    },
+    "seeds": [
+      910047,
+      910083,
+      910101,
+      910137,
+      910173
+    ],
+    "delta": {
+      "ho_reduction": 0.3372631578947368,
+      "pp_reduction": 0.9902439024390244,
+      "weak_delta_pp": 0.0074822297044521355,
+      "rsrp_loss": 0.8919566030677117,
+      "gap": 1.0715301159745603,
+      "forced": 105.6
+    },
+    "seed_sd": {
+      "ho_reduction": 0.02096825195450733,
+      "pp_reduction": 0.005453824335365345,
+      "weak_delta_pp": 0.15739381943855318,
+      "rsrp_loss": 0.11219085112673263,
+      "gap": 0.11219085112673215,
+      "forced": 9.370165420097983
+    },
+    "seed_results": [
+      {
+        "seed": 910047,
+        "delta": {
+          "ho_reduction": 0.34947368421052627,
+          "pp_reduction": 0.9878048780487805,
+          "weak_delta_pp": -0.03741114852225964,
+          "rsrp_loss": 0.9738121960344159,
+          "gap": 1.1533857089412645,
+          "forced": 111
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 101,
+              "pp": 0,
+              "forced": 44,
+              "rows": 528,
+              "weak105": 5,
+              "rsrp_sum": -42898,
+              "gap_sum": 718
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 40,
+              "pp": 1,
+              "forced": 22,
+              "rows": 492,
+              "weak105": 0,
+              "rsrp_sum": -38904,
+              "gap_sum": 979
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 35,
+              "pp": 0,
+              "forced": 10,
+              "rows": 607,
+              "weak105": 17,
+              "rsrp_sum": -51586,
+              "gap_sum": 568
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 51,
+              "pp": 0,
+              "forced": 24,
+              "rows": 259,
+              "weak105": 0,
+              "rsrp_sum": -18839,
+              "gap_sum": 277
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 75,
+              "pp": 0,
+              "forced": 9,
+              "rows": 391,
+              "weak105": 11,
+              "rsrp_sum": -33241,
+              "gap_sum": 341
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 7,
+              "pp": 0,
+              "forced": 2,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11223,
+              "gap_sum": 200
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5359251499176025,
+        "validation_seconds": 0.011363983154296875,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5473198890686035
+      },
+      {
+        "seed": 910083,
+        "delta": {
+          "ho_reduction": 0.35789473684210527,
+          "pp_reduction": 0.9878048780487805,
+          "weak_delta_pp": 0.18705574261129818,
+          "rsrp_loss": 0.9876543209876587,
+          "gap": 1.1672278338945006,
+          "forced": 117
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 99,
+              "pp": 0,
+              "forced": 46,
+              "rows": 528,
+              "weak105": 7,
+              "rsrp_sum": -42935,
+              "gap_sum": 755
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 41,
+              "pp": 1,
+              "forced": 22,
+              "rows": 492,
+              "weak105": 2,
+              "rsrp_sum": -38884,
+              "gap_sum": 959
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 35,
+              "pp": 0,
+              "forced": 13,
+              "rows": 607,
+              "weak105": 17,
+              "rsrp_sum": -51622,
+              "gap_sum": 604
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 51,
+              "pp": 0,
+              "forced": 23,
+              "rows": 259,
+              "weak105": 1,
+              "rsrp_sum": -18837,
+              "gap_sum": 275
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 71,
+              "pp": 0,
+              "forced": 13,
+              "rows": 391,
+              "weak105": 12,
+              "rsrp_sum": -33316,
+              "gap_sum": 416
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 8,
+              "pp": 0,
+              "forced": 0,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11134,
+              "gap_sum": 111
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5329434871673584,
+        "validation_seconds": 0.011242866516113281,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.544215202331543
+      },
+      {
+        "seed": 910101,
+        "delta": {
+          "ho_reduction": 0.31789473684210523,
+          "pp_reduction": 0.9878048780487805,
+          "weak_delta_pp": -0.22446689113355783,
+          "rsrp_loss": 0.8114478114478061,
+          "gap": 0.9910213243546577,
+          "forced": 95
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 102,
+              "pp": 0,
+              "forced": 40,
+              "rows": 528,
+              "weak105": 5,
+              "rsrp_sum": -42844,
+              "gap_sum": 664
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 44,
+              "pp": 0,
+              "forced": 19,
+              "rows": 492,
+              "weak105": 0,
+              "rsrp_sum": -38758,
+              "gap_sum": 833
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 41,
+              "pp": 0,
+              "forced": 8,
+              "rows": 607,
+              "weak105": 11,
+              "rsrp_sum": -51421,
+              "gap_sum": 403
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 53,
+              "pp": 0,
+              "forced": 20,
+              "rows": 259,
+              "weak105": 0,
+              "rsrp_sum": -18754,
+              "gap_sum": 192
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 76,
+              "pp": 1,
+              "forced": 7,
+              "rows": 391,
+              "weak105": 12,
+              "rsrp_sum": -33223,
+              "gap_sum": 323
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 8,
+              "pp": 0,
+              "forced": 1,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11257,
+              "gap_sum": 234
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5207197666168213,
+        "validation_seconds": 0.011121273040771484,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5318689346313477
+      },
+      {
+        "seed": 910137,
+        "delta": {
+          "ho_reduction": 0.31157894736842107,
+          "pp_reduction": 1.0,
+          "weak_delta_pp": 0.0,
+          "rsrp_loss": 0.7355031799476279,
+          "gap": 0.9150766928544707,
+          "forced": 97
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 104,
+              "pp": 0,
+              "forced": 39,
+              "rows": 528,
+              "weak105": 5,
+              "rsrp_sum": -42703,
+              "gap_sum": 523
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 44,
+              "pp": 0,
+              "forced": 17,
+              "rows": 492,
+              "weak105": 0,
+              "rsrp_sum": -38753,
+              "gap_sum": 828
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 44,
+              "pp": 0,
+              "forced": 10,
+              "rows": 607,
+              "weak105": 17,
+              "rsrp_sum": -51469,
+              "gap_sum": 451
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 53,
+              "pp": 0,
+              "forced": 21,
+              "rows": 259,
+              "weak105": 0,
+              "rsrp_sum": -18758,
+              "gap_sum": 196
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 74,
+              "pp": 0,
+              "forced": 10,
+              "rows": 391,
+              "weak105": 12,
+              "rsrp_sum": -33265,
+              "gap_sum": 365
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 8,
+              "pp": 0,
+              "forced": 0,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11106,
+              "gap_sum": 83
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5293715000152588,
+        "validation_seconds": 0.010525941848754883,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5399272441864014
+      },
+      {
+        "seed": 910173,
+        "delta": {
+          "ho_reduction": 0.34947368421052627,
+          "pp_reduction": 0.9878048780487805,
+          "weak_delta_pp": 0.11223344556677892,
+          "rsrp_loss": 0.9513655069210643,
+          "gap": 1.1309390198279088,
+          "forced": 108
+        },
+        "sessions": [
+          {
+            "session": "network_log_20260927_205144_car.csv",
+            "metrics": {
+              "ho": 103,
+              "pp": 0,
+              "forced": 40,
+              "rows": 528,
+              "weak105": 5,
+              "rsrp_sum": -42790,
+              "gap_sum": 610
+            }
+          },
+          {
+            "session": "network_log_20261001_133919_car.csv",
+            "metrics": {
+              "ho": 42,
+              "pp": 1,
+              "forced": 20,
+              "rows": 492,
+              "weak105": 2,
+              "rsrp_sum": -38862,
+              "gap_sum": 937
+            }
+          },
+          {
+            "session": "network_log_20260925_154924_car.csv",
+            "metrics": {
+              "ho": 37,
+              "pp": 0,
+              "forced": 10,
+              "rows": 607,
+              "weak105": 17,
+              "rsrp_sum": -51556,
+              "gap_sum": 538
+            }
+          },
+          {
+            "session": "network_log_20261015_101549_home.csv",
+            "metrics": {
+              "ho": 0,
+              "pp": 0,
+              "forced": 0,
+              "rows": 254,
+              "weak105": 0,
+              "rsrp_sum": -21010,
+              "gap_sum": 0
+            }
+          },
+          {
+            "session": "network_log_20260920_123732_subway.csv",
+            "metrics": {
+              "ho": 51,
+              "pp": 0,
+              "forced": 25,
+              "rows": 259,
+              "weak105": 1,
+              "rsrp_sum": -18866,
+              "gap_sum": 304
+            }
+          },
+          {
+            "session": "network_log_20261016_175448_subway.csv",
+            "metrics": {
+              "ho": 68,
+              "pp": 0,
+              "forced": 12,
+              "rows": 391,
+              "weak105": 12,
+              "rsrp_sum": -33335,
+              "gap_sum": 435
+            }
+          },
+          {
+            "session": "network_log_20261016_173420_walking.csv",
+            "metrics": {
+              "ho": 8,
+              "pp": 0,
+              "forced": 1,
+              "rows": 142,
+              "weak105": 0,
+              "rsrp_sum": -11222,
+              "gap_sum": 199
+            }
+          }
+        ],
+        "forecast": null,
+        "policy_train_seconds": 0.5387821197509766,
+        "validation_seconds": 0.011223554611206055,
+        "policy_training_replay": {
+          "episodes": 54,
+          "rows": 23160
+        },
+        "total_seconds": 0.5500373840332031
+      }
+    ],
+    "role": "candidate",
+    "stage": "confirmation"
+  }
+]

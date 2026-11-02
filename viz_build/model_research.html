@@ -1,0 +1,541 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>핸드오버 AI 모델 연구</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#111519; --ink-2:#4b5462; --ink-3:#7d8794; --line:#dbe0e7; --line-2:#c2cad4;
+  --blue:#2a78d6; --red:#d6453f; --green:#1a9a6a; --amber:#b9800f; --violet:#6250d6;
+  --hl:rgba(42,120,214,.12); --hl-g:rgba(26,154,106,.14); --hl-p:rgba(214,69,63,.12);
+  --mv:rgba(26,154,106,.18); --hd:rgba(214,69,63,.13);
+  --callout:#f7f9fc; --fig:#ffffff;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f; --line:#242b35; --line-2:#333c48;
+  --blue:#5fa0ea; --red:#ee7a74; --green:#34c894; --amber:#e2b545; --violet:#9d8ff0;
+  --hl:rgba(95,160,234,.18); --hl-g:rgba(52,200,148,.16); --hl-p:rgba(238,122,116,.16);
+  --mv:rgba(52,200,148,.22); --hd:rgba(238,122,116,.18);
+  --callout:#1a2029; --fig:#f4f5f7;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f; --line:#242b35; --line-2:#333c48;
+  --blue:#5fa0ea; --red:#ee7a74; --green:#34c894; --amber:#e2b545; --violet:#9d8ff0;
+  --hl:rgba(95,160,234,.18); --hl-g:rgba(52,200,148,.16); --hl-p:rgba(238,122,116,.16);
+  --mv:rgba(52,200,148,.22); --hd:rgba(238,122,116,.18);
+  --callout:#1a2029; --fig:#f4f5f7;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  font-size:15.5px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.page{max-width:900px;margin:28px auto 80px;padding:34px 40px 50px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px}
+h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:30px;line-height:1.25;font-weight:600;margin-top:12px}
+h2{font-size:21px;line-height:1.4;font-weight:600;margin:44px 0 10px;padding-top:18px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2 .no{display:inline-block;min-width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;
+  background:var(--ink);color:var(--surface);font-size:14px;font-weight:600;margin-right:10px;vertical-align:2px;padding:0 6px}
+h3{font-size:16.5px;font-weight:600;margin:24px 0 6px}
+p{margin:6px 0}
+.date{font-size:13px;color:var(--ink-3)}
+.back{font-size:13.5px;color:var(--blue);text-decoration:none}
+.back:hover{text-decoration:underline}
+a{color:var(--blue)}
+code{font-family:"IBM Plex Mono",Consolas,monospace;font-size:13px;background:var(--surface-2);padding:1px 5px;border-radius:4px;word-break:break-all}
+.hl{background:var(--hl);padding:1px 4px;border-radius:3px}
+.hl-g{background:var(--hl-g);padding:1px 4px;border-radius:3px}
+.hl-p{background:var(--hl-p);padding:1px 4px;border-radius:3px}
+ul,ol{margin:6px 0;padding-left:22px}
+li{margin:3px 0}
+.sticky{background:var(--callout);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;
+  padding:12px 18px;margin:18px 0;color:var(--ink-2)}
+.sticky b{color:var(--ink)}
+.sticky.warn{border-left-color:var(--amber)}
+.side{font-size:13.5px;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:8px 12px;margin:8px 0}
+.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 18px;font-size:14px;margin:14px 0 0;padding:12px 16px;
+  background:var(--surface-2);border-radius:8px}
+.toc a{text-decoration:none;color:var(--ink-2)} .toc a:hover{color:var(--blue)}
+.toc span{font-family:"IBM Plex Mono",monospace;color:var(--ink-3);display:inline-block;min-width:24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:18px 0}
+.stat{background:var(--surface);padding:12px 14px}
+.stat .k{font-size:12px;color:var(--ink-3);line-height:1.4}
+.stat .v{font-size:23px;font-weight:600;line-height:1.3;margin-top:4px}
+.stat .s{font-size:12px;color:var(--ink-3)}
+table{border-collapse:collapse;margin:10px 0;width:100%;font-size:14px;line-height:1.6}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px 6px 0;text-align:left;vertical-align:top}
+th{color:var(--ink-3);font-weight:500;font-size:13px;white-space:nowrap}
+td.n{font-family:"IBM Plex Mono",Consolas,monospace;text-align:right;white-space:nowrap;font-size:13.5px}
+th.n{text-align:right}
+tr.best td{font-weight:600}
+tr.base td{color:var(--ink-3)}
+.tbl{overflow-x:auto}
+.cap{font-size:13px;color:var(--ink-3);margin:2px 0 14px}
+figure{margin:16px 0}
+figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:var(--fig)}
+figcaption{font-size:13px;color:var(--ink-3);margin-top:6px}
+table.qmap{font-size:12.5px;table-layout:fixed;min-width:620px}
+table.qmap th,table.qmap td{padding:4px 4px;text-align:center;border:1px solid var(--surface)}
+table.qmap td.q{border-radius:3px}
+td.mv{background:var(--mv);color:var(--green);font-weight:600}
+td.hd{background:var(--hd);color:var(--red)}
+td.na{color:var(--ink-3)}
+.legend{font-size:13px;color:var(--ink-3)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 10px}
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0;font-size:13.5px}
+.pipe div{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.pipe b{display:block;font-size:12px;color:var(--ink-3);font-weight:500}
+.pipe .ar{border:0;background:none;padding:0;color:var(--ink-3)}
+pre{font-family:"IBM Plex Mono",Consolas,monospace;font-size:13px;line-height:1.6;background:var(--surface-2);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:10px 0}
+.src{font-size:13.5px;color:var(--ink-2)}
+.src li{margin-bottom:6px}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border-radius:4px;padding:0 6px;margin-right:6px}
+.st{display:inline-block;font-size:12px;font-weight:600;padding:1px 9px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.st-done{color:var(--green)} .st-wait{color:var(--amber)} .st-todo{color:var(--ink-3)}
+@media (max-width:640px){
+  .page{margin:0;border-radius:0;border-left:0;border-right:0;padding:24px 16px 40px}
+  h1{font-size:25px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+<div class="page">
+  <a class="back" href="index.html">← 결과 모아보기로 돌아가기</a>
+  <h1>핸드오버 AI 모델 연구</h1>
+  <div class="sticky warn"><b>후속 실험 · 2026.11.01</b><br><a href="policy_research.html">보상·규칙 탐색과 DQN·PPO·CQL 심화 연구로 이동 →</a><br>이 페이지는 10/28의 1차 결과를 보존한 기록입니다. 후속 연구는 내부 검증 분리·할인 계산 수정·3시드 정책 평가를 적용했습니다. 기존 Q-learning 수치를 새 실험의 최종 성과로 인용하지 마세요.</div>
+  <div class="date">2026. 10. 28 실험 · 2026. 11. 1 정리 · 논문용 정리 노트 · 원본 보고서 <code>모델_비교_보고.md</code></div>
+
+  <div class="sticky">
+    <b>한 줄 요약</b><br>
+    폰 1대 실측 로그(31세션, 핸드오버 1,987건)로 <b>핑퐁 예측 · 신호 예측 · 핸드오버 정책</b> 3가지 문제에 모델 5종 비교했음.<br>
+    → 예측은 GRU가 조금 나았지만 기준선과 차이 작음. <b>정책은 Q-learning이 핸드오버 −29%, 핑퐁 −95%</b>(약전계 증가 없음)로 제일 좋았음.
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">핑퐁 예측 AUC (GRU)</div><div class="v">0.757</div><div class="s">기준선 로지스틱 0.736</div></div>
+    <div class="stat"><div class="k">10초 뒤 RSRP 오차 (GRU)</div><div class="v">5.12<span class="s"> dB</span></div><div class="s">지금 값 유지 5.67 dB</div></div>
+    <div class="stat"><div class="k">핸드오버 (Q-learning)</div><div class="v">−29%</div><div class="s">1,987 → 1,405건</div></div>
+    <div class="stat"><div class="k">핑퐁 (Q-learning)</div><div class="v">−95%</div><div class="s">353 → 18건</div></div>
+  </div>
+
+  <nav class="toc">
+    <a href="#s1"><span>1</span>연구 질문과 위치</a>
+    <a href="#s2"><span>2</span>데이터셋</a>
+    <a href="#s3"><span>3</span>문제 정의 (라벨)</a>
+    <a href="#s4"><span>4</span>입력 특징</a>
+    <a href="#s5"><span>5</span>실험 설계</a>
+    <a href="#s6"><span>6</span>모델 설정</a>
+    <a href="#s7"><span>7</span>결과 A · 핑퐁 예측</a>
+    <a href="#s8"><span>8</span>결과 B · 신호 예측</a>
+    <a href="#s9"><span>9</span>결과 C · 핸드오버 정책</a>
+    <a href="#s10"><span>10</span>한계 (타당성 위협)</a>
+    <a href="#s11"><span>11</span>교수님 todo 진행 상황</a>
+    <a href="#s12"><span>12</span>코드 경로 · 재현 방법</a>
+    <a href="#s13"><span>13</span>논문 쓸 때 메모</a>
+    <a href="#s14"><span>14</span>참고 문헌</a>
+  </nav>
+
+  <!-- ───────────────────────────── 1 ───────────────────────────── -->
+  <h2 id="s1"><span class="no">1</span>연구 질문과 위치</h2>
+  <ul>
+    <li><b>배경:</b> 핸드오버는 기지국이 결정함 (단말은 측정 보고만). 그래서 이 연구 결과물은 "단말 측 예측기"와 "망 파라미터 조정(MRO) 정책" 두 가지 형태</li>
+    <li><b>앞 단계에서 확인한 문제</b> (<code>핸드오버_데이터_점검_보고.md</code>)
+      <ul>
+        <li>신호 좋은 상태(≥ −85 dBm)의 핸드오버가 61%인데 순효과는 −2.6 ~ −9.1 dB (손해)</li>
+        <li>핑퐁(30초 내 복귀)이 약 16%, 신호 이득은 사실상 없음 (평균 −0.4 dB)</li>
+        <li>약전계(≤ −105 dBm) 핸드오버는 +10.6 dB 이득 → 이건 지켜야 함</li>
+      </ul>
+    </li>
+    <li>→ 줄일 대상은 "모든 핸드오버"가 아니라 <span class="hl">신호 좋은데 옮기는 것</span>과 <span class="hl">핑퐁</span></li>
+  </ul>
+  <h3>연구 질문</h3>
+  <div class="tbl"><table>
+    <tr><th>RQ</th><th>질문</th><th>실험</th></tr>
+    <tr><td>RQ1</td><td>핸드오버 순간에 이미 알 수 있는 단말 측정만으로 핑퐁·손해 핸드오버를 예측할 수 있나? 시계열 모델이 표 모델보다 나은가?</td><td>A</td></tr>
+    <tr><td>RQ2</td><td>직전 60초 측정으로 5·10·15초 뒤 서빙 RSRP를 "지금 값 유지"보다 잘 맞힐 수 있나?</td><td>B</td></tr>
+    <tr><td>RQ3</td><td>핸드오버 허용/보류 정책을 학습하면 신호 손해 없이 핸드오버·핑퐁을 줄일 수 있나? 분류기 차단과 강화학습 중 뭐가 나은가?</td><td>C</td></tr>
+  </table></div>
+  <div class="side">표준 흐름과 연결: 3GPP Rel-19 TR 38.744 (NR 이동성 AI/ML)에서 "단말 측 모델로 RRM 측정·이벤트 예측"을 다룸 → 이 연구는 그걸 <b>상용망 실측 데이터</b>로 해본 것 (논문 서론 포인트)</div>
+
+  <h3>연구 단계 (지금까지 흐름)</h3>
+  <div class="pipe">
+    <div><b>10/15 · 점검</b>핸드오버 전후 RSRP<br><code>ho_review.py</code></div><div class="ar">→</div>
+    <div><b>10/15 · 방향 A</b>규칙 재생 실험<br><code>ho_review.py</code></div><div class="ar">→</div>
+    <div><b>10/15 · 방향 B 사전</b>로지스틱 AUC 0.73<br><code>pp_feasibility.py</code></div><div class="ar">→</div>
+    <div><b>10/28 · 본 실험</b>모델 5종 비교<br><code>model_compare.py</code></div><div class="ar">→</div>
+    <div><b>11월 · 예정</b>Jev 추가</div>
+  </div>
+
+  <!-- ───────────────────────────── 2 ───────────────────────────── -->
+  <h2 id="s2"><span class="no">2</span>데이터셋</h2>
+  <ul>
+    <li>수집: 자체 안드로이드 앱(NetworkTrackerApp v1.1~v1.4), LG U+ LTE, 약 5초 간격 기록</li>
+    <li>기간: 2026-08-04 ~ 2026-10-25, 폴더 <code>trackingcsv/new/</code> (8월 이전은 <code>legacy/</code>라 제외)</li>
+    <li>셀 식별: 서빙은 ECI, 이웃은 (EARFCN, PCI) — 이웃 셀 ID는 폰이 안 줌</li>
+  </ul>
+  <div class="tbl"><table>
+    <tr><th>이동수단</th><th class="n">세션</th><th class="n">핸드오버</th><th class="n">핑퐁</th><th class="n">핑퐁 비율</th></tr>
+    <tr><td>차량</td><td class="n">15</td><td class="n">1,109</td><td class="n">216</td><td class="n">19.5%</td></tr>
+    <tr><td>지하철</td><td class="n">9</td><td class="n">816</td><td class="n">94</td><td class="n">11.5%</td></tr>
+    <tr><td>도보</td><td class="n">4</td><td class="n">52</td><td class="n">13</td><td class="n">25.0%</td></tr>
+    <tr><td>집(정지)</td><td class="n">3</td><td class="n">10</td><td class="n">3</td><td class="n">—</td></tr>
+    <tr class="best"><td>합계</td><td class="n">31</td><td class="n">1,987</td><td class="n">326</td><td class="n">16.4%</td></tr>
+  </table></div>
+  <p class="cap">표 1. 데이터셋 구성. 전체 측정 12,085행, 그중 셀 정보가 신선한 행(셀 정보 나이 ≤ 8초) 10,187행을 신호 예측(B)에 사용. 핸드오버가 있는 세션은 29개.</p>
+  <div class="side">핑퐁 수가 A(326)와 C의 "실제 망"(353)에서 다름 → A는 앱 플래그 기준 "다음 핸드오버가 30초 안에 원래 셀로 복귀"한 핸드오버 수, C는 재생기가 같은 기준을 (EARFCN, PCI) 단위로 다시 센 값. 논문에서는 정의를 하나로 맞춰 쓸 것.</div>
+
+  <!-- ───────────────────────────── 3 ───────────────────────────── -->
+  <h2 id="s3"><span class="no">3</span>문제 정의 (라벨)</h2>
+  <div class="tbl"><table>
+    <tr><th>과제</th><th>표본 단위</th><th>라벨 / 타깃</th><th>표본 수</th><th>기준선</th></tr>
+    <tr><td>A-1 핑퐁</td><td>핸드오버 A→B 1건</td><td>다음 핸드오버가 30초 안에 A로 복귀하면 1</td><td>1,987 (양성 326, 16.4%)</td><td>로지스틱 회귀</td></tr>
+    <tr><td>A-2 손해 HO</td><td>핸드오버 1건</td><td>10초 뒤 서빙 RSRP − 직전 RSRP ≤ −3 dB 이면 1 (10초 뒤 행이 동결이면 제외)</td><td>1,928 (양성 676, 35.1%)</td><td>로지스틱 회귀</td></tr>
+    <tr><td>B 신호 예측</td><td>신선한 측정 행 1개</td><td>5·10·15초 뒤 서빙 RSRP <b>변화량</b> (dB, 회귀)</td><td>10,187</td><td>지금 값 유지 (변화량 0)</td></tr>
+    <tr><td>C 정책</td><td>세션 1개 = 에피소드</td><td>결정 시점마다 옮김/보류 → 핸드오버·핑퐁·약전계·신호 손해로 평가</td><td>평가 세션 합계</td><td>실제 망, A3 규칙</td></tr>
+  </table></div>
+  <ul>
+    <li>A의 입력은 <b>핸드오버 직전 행까지만</b> 씀 (시계열은 <code>row − 1</code>까지) → 미래 정보 누설 없음</li>
+    <li>단, 표 특징에 "직후 RSRP/RSRQ"가 들어 있음 → A-2(손해 HO)가 쉬워진 이유. 실제 차단에 쓰려면 직후 값 없이 다시 돌려야 함 (<a href="#s10">10절</a>)</li>
+  </ul>
+
+  <!-- ───────────────────────────── 4 ───────────────────────────── -->
+  <h2 id="s4"><span class="no">4</span>입력 특징</h2>
+  <h3>표 특징 15개 (핸드오버 시점, <code>pp_feasibility.FEATS</code>)</h3>
+  <div class="tbl"><table>
+    <tr><th>특징</th><th>뜻</th></tr>
+    <tr><td><code>rsrp_prev</code>, <code>rsrq_prev</code></td><td>핸드오버 직전 행의 서빙 RSRP/RSRQ</td></tr>
+    <tr><td><code>rsrp_new</code>, <code>rsrq_new</code></td><td>핸드오버 직후 행의 서빙 RSRP/RSRQ</td></tr>
+    <tr><td><code>dwell</code></td><td>직전 셀 체류 시간 (초, 300 상한)</td></tr>
+    <tr><td><code>ho30</code></td><td>최근 30초 핸드오버 수</td></tr>
+    <tr><td><code>same_enb</code></td><td>같은 기지국(ECI // 256) 안 이동인지</td></tr>
+    <tr><td><code>inter_freq</code></td><td>주파수(EARFCN)가 바뀌는 핸드오버인지</td></tr>
+    <tr><td><code>is_return</code></td><td>이번 핸드오버 자체가 이미 복귀(앱 핑퐁 플래그)인지</td></tr>
+    <tr><td><code>tgt_seen</code>, <code>tgt_top</code></td><td>목표 셀이 직전 이웃 목록에 있었나 / 1위였나</td></tr>
+    <tr><td><code>tgt_margin</code></td><td>직전 이웃 목록에서 목표 셀 RSRP − 서빙 RSRP</td></tr>
+    <tr><td><code>act_car</code> / <code>act_subway</code> / <code>act_walking</code></td><td>이동수단 원핫</td></tr>
+  </table></div>
+  <h3>시계열 입력 (직전 12행 ≈ 60초, 행당 8개 + 마스크)</h3>
+  <div class="tbl"><table>
+    <tr><th>열</th><th>뜻</th></tr>
+    <tr><td><code>rsrp</code>, <code>rsrq</code></td><td>서빙 RSRP/RSRQ (빈칸은 앞뒤 값으로 채움)</td></tr>
+    <tr><td><code>nbr_gap</code></td><td>최강 이웃 RSRP − 서빙 RSRP (없으면 −30). <b>주파수 무관 최강 이웃</b>이라 비교가 아니라 특징으로만 씀</td></tr>
+    <tr><td><code>nbr_cnt</code></td><td>이웃 수</td></tr>
+    <tr><td><code>ho</code>, <code>pp</code></td><td>그 행에 핸드오버/핑퐁 플래그</td></tr>
+    <tr><td><code>dt</code></td><td>직전 행과 시간 간격 (0~30초)</td></tr>
+    <tr><td><code>stale</code></td><td>셀 정보 동결 여부 (셀 정보 나이 &gt; 8초)</td></tr>
+    <tr><td><code>mask</code></td><td>세션 앞부분이라 12행이 안 되면 0으로 채운 칸 표시</td></tr>
+  </table></div>
+  <ul>
+    <li>RNN·LSTM·GRU: 시계열 → 순환층, 마지막 은닉 상태에 표 특징을 붙여 출력층으로</li>
+    <li>XGBoost: 시계열 마지막 6행을 펼쳐(6 × 9 = 54) 표 특징 15개와 붙임 → 69개. 표 특징만 넣은 버전도 따로</li>
+  </ul>
+
+  <!-- ───────────────────────────── 5 ───────────────────────────── -->
+  <h2 id="s5"><span class="no">5</span>실험 설계</h2>
+  <ul>
+    <li><b>분할:</b> 세션 단위 5겹 교차검증 (시드 0으로 세션 섞어 5묶음). 한 세션은 학습이나 평가 한쪽에만 → 같은 경로 외우기 방지</li>
+    <li><b>테스트 세트:</b> 따로 떼어둔 홀드아웃 없음. 각 겹의 평가 세션 예측을 모아서(out-of-fold) 전체 1번 평가</li>
+    <li><b>신경망 조기 종료:</b> 학습 세션 중 1/6을 다시 세션 단위로 떼어 검증용으로 씀. 검증 손실 10회 개선 없으면 멈춤</li>
+    <li><b>시드:</b> 신경망·XGBoost 시드 3개(0, 1, 2). 표의 값은 <b>시드 3개 예측 평균(앙상블)</b>의 지표, 시드별 편차는 따로 기록</li>
+    <li><b>정규화:</b> 학습 세트 평균·표준편차로만 (평가 세트 정보 안 씀)</li>
+  </ul>
+  <h3>평가 지표</h3>
+  <div class="tbl"><table>
+    <tr><th>과제</th><th>지표</th><th>왜</th></tr>
+    <tr><td>A 분류</td><td>AUC, AP(평균 정밀도), Brier, ECE(10구간 보정 오차), 상위 k% 차단 시 걸러진 핑퐁 / 같이 막힌 정상 HO</td><td>양성 16%로 불균형 → AUC만 보면 안 됨. 실제 쓰는 형태는 "상위 k% 막기"</td></tr>
+    <tr><td>B 회귀</td><td>MAE (dB), 이동수단별 MAE</td><td>이상값에 덜 민감. 학습 손실도 L1</td></tr>
+    <tr><td>C 정책</td><td>핸드오버 수, 핑퐁 수, 약전계 비율(≤ −105 dBm 행 비율), 평균 RSRP, 같은 주파수 최강 셀 대비 dB, 강제 이동 수</td><td>연구방향 문서의 성공 기준: HO −30%, 핑퐁 −80%, 약전계 증가 없음, RSRP 손실 1 dB 이내</td></tr>
+  </table></div>
+
+  <!-- ───────────────────────────── 6 ───────────────────────────── -->
+  <h2 id="s6"><span class="no">6</span>모델 설정</h2>
+  <div class="tbl"><table>
+    <tr><th>모델</th><th>쓴 곳</th><th>설정</th></tr>
+    <tr><td>로지스틱 회귀</td><td>A 기준선</td><td>numpy 직접 구현, L2 = 1.0, 경사하강 3,000회, lr 0.1, 표 특징 15개 표준화</td></tr>
+    <tr><td>지금 값 유지</td><td>B 기준선</td><td>변화량 = 0</td></tr>
+    <tr><td>XGBoost (분류)</td><td>A, C 차단기</td><td>트리 300, 깊이 3, lr 0.05, subsample 0.8, colsample 0.8, min_child_weight 5, λ 1.0</td></tr>
+    <tr><td>XGBoost (회귀)</td><td>B</td><td>트리 400, 깊이 4, lr 0.05, 목적함수 절대오차, min_child_weight 10, 출력 3개 따로</td></tr>
+    <tr><td>RNN / LSTM / GRU</td><td>A, B</td><td>순환층 1개 (은닉 32) → [은닉 ⊕ 표 특징] → FC 32 → ReLU → Dropout 0.2 → 출력. Adam lr 2e−3, weight decay 1e−4, 배치 64, 최대 80 epoch(A) / 40 epoch(B), 손실 BCE(A) / L1(B, NaN 타깃 무시)</td></tr>
+    <tr><td>Q-learning</td><td>C</td><td>표 방식, 상태 72개, 행동 2개(보류/옮김), α 0.1, γ 0.9, ε 0.3 → 0.02 (학습의 70% 동안 선형 감소), 60 epoch(학습 세션 전체 재생 1회 = 1 epoch)</td></tr>
+  </table></div>
+  <div class="side">라이브러리: numpy, pandas, xgboost, PyTorch (CPU, 스레드 8). GPU 없이 PC에서 돌아감.</div>
+  <h3>학습이 빨리 끝나는 이유 (오래 걸린다는 예상과 다른 점)</h3>
+  <ul>
+    <li><b>데이터가 작음:</b> 분류 표본 약 2천 건, 회귀 약 1만 행, 입력 시퀀스 12 × 9. 이미지·언어 모델과 비교하면 수천~수만 배 작음</li>
+    <li><b>모델이 작음:</b> 순환층 1개·은닉 32 → 파라미터 수천 개 수준. 조기 종료로 보통 80 epoch 다 안 감</li>
+    <li><b>Q-learning이 표 방식:</b> 상태 72 × 행동 2 = 숫자 144개만 갱신. 신경망(DQN·PPO) 아님, 망과 실시간 상호작용도 없이 기록 재생만</li>
+    <li>→ 이번 결과는 <b>"작은 데이터·작은 모델로 해본 1차 비교"</b>. 오래 걸리는 쪽은 학습 자체보다 ① 데이터 더 모으기 ② 하이퍼파라미터·보상 가중치 탐색 ③ DQN/PPO·오프라인 RL(CQL) 같은 큰 모델 ④ 실제 망 적용 검증</li>
+  </ul>
+
+  <!-- ───────────────────────────── 7 ───────────────────────────── -->
+  <h2 id="s7"><span class="no">7</span>결과 A · 핑퐁·손해 핸드오버 예측</h2>
+  <div class="tbl"><table>
+    <tr><th>모델</th><th class="n">핑퐁 AUC</th><th class="n">시드별 AUC</th><th class="n">AP</th><th class="n">ECE</th><th class="n">상위 20% 차단<br>핑퐁 걸러냄 / 정상 막힘</th><th class="n">손해 HO AUC</th></tr>
+    <tr class="base"><td>로지스틱 회귀 (기준선)</td><td class="n">0.736</td><td class="n">—</td><td class="n">0.333</td><td class="n">0.013</td><td class="n">47.5% / 14.6%</td><td class="n"><b>0.816</b></td></tr>
+    <tr><td>XGBoost (표 15개)</td><td class="n">0.731</td><td class="n">0.730 ± 0.002</td><td class="n">0.346</td><td class="n">0.028</td><td class="n">43.9% / 15.3%</td><td class="n">0.807</td></tr>
+    <tr><td>XGBoost (표 + 시계열 69개)</td><td class="n">0.710</td><td class="n">0.708 ± 0.002</td><td class="n">0.317</td><td class="n">0.038</td><td class="n">44.8% / 15.1%</td><td class="n">0.800</td></tr>
+    <tr><td>RNN</td><td class="n">0.749</td><td class="n">0.740 ± 0.007</td><td class="n">0.359</td><td class="n">0.016</td><td class="n">45.4% / 15.0%</td><td class="n">0.805</td></tr>
+    <tr><td>LSTM</td><td class="n">0.751</td><td class="n">0.742 ± 0.007</td><td class="n">0.351</td><td class="n"><b>0.007</b></td><td class="n">46.0% / 14.9%</td><td class="n">0.805</td></tr>
+    <tr class="best"><td>GRU</td><td class="n">0.757</td><td class="n">0.746 ± 0.015</td><td class="n">0.360</td><td class="n">0.011</td><td class="n">46.6% / 14.8%</td><td class="n">0.805</td></tr>
+  </table></div>
+  <p class="cap">표 2. 핑퐁(n = 1,987, 양성 16.4%)·손해 핸드오버(n = 1,928, 양성 35.1%) 분류. 세션 5겹 out-of-fold. "핑퐁 AUC"는 시드 3개 예측 평균의 AUC, "시드별 AUC"는 시드 하나씩 낸 AUC의 평균 ± 표준편차.</p>
+  <figure>
+    <img src="../analysis_output/model_compare/A_roc.png" alt="핑퐁과 손해 핸드오버 예측 ROC 곡선, 모델별">
+    <figcaption>그림 1. 핑퐁(왼쪽)·손해 핸드오버(오른쪽) ROC. 곡선이 거의 겹침 → 모델 간 차이 작음</figcaption>
+  </figure>
+  <h3>해석</h3>
+  <ul>
+    <li>시계열 모델(GRU &gt; LSTM &gt; RNN)이 기준선보다 AUC +0.01~0.02. 시드 편차(±0.007~0.015)와 비슷한 크기라 <b>유의한 차이라고 말하기 어려움</b></li>
+    <li>XGBoost는 기준선보다 낮음. 특징 69개 / 표본 2천 건 → 과적합. 표 15개만 넣어도 기준선과 비슷 → 이 규모에서는 트리 모델 장점 없음</li>
+    <li>실사용 기준(상위 20% 막기)으로는 모든 모델이 핑퐁 44~48% 걸러내고 정상 15% 같이 막음 → 거의 같음</li>
+    <li>보정(ECE)은 LSTM·GRU·로지스틱 모두 0.01 근처로 좋음. XGBoost는 0.03~0.04로 확률이 덜 맞음</li>
+    <li>손해 HO는 다 AUC 0.80 이상인데 입력에 직후 RSRP가 있어서 쉬운 문제 → 선형으로 충분</li>
+  </ul>
+  <h3>XGBoost 특징 중요도 (핑퐁, 상위 8개)</h3>
+  <div class="tbl"><table>
+    <tr><th>순위</th><th>특징</th><th class="n">gain 비중</th><th>뜻</th></tr>
+    <tr><td>1</td><td><code>is_return</code></td><td class="n">0.112</td><td>이번 HO가 이미 복귀 → 핑퐁이 연쇄로 일어남</td></tr>
+    <tr><td>2</td><td><code>ho[t-1]</code></td><td class="n">0.031</td><td>바로 앞 행에도 HO</td></tr>
+    <tr><td>3</td><td><code>stale[t-0]</code></td><td class="n">0.031</td><td>직전 행 셀 정보 동결</td></tr>
+    <tr><td>4</td><td><code>tgt_seen</code></td><td class="n">0.030</td><td>목표 셀이 직전 이웃 목록에 있었나</td></tr>
+    <tr><td>5</td><td><code>act_subway</code></td><td class="n">0.025</td><td>지하철 여부</td></tr>
+    <tr><td>6</td><td><code>stale[t-4]</code></td><td class="n">0.023</td><td>4행 전 셀 정보 동결</td></tr>
+    <tr><td>7</td><td><code>ho[t-0]</code></td><td class="n">0.022</td><td>직전 행 HO</td></tr>
+    <tr><td>8</td><td><code>tgt_top</code></td><td class="n">0.021</td><td>목표 셀이 이웃 1위였나</td></tr>
+  </table></div>
+  <ul><li>"셀 정보 동결" 특징이 상위권 → 측정 품질 자체가 예측에 섞여 들어감. 논문에서는 동결 행 제외 실험도 같이 보여주는 게 안전</li></ul>
+
+  <!-- ───────────────────────────── 8 ───────────────────────────── -->
+  <h2 id="s8"><span class="no">8</span>결과 B · 서빙 RSRP 단기 예측</h2>
+  <div class="tbl"><table>
+    <tr><th>모델</th><th class="n">5초 뒤</th><th class="n">10초 뒤</th><th class="n">15초 뒤</th><th class="n">10초 시드 편차</th></tr>
+    <tr class="base"><td>지금 값 유지 (기준선)</td><td class="n">4.61</td><td class="n">5.67</td><td class="n">6.28</td><td class="n">—</td></tr>
+    <tr><td>XGBoost</td><td class="n">4.37</td><td class="n">5.17</td><td class="n">5.68</td><td class="n">0.001</td></tr>
+    <tr><td>RNN</td><td class="n">4.34</td><td class="n">5.13</td><td class="n">5.57</td><td class="n">0.015</td></tr>
+    <tr><td>LSTM</td><td class="n">4.39</td><td class="n">5.17</td><td class="n">5.62</td><td class="n">0.014</td></tr>
+    <tr class="best"><td>GRU</td><td class="n">4.34</td><td class="n">5.12</td><td class="n">5.56</td><td class="n">0.004</td></tr>
+  </table></div>
+  <p class="cap">표 3. 서빙 RSRP 예측 MAE (dB), n = 10,187 신선한 행. 15초 뒤 기준선 대비 −11%.</p>
+  <h3>이동수단별 (10초 뒤 MAE, dB)</h3>
+  <div class="tbl"><table>
+    <tr><th>모델</th><th class="n">차량</th><th class="n">지하철</th><th class="n">도보</th></tr>
+    <tr class="base"><td>지금 값 유지</td><td class="n">5.01</td><td class="n">8.19</td><td class="n">4.37</td></tr>
+    <tr><td>XGBoost</td><td class="n">4.70</td><td class="n">7.07</td><td class="n">4.40</td></tr>
+    <tr><td>RNN</td><td class="n">4.65</td><td class="n">7.10</td><td class="n">4.20</td></tr>
+    <tr><td>LSTM</td><td class="n">4.67</td><td class="n">7.17</td><td class="n">4.15</td></tr>
+    <tr class="best"><td>GRU</td><td class="n">4.64</td><td class="n">7.10</td><td class="n">4.13</td></tr>
+  </table></div>
+  <figure>
+    <img src="../analysis_output/model_compare/B_rsrp_mae.png" alt="예측 시점별·이동수단별 RSRP 예측 MAE 막대그래프">
+    <figcaption>그림 2. RSRP 예측 오차. 멀리 볼수록 기준선과 차이 커짐</figcaption>
+  </figure>
+  <ul>
+    <li>모든 모델이 기준선보다 나음 (RQ2 = 예). 모델끼리는 0.1 dB 안쪽 → <b>모델보다 입력 정보가 한계</b></li>
+    <li>지하철이 오차도 제일 크고 이득도 제일 큼 (8.19 → 7.10). 역·터널 전환이 급해서로 추정</li>
+    <li>차량·도보 5초 뒤는 기준선과 거의 같음 (도보 5초: 기준선 2.98, GRU 2.97)</li>
+    <li>참고: 관련 연구(인코더-디코더 LSTM, 드라이브 테스트)는 MAE 약 2 dB 보고 → 우리는 5초 간격·단말 1대라 직접 비교 어려움</li>
+  </ul>
+
+  <!-- ───────────────────────────── 9 ───────────────────────────── -->
+  <h2 id="s9"><span class="no">9</span>결과 C · 핸드오버 정책 (재생 시뮬레이터)</h2>
+  <h3>재생 방식</h3>
+  <ul>
+    <li>측정된 서빙·이웃 RSRP를 시간순으로 다시 돌림. 셀은 (EARFCN, PCI)로 구분, <b>같은 주파수 이웃만</b> 후보</li>
+    <li><b>결정 시점:</b> 같은 주파수 최강 이웃이 가상 서빙보다 3 dB 이상 셀 때 (A3, TTT 1행)</li>
+    <li>가상 서빙이 이웃 목록에서 사라지면 RSRP를 모름 → 실제 망이 고른 셀로 <b>강제 이동</b>으로 셈</li>
+    <li>셀 정보 동결 행(나이 &gt; 8초)은 결정에 안 씀</li>
+    <li>검증: 실제 망을 같은 방식으로 재생하면 같은 주파수 최강 셀과 차이 0.15 dB → 재생 기준이 실제와 맞음</li>
+  </ul>
+  <h3>비교 정책</h3>
+  <div class="tbl"><table>
+    <tr><th>정책</th><th>규칙</th></tr>
+    <tr><td>실제 망</td><td>측정된 그대로</td></tr>
+    <tr><td>A3 규칙</td><td>3 dB 세면 무조건 옮김</td></tr>
+    <tr><td>A3 + 핑퐁벌점</td><td>30초 안에 떠난 셀로 돌아가려면 6 dB 더 (총 9 dB) — 10/15 규칙 실험 최고안</td></tr>
+    <tr><td>A3 + XGBoost 차단</td><td>학습 세션 실제 HO로 핑퐁 분류기 학습 (재생 중 계산 가능한 9개 특징: 서빙·목표 RSRP, 체류, ho30, 복귀, 여유, 이동수단). 점수가 학습 세트 상위 20% 이상이면 보류</td></tr>
+    <tr><td>A3 + Q-learning</td><td>상태별로 옮김/보류 학습 (아래)</td></tr>
+  </table></div>
+  <h3>Q-learning 정의</h3>
+  <ul>
+    <li><b>상태 72개</b> = 서빙 RSRP 4구간(≤−105 / −105~−95 / −95~−85 / &gt;−85) × 이웃 여유 3구간(&lt;6 / 6~10 / ≥10 dB) × 복귀 여부 2 × 직전 HO 후 경과 3구간(&lt;10 / 10~30 / ≥30초)</li>
+    <li><b>행동:</b> 보류(0) / 옮김(1)</li>
+    <li><b>보상 (행 ≈ 5초마다 누적):</b> 핸드오버 −1, 핑퐁 −3, 약전계(≤ −105 dBm) −5, 같은 주파수 최강 셀 대비 손해 dB × −0.1 (15 dB 상한)</li>
+    <li>결정 시점 사이 보상을 할인 누적해서 다음 결정 시점 상태로 갱신 (semi-MDP 방식)</li>
+    <li>학습 세션으로 학습 → 평가 세션에서 탐색 없이(ε = 0) 평가. 5겹, 평가 세션 합계</li>
+  </ul>
+  <div class="tbl"><table>
+    <tr><th>정책</th><th class="n">핸드오버</th><th class="n">핑퐁</th><th class="n">강제 이동</th><th class="n">약전계 비율</th><th class="n">평균 RSRP</th><th class="n">최강 셀 대비</th></tr>
+    <tr class="base"><td>실제 망</td><td class="n">1,987</td><td class="n">353</td><td class="n">—</td><td class="n">1.27%</td><td class="n">−81.8</td><td class="n">0.15 dB</td></tr>
+    <tr><td>A3 규칙</td><td class="n">1,773 (−11%)</td><td class="n">226 (−36%)</td><td class="n">243</td><td class="n">1.12%</td><td class="n">−81.6</td><td class="n">0.08 dB</td></tr>
+    <tr><td>A3 + 핑퐁벌점</td><td class="n">1,642 (−17%)</td><td class="n">68 (−81%)</td><td class="n">259</td><td class="n">1.19%</td><td class="n">−81.8</td><td class="n">0.22 dB</td></tr>
+    <tr><td>A3 + XGBoost 차단</td><td class="n">1,624 (−18%)</td><td class="n">81 (−77%)</td><td class="n">267</td><td class="n">1.17%</td><td class="n">−81.8</td><td class="n">0.31 dB</td></tr>
+    <tr class="best"><td>A3 + Q-learning</td><td class="n">1,405 (−29%)</td><td class="n">18 (−95%)</td><td class="n">378</td><td class="n">1.20%</td><td class="n">−82.3</td><td class="n">0.71 dB</td></tr>
+  </table></div>
+  <p class="cap">표 4. 정책별 재생 결과 (세션 5겹, 평가 세션 합계). 성공 기준: HO −30% · 핑퐁 −80% · 약전계 증가 없음 · RSRP 손실 1 dB 이내 → Q-learning이 HO만 1%p 모자라고 나머지 충족.</p>
+  <figure>
+    <img src="../analysis_output/model_compare/C_policy.png" alt="정책별 핸드오버 수, 핑퐁 수, 약전계 비율 비교 그래프">
+    <figcaption>그림 3. 정책별 재생 결과</figcaption>
+  </figure>
+  <figure>
+    <img src="../analysis_output/model_compare/C_qlearning_curve.png" alt="Q-learning epoch별 누적 보상 학습 곡선">
+    <figcaption>그림 4. Q-learning 학습 곡선 (1번째 겹). 약 40 epoch에서 수렴, 이후 흔들림은 탐색(ε) 때문</figcaption>
+  </figure>
+
+  <h3>학습된 정책 (1번째 겹 Q표)</h3>
+  <div class="tbl"><table class="qmap">
+    <tr><th rowspan="2" style="width:44px">HO 종류</th><th rowspan="2" style="width:76px">서빙 RSRP</th><th colspan="3">이웃 여유 3~6 dB</th><th colspan="3">6~10 dB</th><th colspan="3">≥10 dB</th></tr>
+    <tr><th>&lt;10s</th><th>10~30s</th><th>≥30s</th><th>&lt;10s</th><th>10~30s</th><th>≥30s</th><th>&lt;10s</th><th>10~30s</th><th>≥30s</th></tr>
+<tr><th>일반</th><th>≤−105</th><td class="q mv" title="Q(옮김)−Q(보류) = +0.16">옮김</td><td class="q hd" title="Q(옮김)−Q(보류) = -1.35">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +1.40">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +3.16">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +3.69">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +4.49">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.90">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +5.49">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +6.18">옮김</td></tr>
+<tr><th>일반</th><th>−105~−95</th><td class="q hd" title="Q(옮김)−Q(보류) = -0.99">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +1.12">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.15">옮김</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.32">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.55">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.26">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.92">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.74">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.53">옮김</td></tr>
+<tr><th>일반</th><th>−95~−85</th><td class="q hd" title="Q(옮김)−Q(보류) = -0.29">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.38">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.33">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = +0.00">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.64">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.25">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.52">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.55">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.94">옮김</td></tr>
+<tr><th>일반</th><th>&gt;−85</th><td class="q hd" title="Q(옮김)−Q(보류) = -0.02">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = +0.00">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.30">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.10">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.51">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.39">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +1.10">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.75">옮김</td><td class="q mv" title="Q(옮김)−Q(보류) = +1.04">옮김</td></tr>
+<tr><th>복귀</th><th>≤−105</th><td class="q hd" title="Q(옮김)−Q(보류) = -0.32">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.32">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -4.23">보류</td><td class="q mv" title="Q(옮김)−Q(보류) = +1.02">옮김</td><td class="q na">·</td><td class="q mv" title="Q(옮김)−Q(보류) = +0.25">옮김</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.13">보류</td><td class="q na">·</td></tr>
+<tr><th>복귀</th><th>−105~−95</th><td class="q hd" title="Q(옮김)−Q(보류) = -1.92">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.40">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -1.43">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.28">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.34">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.67">보류</td><td class="q na">·</td></tr>
+<tr><th>복귀</th><th>−95~−85</th><td class="q hd" title="Q(옮김)−Q(보류) = -3.22">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -3.33">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -3.62">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.59">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.57">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.17">보류</td><td class="q na">·</td></tr>
+<tr><th>복귀</th><th>&gt;−85</th><td class="q hd" title="Q(옮김)−Q(보류) = -2.78">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.72">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -2.16">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -3.40">보류</td><td class="q na">·</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.92">보류</td><td class="q hd" title="Q(옮김)−Q(보류) = -0.39">보류</td><td class="q na">·</td></tr>
+  </table></div>
+  <p class="legend"><i style="background:var(--mv)"></i>옮김 <i style="background:var(--hd)"></i>보류 <span style="margin-left:10px">· = 한 번도 안 나온 상태 (복귀는 정의상 30초 안이라 ≥30s 없음)</span> · 칸에 마우스 올리면 Q(옮김) − Q(보류)</p>
+  <ul>
+    <li><b>복귀(핑퐁 후보)는 거의 전부 보류.</b> 약전계일 때만 일부 옮김 → 핑퐁벌점 규칙을 스스로 찾은 셈</li>
+    <li><b>일반 HO는 여유 3~6 dB면 대체로 보류, 6 dB 넘으면 옮김.</b> 약전계(≤ −105)면 여유 작아도 옮김</li>
+    <li>즉 "애매하게 센 이웃으로는 안 옮기고, 약할 땐 빨리 옮김" → 점검 결론("신호 좋을 때 HO는 손해")과 같은 방향. <b>해석 가능한 정책</b>이라는 점이 논문 포인트</li>
+    <li>XGBoost 차단은 핑퐁벌점 규칙과 성능 비슷 → 분류 점수 하나로 막는 것보다 상황별 학습이 나음 (RQ3)</li>
+  </ul>
+
+  <!-- ───────────────────────────── 10 ───────────────────────────── -->
+  <h2 id="s10"><span class="no">10</span>한계 (타당성 위협)</h2>
+  <div class="tbl"><table>
+    <tr><th>한계</th><th>영향</th><th>대응 (계획)</th></tr>
+    <tr><td>단말 1대 · 통신사 1곳(LG U+) · 수도권 일부 경로</td><td>일반화 어려움</td><td>경로 늘리기, 공개 데이터셋(Vienna 4G/5G Drive-Test)으로 외부 검증 고려</td></tr>
+    <tr><td>표본 작음 (HO 2천, 핑퐁 326)</td><td>모델 간 차이가 시드 편차 수준</td><td>v1.4로 지하철·차량 추가 수집. 논문에선 신뢰구간(부트스트랩) 같이 표기</td></tr>
+    <tr><td>5초 간격 측정</td><td>실제 A3 TTT(수백 ms)를 못 봄. 재생 TTT는 "행" 단위</td><td>앱 v1.4 셀 정보 1초 버퍼 데이터로 다시</td></tr>
+    <tr><td>강제 이동 (Q-learning 378건)</td><td>보류가 많을수록 늘어남 → HO 감소폭이 과대 또는 과소일 수 있음</td><td>강제 이동 직전 RSRP 분포 같이 보고. v1.4로 이웃 목록 누락 줄이기</td></tr>
+    <tr><td>재생은 열린 루프</td><td>우리 결정에 망이 어떻게 반응할지(부하, 다른 셀 측정) 반영 못 함</td><td>"오프라인 평가"로 명시. 오프라인 RL(CQL) 관점으로 서술</td></tr>
+    <tr><td>보상 가중치를 손으로 정함</td><td>결과가 가중치에 따라 바뀜</td><td>가중치 조합 민감도 표 만들기 (todo)</td></tr>
+    <tr><td>A 표 특징에 직후 RSRP/RSRQ 포함</td><td>"핸드오버 전에 막기"용으로는 정보 누설. 손해 HO AUC가 높게 나온 원인</td><td>직전 정보만 쓴 버전 따로 돌리기 (C의 XGBoost 차단기는 이미 직후 대신 목표 셀 RSRP 사용)</td></tr>
+    <tr><td>셀 정보 동결 특징이 예측에 쓰임</td><td>측정 품질 효과가 섞임</td><td>동결 구간 제외 실험 추가</td></tr>
+    <tr><td>최강 이웃 RSRP가 주파수 무관</td><td>서빙과 직접 비교하면 틀림</td><td>A·B에선 특징으로만 씀. C는 같은 주파수 이웃만 사용</td></tr>
+    <tr><td>5G 셀 정보 미수집</td><td>NR 이동성은 못 다룸 (NSA 표시만)</td><td>LTE 앵커 이동성으로 범위 한정해서 서술</td></tr>
+  </table></div>
+
+  <!-- ───────────────────────────── 11 ───────────────────────────── -->
+  <h2 id="s11"><span class="no">11</span>교수님 todo 진행 상황</h2>
+  <div class="tbl"><table>
+    <tr><th>todo</th><th>상태</th><th>내용</th></tr>
+    <tr><td>1. XGBoost, GRU, LSTM/RNN, Q-learning 비교</td><td><span class="st st-done">완료 10/28</span></td><td>7~9절</td></tr>
+    <tr><td>2. Jev 적용 가능한지</td><td><span class="st st-wait">11월 결제 후</span></td><td>아래</td></tr>
+    <tr><td>3. 결과 문서화</td><td><span class="st st-done">완료</span></td><td><code>모델_비교_보고.md/.docx</code> + 이 페이지</td></tr>
+    <tr><td>4. SINR 측정 안 된 이유</td><td><span class="st st-done">완료</span></td><td>아래</td></tr>
+  </table></div>
+  <h3>Jev (todo 2)</h3>
+  <ul>
+    <li>TypeSafe AI가 2026-09-15 공개한 판단 전용 모델 (대화형 X, 예/아니오 확률·보기 선택·점수 출력)</li>
+    <li>"확률이 실제와 맞게(보정)" 학습한 게 핵심 → "이 HO가 핑퐁일 확률"과 형태가 그대로 맞음. 그래서 A 표에 ECE를 미리 넣어둠</li>
+    <li>회사 발표: 기존 모델보다 최대 444배 싸고 193배 빠름 (독립 검증 못 찾음)</li>
+    <li>추가할 때 방법
+      <ul>
+        <li>A와 같은 세션 분할·표 특징으로 핑퐁 확률 받기 → AUC·ECE 비교 (예시 없이 / 예시 몇 개 넣고 둘 다)</li>
+        <li>C 재생에 "A3 + Jev 차단" 정책 추가</li>
+        <li>위치 정보는 빼고 신호 수치만 보낼 것</li>
+      </ul>
+    </li>
+  </ul>
+  <h3>SINR 빈칸 (todo 4)</h3>
+  <ul>
+    <li>세션별 빈칸 0~98%. v1.4 세션(10/16, 10/25)은 0%, 0%, 14%</li>
+    <li>앱은 SINR을 셀 정보(CellInfo)의 <code>rssnr</code>에서만 읽음 → 셀 정보가 늦게 오면 SINR도 같이 빠짐</li>
+    <li>셀 정보 8초 넘게 묵은 행: 빈칸 85~99% / 3초 이내 행: 0~5%</li>
+    <li>v1.4(1초마다 요청)에서도 빈칸 구간은 셀 정보 나이 중앙값 4.0초 (정상 0.95초) → 모뎀이 응답을 늦추는 상태 (저전력 추정)</li>
+    <li>5G CSI-SINR 0% → 5G 셀 자체가 안 잡힘</li>
+    <li>다음: SignalStrength 콜백으로도 SINR 받기, 화면 켜짐/꺼짐 기록 추가</li>
+  </ul>
+
+  <!-- ───────────────────────────── 12 ───────────────────────────── -->
+  <h2 id="s12"><span class="no">12</span>코드 경로 · 재현 방법</h2>
+  <p>저장소 루트: <code>C:\Users\admin\NetworkTrackerApp</code> · GitHub <a href="https://github.com/JosephHsm/NetworkTrackerApp">JosephHsm/NetworkTrackerApp</a></p>
+  <div class="tbl"><table>
+    <tr><th>경로</th><th>역할</th></tr>
+    <tr><td><code>trackingcsv/new/*.csv</code></td><td>입력 원본 (세션당 CSV 1개, 파일명 끝이 이동수단)</td></tr>
+    <tr><td><code>analysis/model_compare.py</code></td><td><b>본 실험.</b> A(<code>part_a</code>) · B(<code>part_b</code>) · C(<code>part_c</code>, <code>run_policy</code>, <code>QAgent</code>)</td></tr>
+    <tr><td><code>analysis/model_compare_fig.py</code></td><td>그림 1~4 PNG</td></tr>
+    <tr><td><code>analysis/pp_feasibility.py</code></td><td>핸드오버 이벤트 추출 <code>events()</code>, 표 특징 15개 <code>FEATS</code>, 로지스틱 회귀·AUC (10/15 사전 실험)</td></tr>
+    <tr><td><code>analysis/ho_review.py</code></td><td>데이터 점검, 재생기 <code>frames()</code>/<code>replay()</code>, 상수 (동결 8초, 핑퐁 30초, 약전계 −105)</td></tr>
+    <tr><td><code>analysis_output/stats/model_compare.json</code></td><td>모든 수치 결과 (Q표·학습 곡선 포함)</td></tr>
+    <tr><td><code>analysis_output/stats/model_compare_pred.npz</code></td><td>out-of-fold 예측값 (그림·추가 분석용)</td></tr>
+    <tr><td><code>analysis_output/model_compare/*.png</code></td><td>그림 1~4</td></tr>
+    <tr><td><code>모델_비교_보고.md / .docx</code></td><td>교수님 보고서 (10/28)</td></tr>
+    <tr><td><code>핸드오버_AI_연구방향.md</code></td><td>문제 정의·알고리즘 방향·후보 모델·성공 기준·참고 문헌</td></tr>
+    <tr><td><code>핸드오버_데이터_점검_보고.md</code></td><td>핸드오버 전후 RSRP, 규칙 재생 결과 (앞 단계)</td></tr>
+    <tr><td><code>viz_build/model_research.html</code></td><td>이 페이지</td></tr>
+  </table></div>
+  <h3>다시 돌리기</h3>
+<pre>cd C:\Users\admin\NetworkTrackerApp
+pip install numpy pandas xgboost torch matplotlib
+python analysis/model_compare.py          # A B C 전부 (A·B만: python analysis/model_compare.py A B)
+python analysis/model_compare_fig.py      # 그림 다시 그리기</pre>
+  <div class="side">결과 JSON은 부분 실행 시 해당 파트만 덮어씀. 데이터가 늘면 숫자가 바뀌므로 논문용 수치는 커밋 해시와 같이 기록할 것.</div>
+
+  <!-- ───────────────────────────── 13 ───────────────────────────── -->
+  <h2 id="s13"><span class="no">13</span>논문 쓸 때 메모</h2>
+  <h3>주장할 수 있는 것</h3>
+  <ul>
+    <li>상용 LTE망 단말 실측 데이터로 핑퐁 예측 · 신호 예측 · 정책 학습을 <b>같은 분할</b>에서 비교한 사례</li>
+    <li>표 형식 Q-learning이 핑퐁 −95%, HO −29%, 약전계 증가 없이 달성 + 학습된 정책이 해석 가능 (9절 Q표)</li>
+    <li>소규모 실측 데이터에선 모델 복잡도보다 입력 정보가 한계 (A·B 모두 모델 간 차이 작음)</li>
+  </ul>
+  <h3>주장하면 안 되는 것</h3>
+  <ul>
+    <li>"GRU가 제일 좋다" 단정 → 시드 편차 수준 차이. "비슷하거나 약간 나음"으로</li>
+    <li>재생 결과를 실제 망 성능으로 → "오프라인 재생 평가"로 명시</li>
+    <li>손해 HO 예측 AUC 0.8 → 직후 RSRP가 입력에 있어 실시간 차단 성능 아님</li>
+  </ul>
+  <h3>논문 전에 더 할 것</h3>
+  <ul>
+    <li>Jev 추가 (11월)</li>
+    <li>v1.4 데이터 추가 후 전체 재실행 → 표본 늘었을 때 GRU·LSTM 차이 확인</li>
+    <li>보상 가중치 민감도 표, 부트스트랩 신뢰구간</li>
+    <li>A를 직전 정보만으로 다시 (직후 RSRP/RSRQ 제거), 동결 구간 제외 실험</li>
+    <li>GRU 신호 예측값을 Q-learning 상태에 넣기 (예측 기반 정책) → 연구방향 문서 4·5단계 연결</li>
+    <li>오프라인 RL(CQL)·문맥 밴딧과 비교 (연구방향 문서 3절 후보)</li>
+  </ul>
+  <h3>논문 구성안</h3>
+  <ol>
+    <li>서론 — 불필요 HO·핑퐁 문제, 3GPP Rel-19 AI/ML 이동성</li>
+    <li>관련 연구 — 시계열 예측(GRU/LSTM), 트리 분류, RL 기반 HO 최적화, 오프라인 RL MRO</li>
+    <li>측정 시스템·데이터셋 — 앱, 2절 표 1, 셀 식별, 동결 문제</li>
+    <li>문제 정의 — 3절 라벨, 4절 특징</li>
+    <li>방법 — 6절 모델, 9절 재생 시뮬레이터·Q-learning</li>
+    <li>실험 — 5절 설계, 7~9절 결과</li>
+    <li>논의·한계 — 10절</li>
+    <li>결론</li>
+  </ol>
+
+  <!-- ───────────────────────────── 14 ───────────────────────────── -->
+  <h2 id="s14"><span class="no">14</span>참고 문헌</h2>
+  <p class="date">출처: <code>핸드오버_AI_연구방향.md</code> 참고 자료. 수치는 각 논문 보고값(대부분 시뮬레이션)</p>
+  <ol class="src">
+    <li><span class="tag">표준</span><a href="https://3gpp.org/dynareport/38744.htm">3GPP TR 38.744</a> — Study on AI/ML for mobility in NR (Rel-19)</li>
+    <li><span class="tag">개요</span><a href="https://arxiv.org/pdf/2312.15174">The Bridge Toward 6G: 5G-Advanced Evolution in 3GPP Release 19</a>, arXiv:2312.15174</li>
+    <li><span class="tag">시계열</span><a href="https://arxiv.org/pdf/2510.02958">Sequence-Based Deep Learning for Handover Optimization in Dense Urban Cellular Network</a>, arXiv:2510.02958 — GRU·LSTM·Transformer, 실측</li>
+    <li><span class="tag">시계열</span><a href="https://telkomnika.uad.ac.id/index.php/TELKOMNIKA/article/view/27107">Encoder-decoder LSTM for multistep forecasting (5G handover)</a>, TELKOMNIKA</li>
+    <li><span class="tag">RL</span><a href="https://espace.etsmtl.ca/id/eprint/3695/1/Ebrahimzadeh%20Gonbadi_Farhad.pdf">Ebrahimzadeh Gonbadi, DQN 기반 TTT·히스테리시스·A3 오프셋 조정</a>, ÉTS 학위논문</li>
+    <li><span class="tag">RL</span><a href="https://www.arxiv.org/pdf/2401.14823">PPO 기반 적응형 핸드오버 프로토콜</a>, arXiv:2401.14823</li>
+    <li><span class="tag">RL</span><a href="https://arxiv.org/html/2505.21249v1">Data-Driven Cellular Mobility Management via Bayesian Optimization and RL</a>, arXiv:2505.21249</li>
+    <li><span class="tag">RL</span><a href="https://arxiv.org/pdf/1904.02572">5G Handover using Reinforcement Learning</a>, arXiv:1904.02572</li>
+    <li><span class="tag">오프라인 RL</span><a href="https://www.arxiv.org/pdf/2506.22793">Alizadeh 외 (Ericsson), Offline RL for Mobility Robustness Optimization</a>, arXiv:2506.22793</li>
+    <li><span class="tag">오프라인 RL</span><a href="https://arxiv.org/pdf/2603.03932.pdf">Helson 외, Selecting Offline RL Algorithms for Stochastic Network Control</a>, arXiv:2603.03932</li>
+    <li><span class="tag">분류</span><a href="https://scholarworks.sjsu.edu/faculty_rsca/7213">Predicting Unstable Handovers Using ML in LTE/5G (LightGBM·XGBoost)</a>, SJSU</li>
+    <li><span class="tag">MRO</span><a href="https://aaltodoc.aalto.fi/items/ae16930e-4fca-4414-90ed-a733e4c1b343">Effectiveness of MRO in a live LTE network</a>, Aalto University</li>
+    <li><span class="tag">GNN</span><a href="https://ojs.aaai.org/index.php/AAAI/article/view/26684">Neighbor Auto-Grouping GNN for Handover Parameter Configuration</a>, AAAI 2023</li>
+    <li><span class="tag">GNN</span><a href="https://arxiv.org/pdf/2603.24634">Dual-Graph Multi-Agent RL for Handover Optimization</a>, arXiv:2603.24634</li>
+    <li><span class="tag">데이터</span><a href="https://arxiv.org/abs/2603.02638">The Vienna 4G/5G Drive-Test Dataset</a>, arXiv:2603.02638</li>
+  </ol>
+</div>

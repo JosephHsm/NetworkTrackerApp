@@ -1,0 +1,14 @@
+{
+  "batch": 1,
+  "time": "2026-11-01T19:42:11+09:00",
+  "neural_family": "DQN",
+  "seeds": [
+    11,
+    29
+  ],
+  "candidates": 4,
+  "smoke": false,
+  "code_sha256": "1fb271cccdd25abfdbccb37816378d97607915dc9b41dc8afb6dafb169fad64e",
+  "original_manifest_sha256": "b83d39c0e183f40e3d2166b4b7a3cdac67bb061122f149105275a93c2a4236f7",
+  "evaluation": "validation only; outer test never evaluated"
+}

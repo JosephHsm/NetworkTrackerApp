@@ -1,0 +1,22 @@
+{
+  "batch": 3,
+  "time": "2026-11-01T21:40:39+09:00",
+  "neural_family": "CQL",
+  "seeds": [
+    11,
+    29
+  ],
+  "confirmation_seeds": [
+    30047,
+    30083,
+    30101,
+    30137,
+    30173
+  ],
+  "candidates": 4,
+  "smoke": false,
+  "confirmation_rule": "Freeze strongest novel candidate after screening; compare candidate and incumbent on new paired seeds; promote only on material mean improvement and strict majority seed wins",
+  "code_sha256": "4a3d6585c1992baf0907ed88bf00fb8cacef86f0959d64b1714d6b6303ac61e3",
+  "original_manifest_sha256": "b83d39c0e183f40e3d2166b4b7a3cdac67bb061122f149105275a93c2a4236f7",
+  "evaluation": "validation only; outer test never evaluated"
+}

@@ -1,0 +1,71 @@
+{
+  "round": 1,
+  "complete": true,
+  "completed_pairs": 45,
+  "total_pairs": 45,
+  "family_results": {
+    "Q": {
+      "ho_reduction": 0.2129926601594622,
+      "pp_reduction": 0.8600413501472476,
+      "weak_delta_pp": -0.018151163219040655,
+      "rsrp_loss": 0.23756272199157139,
+      "forecast_mae": null
+    },
+    "DQN": {
+      "ho_reduction": 0.21168157965013729,
+      "pp_reduction": 0.6854272101177787,
+      "weak_delta_pp": -0.09557400619641196,
+      "rsrp_loss": 0.27250115271695846,
+      "forecast_mae": null
+    },
+    "PPO": {
+      "ho_reduction": 0.1760867325408943,
+      "pp_reduction": 0.6365172605943731,
+      "weak_delta_pp": -0.1807844854262477,
+      "rsrp_loss": 0.16249721381090013,
+      "forecast_mae": null
+    },
+    "CQL": {
+      "ho_reduction": 0.23230889533740443,
+      "pp_reduction": 0.6879152248793267,
+      "weak_delta_pp": -0.08801903343893913,
+      "rsrp_loss": 0.4860501735232162,
+      "forecast_mae": null
+    },
+    "DQN+XGBoost": {
+      "ho_reduction": 0.20564414048087817,
+      "pp_reduction": 0.6755287077643342,
+      "weak_delta_pp": -0.12170827396230084,
+      "rsrp_loss": 0.24788217360209613,
+      "forecast_mae": 5.8229820877956096
+    },
+    "DQN+RNN": {
+      "ho_reduction": 0.24377479176208436,
+      "pp_reduction": 0.8016584335798109,
+      "weak_delta_pp": -0.06850755470098327,
+      "rsrp_loss": 0.4356870908066924,
+      "forecast_mae": 5.8623301143186985
+    },
+    "DQN+LSTM": {
+      "ho_reduction": 0.20584446863345363,
+      "pp_reduction": 0.6738061574861998,
+      "weak_delta_pp": -0.13518917374049944,
+      "rsrp_loss": 0.24987354687993674,
+      "forecast_mae": 5.882357587050805
+    },
+    "DQN+GRU": {
+      "ho_reduction": 0.24303161950038904,
+      "pp_reduction": 0.7926714746252012,
+      "weak_delta_pp": -0.041093423569819036,
+      "rsrp_loss": 0.44155567565600223,
+      "forecast_mae": 5.819034008488918
+    },
+    "Rule": {
+      "ho_reduction": 0.19589898162468095,
+      "pp_reduction": 0.8188989829169546,
+      "weak_delta_pp": -0.10729606458957427,
+      "rsrp_loss": 0.09308352742653483,
+      "forecast_mae": null
+    }
+  }
+}

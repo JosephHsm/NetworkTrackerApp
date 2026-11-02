@@ -1,0 +1,14 @@
+{
+  "batch": 2,
+  "time": "2026-11-01T20:54:32+09:00",
+  "neural_family": "PPO",
+  "seeds": [
+    11,
+    29
+  ],
+  "candidates": 4,
+  "smoke": false,
+  "code_sha256": "25921379490caa3a90c2b9b073176f2aca8ac96c35d2e1789df3b5e4c03cb98e",
+  "original_manifest_sha256": "b83d39c0e183f40e3d2166b4b7a3cdac67bb061122f149105275a93c2a4236f7",
+  "evaluation": "validation only; outer test never evaluated"
+}

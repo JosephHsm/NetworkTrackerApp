@@ -29,3 +29,13 @@ __pycache__/
 # OpenCellID 토큰·내려받은 DB (공개 저장소에 올리지 않는다)
 reference/opencellid/key.txt
 reference/opencellid/*.csv.gz
+
+# Local research caches and scratch previews (keep committed JSON evidence)
+analysis_output/*_smoke/
+analysis_output/**/forecast_cache/
+analysis_output/**/batch.lock
+analysis_output/**/*.pt
+analysis_output/**/*.npy
+analysis_output/research_exports/
+analysis_output/work/
+viz_build/policy_research_preview.html

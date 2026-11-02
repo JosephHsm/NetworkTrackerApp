@@ -1,0 +1,8 @@
+{
+  "batch": 2,
+  "candidate_configurations": 40,
+  "validation_only": true,
+  "frozen_summary_preserved": true,
+  "lock_released": true,
+  "report_mirrored": false
+}

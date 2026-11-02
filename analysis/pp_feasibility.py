@@ -63,7 +63,7 @@ def events():
             rk, trsrp = nbr_rank(js, (int(d["serving_freq_arfcn"][i]), int(d["serving_pci"][i])))
             rp = float(d["rsrp_dbm"][i - 1])
             rows.append(dict(
-                session=si, act=act, y=label,
+                session=si, act=act, y=label, file=f, row=int(i),
                 rsrp_prev=rp, rsrp_new=float(d["rsrp_dbm"][i]),
                 rsrq_prev=float(d["rsrq_db"][i - 1]), rsrq_new=float(d["rsrq_db"][i]),
                 dwell=min(t[i] - prev_ho_t, 300.0),

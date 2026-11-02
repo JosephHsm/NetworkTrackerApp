@@ -1,0 +1,11 @@
+{
+  "round": 1,
+  "time": "2026-11-02T15:28:04+09:00",
+  "families": 9,
+  "folds": 5,
+  "screening_configurations": 180,
+  "confirmation_configurations": 90,
+  "updates": 26,
+  "policy_fit_count": 720,
+  "seconds": 872.3586692810059
+}

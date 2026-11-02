@@ -1,0 +1,12 @@
+{
+  "batch": 3,
+  "screening_configurations": 40,
+  "confirmation_configurations": 20,
+  "paired_comparisons": 10,
+  "model_fits": 180,
+  "updates": 4,
+  "validation_only": true,
+  "confirmation_seeds_disjoint_from_screening": true,
+  "frozen_final_evaluation_unchanged": true,
+  "report_mirrored": true
+}

@@ -1,0 +1,342 @@
+[
+  {
+    "fold": 0,
+    "family": "Rule",
+    "config": {
+      "hyst": 3.0,
+      "pen": 6.0,
+      "a2": null
+    }
+  },
+  {
+    "fold": 0,
+    "family": "Q",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ]
+    }
+  },
+  {
+    "fold": 0,
+    "family": "DQN",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 0,
+    "family": "DQN+GRU",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 0,
+    "family": "CQL",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.1
+    }
+  },
+  {
+    "fold": 0,
+    "family": "PPO",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 1,
+    "family": "Rule",
+    "config": {
+      "hyst": 6.0,
+      "pen": 3.0,
+      "a2": -90.0
+    }
+  },
+  {
+    "fold": 1,
+    "family": "Q",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ]
+    }
+  },
+  {
+    "fold": 1,
+    "family": "DQN",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 1,
+    "family": "DQN+GRU",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 1,
+    "family": "CQL",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.03
+      ],
+      "alpha": 1.0
+    }
+  },
+  {
+    "fold": 1,
+    "family": "PPO",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 2,
+    "family": "Rule",
+    "config": {
+      "hyst": 3.0,
+      "pen": 0.0,
+      "a2": -90.0
+    }
+  },
+  {
+    "fold": 2,
+    "family": "Q",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ]
+    }
+  },
+  {
+    "fold": 2,
+    "family": "DQN",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 2,
+    "family": "DQN+GRU",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 2,
+    "family": "CQL",
+    "config": {
+      "reward": [
+        9.0,
+        2.0,
+        0.1
+      ],
+      "alpha": 1.0
+    }
+  },
+  {
+    "fold": 2,
+    "family": "PPO",
+    "config": {
+      "reward": [
+        9.0,
+        15.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 3,
+    "family": "Rule",
+    "config": {
+      "hyst": 3.0,
+      "pen": 0.0,
+      "a2": null
+    }
+  },
+  {
+    "fold": 3,
+    "family": "Q",
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.3
+      ]
+    }
+  },
+  {
+    "fold": 3,
+    "family": "DQN",
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 3,
+    "family": "DQN+GRU",
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 3,
+    "family": "CQL",
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.1
+    }
+  },
+  {
+    "fold": 3,
+    "family": "PPO",
+    "config": {
+      "reward": [
+        3.0,
+        5.0,
+        0.3
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 4,
+    "family": "Rule",
+    "config": {
+      "hyst": 6.0,
+      "pen": 6.0,
+      "a2": null
+    }
+  },
+  {
+    "fold": 4,
+    "family": "Q",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ]
+    }
+  },
+  {
+    "fold": 4,
+    "family": "DQN",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 4,
+    "family": "DQN+GRU",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  },
+  {
+    "fold": 4,
+    "family": "CQL",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 1.0
+    }
+  },
+  {
+    "fold": 4,
+    "family": "PPO",
+    "config": {
+      "reward": [
+        9.0,
+        5.0,
+        0.1
+      ],
+      "alpha": 0.0
+    }
+  }
+]
