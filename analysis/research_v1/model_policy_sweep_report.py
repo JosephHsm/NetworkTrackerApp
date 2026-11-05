@@ -4,7 +4,7 @@ from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from research_paths import EXPORT as OUT
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 ORDER=('Q','DQN','PPO','CQL','DQN+XGBoost','DQN+RNN','DQN+LSTM','DQN+GRU','Rule')
 def read(p):return json.loads(p.read_text(encoding='utf-8'))
 def records(folder):
@@ -31,15 +31,17 @@ def generate(store):
     done=(folder/'complete.json').exists();when=datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M KST')
     total=len(plan['families'])*(1 if plan['smoke'] else 5)
     progress=f'라운드 {rid} · {len(all_rows)}/{total}개 분할·모델 조합 완료'
+    display_round=rid if done else state['completed_rounds']
+    result_rows=all_rows if done else (records(store/f'round_{display_round:04d}') if display_round else [])
     rows=[]
-    if done:
+    if result_rows:
         for family in ORDER:
-            rr=[r for r in all_rows if r['family']==family]
+            rr=[r for r in result_rows if r['family']==family]
             if not rr:continue
             d=metrics(rr);elapsed=sum(r['seconds'] for r in rr)
             rows.append([html.escape(family),str(len(rr)),f'{d["ho_reduction"]:.1%}',f'{d["pp_reduction"]:.1%}',f'{d["weak_delta_pp"]:+.3f}',f'{d["rsrp_loss"]:+.2f}',
                 '—' if d['forecast_mae'] is None else f'{d["forecast_mae"]:.3f}',f'{elapsed/60:.1f}분'])
-    main_table=table(['정책 / 예측 결합','검증 분할 수','HO 감소','핑퐁 감소','약전계 변화 (%p)','평균 RSRP 손실 (dB)','예측 MAE (dB)','선별+확인 시간'],rows) if done else '<div class="note">전체 모델의 이번 라운드가 끝나기 전에는 순위 표를 만들지 않습니다. 아래 진행 기록만 확인할 수 있습니다. 완료된 조합을 먼저 고르는 선택 편향을 피하기 위한 표시 방식입니다.</div>'
+    main_table=(f'<p><b>마지막 완료 라운드 {display_round}의 결과입니다.</b> 진행 중인 라운드의 일부 조합은 이 표에 합산하지 않습니다.</p>'+table(['정책 / 예측 결합','검증 분할 수','HO 감소','핑퐁 감소','약전계 변화 (%p)','평균 RSRP 손실 (dB)','예측 MAE (dB)','선별+확인 시간'],rows)) if result_rows else '<div class="note">아직 전체 라운드 완료 결과가 없습니다. 진행 중 일부 조합으로 전체 모델 순위를 만들지 않습니다.</div>'
     first=store/'round_0001';controlled=[]
     if (first/'complete.json').exists():
         first_rows=records(first)
@@ -85,8 +87,8 @@ def generate(store):
         (ROOT/'viz_build/all_model_policy.html').write_text(local,encoding='utf-8')
     except PermissionError:mirrored=False
     (store/'report_sync.json').write_text(json.dumps(dict(time=when,original_report_mirrored=mirrored),ensure_ascii=False,indent=2),encoding='utf-8')
-    summary=dict(round=rid,complete=done,completed_pairs=len(all_rows),total_pairs=total,
-                 family_results={f:metrics([r for r in all_rows if r['family']==f]) for f in ORDER if any(r['family']==f for r in all_rows)} if done else {})
+    summary=dict(round=display_round,complete=bool(result_rows),current_round=rid if not done else None,current_round_complete=done,completed_pairs=len(all_rows),total_pairs=total,
+                 family_results={f:metrics([r for r in result_rows if r['family']==f]) for f in ORDER if any(r['family']==f for r in result_rows)} if result_rows else {})
     (store/'latest_summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')
 
 if __name__=='__main__':

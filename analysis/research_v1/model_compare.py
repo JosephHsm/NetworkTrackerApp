@@ -22,6 +22,7 @@ import glob, json, os, sys, time
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # analysis/ (pp_feasibility, ho_review)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pp_feasibility as ppf
 import ho_review as hr

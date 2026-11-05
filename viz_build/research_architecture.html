@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>연구 구조도</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#111519; --ink-2:#4b5462; --ink-3:#7d8794;
+  --line:#dbe0e7; --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --e3:#9a55d6; --warn:#b7791f;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px -14px rgba(16,24,40,.16);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f;
+  --line:#2a323d; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --e3:#b276e6; --warn:#d69e2e;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1015; --surface:#161b22; --surface-2:#1c222b;
+  --ink:#eef1f5; --ink-2:#a9b2be; --ink-3:#78828f;
+  --line:#2a323d; --s1:#3987e5; --s2:#d95926; --s3:#199e70; --e3:#b276e6; --warn:#d69e2e;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,"Malgun Gothic",sans-serif;line-height:1.7}
+.wrap{max-width:1000px;margin:0 auto;padding:40px 16px 90px}
+.back{font-size:13px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-top:18px}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.25;font-weight:600;letter-spacing:-.02em;margin:10px 0 0}
+h2{font-size:21px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-size:16px;font-weight:600;margin:20px 0 4px}
+.dek{color:var(--ink-2);max-width:70ch;margin:12px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:22px 24px;margin-top:22px}
+.card>p,.card li,.stage p,.stage li{color:var(--ink-2);font-size:14.5px}
+.num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);letter-spacing:.08em}
+ul{margin:6px 0 0;padding-left:20px}
+li{margin:3px 0}
+b,strong{color:var(--ink);font-weight:600}
+a{color:var(--s1)}
+code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.q3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.q{background:var(--surface-2);border-radius:10px;padding:14px 16px;border-top:3px solid var(--c)}
+.q .k{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3)}
+.q b{display:block;font-size:15px;margin-top:2px}
+.q span{font-size:13px;color:var(--ink-2)}
+.diagram{overflow-x:auto;margin-top:12px;-webkit-overflow-scrolling:touch}
+.diagram svg{display:block;min-width:760px;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--ink-3);margin-top:8px}
+.legend i{display:inline-block;width:22px;height:0;border-top:2px solid var(--ink-3);vertical-align:middle;margin-right:6px}
+.legend i.d{border-top-style:dashed}
+.tbl{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink-3);font-weight:500;white-space:nowrap;background:var(--surface-2)}
+td.c,th.c{text-align:center}
+td:first-child b{white-space:nowrap}
+td.na{color:var(--ink-3);text-align:center;font-size:12.5px}
+tr.grp td{background:var(--surface-2);font-size:12.5px;color:var(--ink-3);font-weight:500}
+.stage{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:16px 18px;margin-top:16px;background:var(--surface)}
+.stage h3{margin-top:0;font-size:17px}
+.stage .tag{display:inline-block;font-size:11.5px;font-family:"IBM Plex Mono",monospace;color:var(--c);border:1px solid var(--c);border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:2px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin-top:10px;font-size:14px}
+.kv dt{color:var(--ink-3);font-weight:500}
+.kv dd{margin:0;color:var(--ink-2)}
+.note{background:var(--surface-2);border-left:3px solid var(--warn);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:13.5px;color:var(--ink-2)}
+.note b{color:var(--ink)}
+.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);margin:2px 2px 0 0;white-space:nowrap}
+.steps{counter-reset:s;list-style:none;padding:0;margin-top:12px}
+.steps li{position:relative;padding:10px 0 10px 44px;border-bottom:1px solid var(--line)}
+.steps li:last-child{border-bottom:0}
+.steps li::before{counter-increment:s;content:counter(s,decimal);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;background:var(--surface-2);color:var(--ink);font:600 13px/28px "IBM Plex Mono",monospace;text-align:center}
+.steps .when{display:block;font-size:13px;color:var(--ink-3)}
+.total{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px}
+.total div{flex:1 1 150px;background:var(--surface);padding:12px 14px}
+.total .k{font-size:12px;color:var(--ink-3)}
+.total .v{font-size:24px;font-weight:600}
+.total .s{font-size:12px;color:var(--ink-3)}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}
+nav.toc a{font-size:12.5px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 11px;color:var(--ink-2)}
+nav.toc a:hover{border-color:var(--s1);color:var(--s1)}
+footer{margin-top:30px;font-size:12.5px;color:var(--ink-3)}
+@media (max-width:700px){.q3{grid-template-columns:1fr}.kv{grid-template-columns:1fr}.kv dt{margin-top:6px}.card{padding:18px 16px}}
+@media print{body{background:#fff}.card{box-shadow:none;break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 결과 모아보기</a>
+  <div class="eyebrow">핸드오버 AI 연구 · 2차 설계 · 2026-11-05 (2판) · 아직 실행 전</div>
+  <h1>연구 구조도: 무엇을, 어떤 순서로, 어떻게 비교하나</h1>
+  <p class="dek">1차 시도(10/28~11/04)에서 모델을 많이 돌렸지만 "어느 부분이 효과를 냈는지", "결과가 재생 가정 때문은 아닌지"를 답하기 어려웠다.
+    그래서 처음부터 다시 설계했다. 이 페이지는 실험을 돌리기 전에 정한 설계도이고, 표의 결과 칸은 모두 비어 있다(미실행).
+    처음 읽는 사람도 이 페이지만 보면 전체 계획을 이해할 수 있게 썼다.</p>
+  <div class="note"><b>2판에서 바뀐 것 (11/05).</b>
+    ① 다른 주파수로의 이동도 정책이 직접 고르는 <b>확장 행동 공간 S2</b>를 추가했다. 대역 간 비교 기준을 사람이 정하지 않고 모델이 보상으로 배운다(5절 3단계).
+    ② <b>SINR</b>을 평가 지표와 보상에 넣었다(6·10절).
+    ③ 이웃 셀 SINR은 폰이 주지 않는다는 한계와, 이를 메우는 <b>SINR 추정기</b>를 0단계에 넣었다.
+    ④ 모델별 <b>보상·벌점·학습 손실·설정 범위</b>를 새 6절로 정리했다.</div>
+
+  <nav class="toc">
+    <a href="#goal">1 연구 질문</a><a href="#why">2 다시 짠 이유</a><a href="#map">3 전체 구조도</a><a href="#data">4 공통 입력</a>
+    <a href="#stages">5 단계별 설계</a><a href="#loss">6 보상·손실 설계</a><a href="#combo">7 조합 설계</a><a href="#train">8 학습·평가 규칙</a>
+    <a href="#show">9 결과 표시</a><a href="#success">10 성공 기준</a><a href="#order">11 진행 순서</a><a href="#words">12 용어</a><a href="#v1">13 1차 시도 자료</a>
+  </nav>
+
+  <!-- 1 -->
+  <div class="card" id="goal">
+    <div class="num">01</div>
+    <h2>연구 질문: 결국 답하려는 것 세 가지</h2>
+    <p>목표는 <b>핸드오버(셀 이동)와 핑퐁(30초 안에 원래 셀로 되돌아가는 이동)을 줄이면서 신호 품질은 지키는 판단 모델</b>을 만드는 것이다.
+      지금은 기지국이 정하는 판단을, 휴대폰으로 측정한 로그를 다시 재생해서 시뮬레이션한다. 휴대폰이 실제로 핸드오버를 결정하지는 않는다.</p>
+    <div class="q3">
+      <div class="q" style="--c:var(--s2)"><div class="k">Q1 · 예측</div><b>무엇을 미리 알 수 있나</b><span>핑퐁이 될 이동인지, 10초 뒤 신호가 어떨지를 과거 측정만으로 맞힐 수 있는가</span></div>
+      <div class="q" style="--c:var(--e3)"><div class="k">Q2 · 결정</div><b>그 예측이 판단에 도움이 되나</b><span>예측값을 정책에 넣으면 넣지 않았을 때보다 HO·핑퐁이 더 줄고 신호는 지켜지는가</span></div>
+      <div class="q" style="--c:var(--s3)"><div class="k">Q3 · 일반화</div><b>새 데이터에서도 유지되나</b><span>설정을 모두 고정한 뒤, 한 번도 보지 않은 새 측정 세션에서도 같은 결과가 나오는가</span></div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card" id="why">
+    <div class="num">02</div>
+    <h2>왜 다시 짰나: 1차 시도와 달라지는 점</h2>
+    <div class="tbl"><table>
+      <tr><th>1차 시도의 문제</th><th>2차 설계에서 바꾸는 것</th></tr>
+      <tr><td>정책이 이동을 <b>보류</b>하면 원래 셀의 이후 신호를 이웃 목록에서 읽었는데, 그 가정이 맞는지 확인하지 않았다. 결과(신호 손실·약전계)가 이 가정에 크게 좌우된다.</td><td><b>0단계</b>를 따로 두고, 보류 가정을 세 가지(G1·G2·G3)로 명시한다. 주 결과를 세 가정 모두에서 확인한다.</td></tr>
+      <tr><td>"12행 = 약 60초"로 가정했는데, 측정 간격이 1~5초로 섞여 있어서 실제 시간과 달랐다.</td><td>모든 입력 구간을 <b>실제 시간 기준</b>(최근 60초)으로 만든다. 빈 구간은 미래 값으로 채우지 않고 "비어 있음" 표시와 경과 시간을 같이 넣는다.</td></tr>
+      <tr><td>예측기와 정책을 붙인 결과만 있어서, 효과가 예측기 덕인지 정책 덕인지 구분이 안 됐다.</td><td>예측기를 <b>켜고 끄는 비교</b>(A 없음 / B 신호 / C 위험 / D 둘 다)를 주 실험으로 한다.</td></tr>
+      <tr><td>후보를 계속 늘려(검증 후보 345개, 9계열 반복 탐색) 운 좋게 좋은 조합이 뽑힐 위험이 컸다.</td><td>주 실험은 <b>8개 구성 + 기준선 4개</b>로 줄이고, 고르는 규칙을 실행 전에 정해 둔다.</td></tr>
+      <tr><td>일부 핑퐁 분류 입력에 핸드오버 <b>직후</b> 신호가 섞여 있었다. 실제 판단할 때는 알 수 없는 정보다.</td><td>판단 시점 <b>이전</b>에 얻을 수 있는 정보만 입력으로 쓴다. 입력 목록을 페이지 4절에 고정한다.</td></tr>
+      <tr><td>예측기(XGBoost·GRU 등)와 정책(Q·DQN·PPO·CQL)의 범위가 실험마다 달라 한 표로 비교하기 어려웠다.</td><td>단계마다 <b>질문 하나, 기준선 하나, 다른 계열 모델 하나 이상</b>을 둔다. 고정된 같은 분할에서 비교한다.</td></tr>
+      <tr><td>주파수 간 이동은 실제 망을 그대로 따랐고, 신호 품질은 RSRP로만 봤다. 그런데 주파수가 다르면 RSRP를 맞대어 비교할 수 없다. 우리 데이터에서 RSRP가 3 dB 이상 오른 주파수 간 이동의 절반은 SINR이 오히려 떨어졌다.</td><td>확장 실험(S2)에서 정책이 다른 주파수 이동까지 고른다. 대역 사이에서도 비교할 수 있는 <b>SINR</b>을 보상과 평가에 넣는다.</td></tr>
+      <tr><td>보상 가중치를 후보 345개 중에서 사람이 골랐다. 고르는 과정 자체가 결과를 끌어올릴 위험이 있었다.</td><td>"지켜야 할 선"(약전계·신호 손실·SINR 손실 허용치)만 미리 정한다. 그 선을 지키는 데 필요한 벌점 크기는 학습 중에 <b>자동으로 조정</b>한다(6절).</td></tr>
+    </table></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card" id="map">
+    <div class="num">03</div>
+    <h2>전체 구조도</h2>
+    <p>왼쪽에서 오른쪽으로 읽는다. 실측 로그를 0단계에서 정리하고, 1단계(위험 판단)와 2단계(신호 예측)가 각자 값을 하나씩 만든다.
+      3단계 정책은 그 값을 받아 "이동 허용 / 보류"를 고른다(확장 실험 S2에서는 다른 주파수로 옮길지도 고른다). 1·2단계 값은 <b>켜고 끌 수 있는 선택 입력</b>이다. 그래서 같은 정책을 예측 없이, 하나만, 둘 다 넣고 비교할 수 있다.</p>
+    <div class="diagram">
+<svg viewBox="0 0 940 600" role="img" aria-label="연구 구조도: 실측 로그에서 0단계 공통 준비, 1단계 위험 판단과 2단계 신호 예측, 3단계 정책, 재생 평가, 새 세션 검증으로 이어지는 흐름">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker>
+  </defs>
+  <style>
+    .bx{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+    .t1{font:600 14px "IBM Plex Sans KR",sans-serif;fill:var(--ink)}
+    .t2{font:400 12px "IBM Plex Sans KR",sans-serif;fill:var(--ink-2)}
+    .t3{font:400 11px "IBM Plex Mono",monospace;fill:var(--ink-3)}
+    .ln{stroke:var(--ink-3);stroke-width:1.5;fill:none}
+    .dl{stroke-dasharray:5 4}
+    .lb{font:500 11px "IBM Plex Sans KR",sans-serif;fill:var(--ink-3)}
+  </style>
+
+  <!-- 실측 로그 -->
+  <rect class="bx" x="16" y="200" width="150" height="92" rx="10"/>
+  <text class="t3" x="30" y="222">INPUT</text>
+  <text class="t1" x="30" y="244">실측 로그</text>
+  <text class="t2" x="30" y="264">31세션 · 차량·지하철·도보</text>
+  <text class="t2" x="30" y="281">1~5초 간격 기록</text>
+
+  <!-- 0단계 -->
+  <rect class="bx" x="196" y="150" width="200" height="210" rx="10" style="stroke:var(--ink-2)"/>
+  <rect x="196" y="150" width="200" height="6" rx="3" fill="var(--ink-2)"/>
+  <text class="t3" x="210" y="178">STAGE 0</text>
+  <text class="t1" x="210" y="200">공통 준비</text>
+  <text class="t2" x="210" y="224">· 관측 유효성·간격 점검</text>
+  <text class="t2" x="210" y="243">· 실제 시간 60초 구간</text>
+  <text class="t2" x="210" y="262">· 결정 시점 표 만들기</text>
+  <text class="t2" x="210" y="281">· 재생 환경</text>
+  <text class="t2" x="210" y="300">· 보류 가정 G1 · G2 · G3</text>
+  <text class="t2" x="210" y="319">· SINR 추정기 (이웃 셀용)</text>
+  <text class="t3" x="210" y="345">모든 모델이 공유</text>
+
+  <!-- 1단계 -->
+  <rect class="bx" x="440" y="40" width="220" height="112" rx="10"/>
+  <rect x="440" y="40" width="220" height="6" rx="3" fill="var(--s2)"/>
+  <text class="t3" x="454" y="68">STAGE 1 · 분류</text>
+  <text class="t1" x="454" y="90">위험 판단</text>
+  <text class="t2" x="454" y="110">이 이동, 핑퐁이 될 확률은?</text>
+  <text class="t3" x="454" y="132">Logistic·XGB·LightGBM·GRU</text>
+
+  <!-- 2단계 -->
+  <rect class="bx" x="440" y="190" width="220" height="112" rx="10"/>
+  <rect x="440" y="190" width="220" height="6" rx="3" fill="var(--s1)"/>
+  <text class="t3" x="454" y="218">STAGE 2 · 회귀</text>
+  <text class="t1" x="454" y="240">신호 예측</text>
+  <text class="t2" x="454" y="260">10초 뒤 지금 셀 신호는?</text>
+  <text class="t3" x="454" y="282">현재값·추세·LightGBM·GRU·LSTM</text>
+
+  <!-- 현재 상태 -->
+  <rect x="440" y="330" width="220" height="44" rx="22" fill="var(--surface-2)" stroke="var(--line)"/>
+  <text class="t2" x="458" y="357">현재 상태 · 이동 이력 (항상 입력)</text>
+
+  <!-- 3단계 -->
+  <rect class="bx" x="706" y="160" width="218" height="140" rx="10" style="stroke:var(--e3)"/>
+  <rect x="706" y="160" width="218" height="6" rx="3" fill="var(--e3)"/>
+  <text class="t3" x="720" y="188">STAGE 3 · 정책</text>
+  <text class="t1" x="720" y="210">이동 허용? 보류?</text>
+  <text class="t2" x="720" y="232">이동 후보마다 하나 선택:</text>
+  <text class="t2" x="720" y="250">보류 · 같은 주파수 이동</text>
+  <text class="t2" x="720" y="267">· 다른 주파수 이동(확장)</text>
+  <text class="t3" x="720" y="289">Double DQN · PPO</text>
+
+  <!-- 평가 -->
+  <rect class="bx" x="706" y="372" width="218" height="96" rx="10"/>
+  <text class="t3" x="720" y="396">EVALUATE</text>
+  <text class="t1" x="720" y="418">재생 환경에서 실행</text>
+  <text class="t2" x="720" y="438">HO · 핑퐁 · 약전계 · SINR</text>
+  <text class="t2" x="720" y="455">신호 손실 · 계산 비용</text>
+
+  <!-- 기준선 -->
+  <rect class="bx" x="196" y="402" width="464" height="66" rx="10" style="stroke:var(--s3)"/>
+  <text class="t3" x="210" y="425">BASELINES · 비교 사다리</text>
+  <text class="t2" x="210" y="448">실제 망 → 고정 A3 규칙 → 튜닝한 규칙 → 표 Q-learning</text>
+
+  <!-- 최종 -->
+  <rect x="440" y="520" width="484" height="56" rx="10" fill="var(--surface-2)" stroke="var(--line)"/>
+  <text class="t1" x="456" y="545">마지막 1회 · 잠가 둔 새 측정 세션으로 검증</text>
+  <text class="t2" x="456" y="564">설정을 모두 고정한 뒤에만 연다</text>
+
+  <!-- 화살표 -->
+  <path class="ln" d="M166,246 L194,246" marker-end="url(#ar)"/>
+  <path class="ln" d="M396,200 C420,200 418,96 438,96" marker-end="url(#ar)"/>
+  <path class="ln" d="M396,246 L438,246" marker-end="url(#ar)"/>
+  <path class="ln" d="M396,300 C420,300 418,352 438,352" marker-end="url(#ar)"/>
+  <path class="ln dl" d="M660,96 C690,96 684,200 704,200" marker-end="url(#ar)"/>
+  <path class="ln dl" d="M660,246 L704,246" marker-end="url(#ar)"/>
+  <path class="ln" d="M660,352 C690,352 684,284 704,284" marker-end="url(#ar)"/>
+  <text class="lb" x="664" y="140">켜고 끔</text>
+  <text class="lb" x="664" y="238">켜고 끔</text>
+  <path class="ln" d="M815,300 L815,370" marker-end="url(#ar)"/>
+  <path class="ln" d="M660,436 L704,436" marker-end="url(#ar)"/>
+  <path class="ln" d="M296,360 L296,400" marker-end="url(#ar)"/>
+  <path class="ln" d="M815,468 L815,518" marker-end="url(#ar)"/>
+</svg>
+    </div>
+    <div class="legend"><span><i></i>항상 연결</span><span><i class="d"></i>켜고 끄며 비교하는 선택 입력</span><span>색 띠: 회색 0단계 · 주황 1단계 · 파랑 2단계 · 보라 3단계 · 초록 기준선</span></div>
+    <div class="note"><b>한 줄 요약.</b> 0단계가 "같은 경기장"을 만들고, 1·2단계가 "힌트"를 만들고, 3단계가 힌트를 보고 "옮길지 말지"를 정한다. 힌트를 빼고도 해 보고 넣고도 해 봐서, 힌트가 정말 도움이 됐는지 확인한다.</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card" id="data">
+    <div class="num">04</div>
+    <h2>공통 입력: 모든 모델이 같은 정보를 본다</h2>
+    <p>모델마다 넣는 정보가 다르면, 결과 차이가 모델 때문인지 정보 때문인지 알 수 없다. 그래서 <b>정보의 범위는 고정</b>하고, 모델에 맞게 <b>모양만</b> 바꾼다.</p>
+    <div class="tbl"><table>
+      <tr><th>입력 묶음</th><th>들어가는 값</th><th>비고</th></tr>
+      <tr><td><b>현재 상태</b></td><td>서빙 RSRP·RSRQ·SINR(실측), 같은 주파수 최강 이웃과의 차이, 같은 주파수 이웃 수, 관측이 신선한지</td><td>"서빙과의 차이"는 <b>같은 EARFCN끼리만</b> 계산한다. 같은 주파수에서는 이웃 신호가 곧 간섭이라 차이가 의미 있다.</td></tr>
+      <tr><td><b>다른 주파수 정보</b></td><td>지금 대역 표시(B1·B5·B7), 다른 대역별 최강 이웃의 RSRP·RSRQ, 후보 셀의 추정 SINR(0단계 추정기)</td><td>서빙과의 차이로 만들지 않고 <b>값 그대로 + 대역 표시</b>로 넣는다. "어느 대역이 몇 dB면 옮길 만한가"는 모델이 보상(SINR 포함)을 통해 스스로 배운다.</td></tr>
+      <tr><td><b>이동 이력</b></td><td>지금 셀에 머문 시간, 최근 30초 이동 횟수, 이동 후보가 최근 30초 안에 떠난 셀인지</td><td>셀 구분 키는 (EARFCN, PCI)</td></tr>
+      <tr><td><b>과거 60초</b></td><td>위 값들의 최근 60초 변화</td><td>실제 시간 기준. 빈 구간은 마스크로 표시</td></tr>
+      <tr><td><b>시간 정보</b></td><td>직전 관측과의 간격, 마지막 신선한 관측 이후 경과 시간</td><td>측정 간격이 1~5초로 섞여 있어서 필요</td></tr>
+      <tr><td><b>상황 정보</b></td><td>이동수단(차량·지하철·도보), GPS 속도</td><td>판단 시점에 실제로 알 수 있는 값만</td></tr>
+    </table></div>
+    <h3>같은 정보를 모델에 맞게 넣는 방법</h3>
+    <ul>
+      <li><b>Logistic·XGBoost·LightGBM(표 형태):</b> 현재값과 함께 과거 60초의 평균·최솟값·기울기·변동폭을 열로 만든다.</li>
+      <li><b>GRU·LSTM(시퀀스 형태):</b> 60초 관측을 시간순으로 넣고, 비어 있음 마스크와 경과 시간을 함께 넣는다.</li>
+      <li><b>정책(Double DQN·PPO):</b> 현재 상태와 이동 이력 요약을 넣고, 켜진 경우에만 1·2단계 출력값을 덧붙인다.</li>
+    </ul>
+    <h3>절대 넣지 않는 것</h3>
+    <ul>
+      <li>판단 시점 이후의 값: 미래 신호, 핸드오버 직후 신호, 평가 세션의 통계</li>
+      <li><code>is_5g_actual</code>: 전 세션 0%라 정보가 없다(5G 셀 정보는 한 번도 안 잡혔다)</li>
+      <li><code>probe_dl_mbps</code>: 망과 상관없는 값이라 쓰지 않는다</li>
+      <li>위치 좌표 자체: 경로를 외워 버릴 수 있어서, 속도·이동수단만 쓴다</li>
+    </ul>
+  </div>
+
+  <!-- 5 -->
+  <div class="card" id="stages">
+    <div class="num">05</div>
+    <h2>단계별 설계: 목표 · 원리 · 입출력 · 비교 모델 · 결과</h2>
+    <p>각 단계는 "질문 하나"를 맡는다. 단계마다 <b>아무것도 학습하지 않는 기준선</b>과 <b>다른 계열 모델</b>을 같이 두어서, "복잡한 모델이 꼭 필요했나"를 답할 수 있게 했다.</p>
+
+    <div class="stage" style="--c:var(--ink-2)">
+      <h3>0단계 · 공통 준비와 재생 환경 <span class="tag">모든 실험의 바닥</span></h3>
+      <dl class="kv">
+        <dt>목표</dt><dd>모든 모델이 같은 데이터, 같은 규칙으로 평가받게 한다. 그리고 결과가 재생 가정에 얼마나 흔들리는지 <b>먼저</b> 잰다.</dd>
+        <dt>원리</dt><dd>측정 로그를 시간순으로 다시 재생한다. 같은 주파수 이웃이 서빙보다 3 dB 이상 세지면 그때가 "이동 후보"다(1차 시도와 같은 기준). 정책이 허용하면 그 셀로 옮기고, 보류하면 원래 셀에 남는다.
+          문제는 실제 망은 이미 옮겼기 때문에, 남았을 때의 신호가 로그에 직접 없다는 점이다. 그래서 원래 셀의 신호를 <b>이웃 목록에 있는 같은 (EARFCN, PCI) 측정값</b>으로 읽는다. 목록에서 사라지면 버틸 수 없다고 보고 강제로 이동시킨다.
+          주파수가 다른 이동은 행동 공간에 따라 다르게 다룬다. 주 실험(S1)에서는 실제 망을 그대로 따르고, 확장 실험(S2)에서는 정책이 직접 고른다(3단계 참고).
+          정책이 다른 주파수 셀로 옮긴 뒤에는 그 셀의 RSRP·RSRQ를 이웃 목록에서 같은 (EARFCN, PCI)로 계속 읽는다. 다른 주파수 이웃은 92%의 행에서 보여서 이렇게 추적할 수 있다.</dd>
+        <dt>입력</dt><dd>원본 CSV 31개 (<code>trackingcsv/new</code>)</dd>
+        <dt>출력</dt><dd>① 결정 시점 표(이동 후보 하나 = 한 행, 4절의 입력 묶음) ② 재생 환경(상태와 행동을 받아 다음 상태와 보상을 돌려준다) ③ 세션별 지표 계산기 ④ SINR 추정기</dd>
+      </dl>
+      <h3 style="font-size:14.5px">SINR 추정기: 이웃 셀 SINR을 채우는 부품</h3>
+      <p><b>한계부터 적는다.</b> 폰은 서빙 셀의 SINR만 준다. 이웃 목록에는 RSRP·RSRQ·RSSI만 있고 SNR 칸은 항상 비어 있다. 그래서 정책이 실제 망과 다른 셀에 있는 시간(보류 중, 또는 다른 주파수로 먼저 옮긴 뒤)에는 SINR을 측정값으로 알 수 없다.</p>
+      <ul>
+        <li><b>방법:</b> 서빙일 때 측정된 (RSRP, RSRQ, RSSI, 대역, 같은 주파수 이웃 수·세기 합) → SINR 관계를 학습한다. 그다음 이웃 셀의 같은 값을 넣어 SINR을 추정한다. RSRQ에는 부하·간섭 정보가 들어 있어서 RSRP만 쓸 때보다 정보가 많다.</li>
+        <li><b>비교 모델:</b> 선형식(RSRQ·RSRP 기반, 기준선) · LightGBM. 학습 손실은 6절에 있다.</li>
+        <li><b>검증 방법:</b> 핸드오버 1,987건마다 직전 "이웃으로 본 목표 셀"의 추정 SINR과 직후 "서빙으로 측정한" SINR을 비교한다. 서빙 데이터로 학습해서 이웃에 쓰는 것이므로, 바로 이 비교가 실제 쓰임새와 같은 조건의 시험이다.</li>
+        <li><b>결과 표시:</b> 평가 지표마다 "실측 SINR 구간"과 "추정 SINR 구간"을 나눠 보고한다. 추정기 오차가 크면 SINR 결과는 참고용으로 낮춘다.</li>
+      </ul>
+      <h3 style="font-size:14.5px">보류 가정 세 가지</h3>
+      <div class="tbl"><table>
+        <tr><th>가정</th><th>보류했을 때 원래 셀 신호</th><th>목록에서 안 보이면</th><th>쓰임</th></tr>
+        <tr><td><b>G1 기본</b></td><td>같은 (EARFCN, PCI) 이웃 측정값을 그대로 쓴다</td><td>즉시 강제 이동</td><td>주 결과</td></tr>
+        <tr><td><b>G2 보수</b></td><td>이웃 측정값에서 보정값을 뺀다. 보정값은 데이터로 정한다(아래 점검 ③)</td><td>즉시 강제 이동 + 신선도 기준을 더 엄격하게</td><td>민감도 확인</td></tr>
+        <tr><td><b>G3 낙관</b></td><td>G1과 같다</td><td>마지막 값을 최대 10초 유지한 뒤 강제 이동</td><td>민감도 확인</td></tr>
+      </table></div>
+      <h3 style="font-size:14.5px">0단계 완료 조건 (이걸 통과해야 다음 단계로 간다)</h3>
+      <ul>
+        <li>① 실제 망의 행동을 그대로 넣으면 원본의 HO·핑퐁 수가 <b>정확히</b> 재현된다.</li>
+        <li>② 고정 A3 규칙 재생 결과가 기존 <code>ho_review.replay</code>와 일치한다.</li>
+        <li>③ 핸드오버 직전 "이웃으로 본 목표 셀 RSRP"와 직후 "서빙으로 본 같은 셀 RSRP"의 차이 분포를 잰다. 이 값이 G2 보정값이 되고, 이웃 측정을 서빙처럼 믿어도 되는지 판단하는 근거가 된다.</li>
+        <li>④ 보류했을 때 원래 셀이 이웃 목록에 계속 보이는 비율(가시율)을 보고한다. 낮으면 결과 해석 범위를 줄인다.</li>
+        <li>⑤ 입력 열마다 "판단 시점에 알 수 있나"를 표로 점검한다(누수 점검표).</li>
+        <li>⑥ SINR 추정기를 위 방법으로 검증하고 오차(MAE)를 보고한다. 선형식 기준선보다 나은지도 확인한다.</li>
+        <li>⑦ 주파수 간 이동 93건(전체의 4.7%)으로 대역 쌍별 "이웃 RSRP → 서빙 RSRP" 보정값을 잰다. 건수가 적은 대역 쌍은 보정값의 불확실성을 같이 표시한다.</li>
+      </ul>
+    </div>
+
+    <div class="stage" style="--c:var(--s2)">
+      <h3>1단계 · 위험 판단 <span class="tag">분류</span></h3>
+      <dl class="kv">
+        <dt>목표</dt><dd>"지금 이 이동을 하면 30초 안에 되돌아올(핑퐁) 확률"을 0~1로 낸다.</dd>
+        <dt>원리</dt><dd>과거에 실제 망이 옮겼던 순간마다 "그 뒤 30초 안에 원래 셀로 돌아왔나"로 정답(라벨)을 붙인다. 그 순간 <b>이전</b>의 정보만 보고 이 정답을 맞히도록 학습한다. 1차 시도 기준 핸드오버 1,987건 중 핑퐁 326건(약 16%)이라 정답이 드물다.</dd>
+        <dt>입력</dt><dd>4절 공통 입력 (표 모델은 요약 열, GRU는 60초 시퀀스)</dd>
+        <dt>출력</dt><dd>핑퐁 위험 확률 1개 (0~1) → 3단계 정책의 선택 입력</dd>
+        <dt>비교 모델</dt><dd><span class="pill">Logistic 회귀 · 기준선</span><span class="pill">XGBoost</span><span class="pill">LightGBM</span><span class="pill">GRU · 다른 계열 교차 확인</span><br>
+          Logistic은 "단순 선형으로도 충분한가"를 보는 기준이다. XGBoost와 LightGBM은 같은 트리 계열인데, 둘 다 넣어 같은 계열 안에서도 차이가 있는지 본다. GRU는 1차 시도에서 핑퐁 AUC가 가장 높았던 모델(0.757)이라 교차 확인용으로 넣는다.</dd>
+        <dt>결과 지표</dt><dd><b>PR-AUC</b>(주 지표, 정답이 드물 때 적합) · ROC-AUC · Brier 점수 · 보정 곡선 · 핑퐁의 80%를 잡을 때 정상 이동을 잘못 막는 비율</dd>
+        <dt>정책에 넘기는 것</dt><dd>검증 데이터의 PR-AUC 1위 모델을 대표로 쓴다. 2위는 "대표를 바꿔도 결론이 같은가" 확인용이다.</dd>
+      </dl>
+      <div class="note"><b>주의.</b> 이 라벨은 "실제 망이 옮겼을 때" 기준이다. 정책이 만든 가상의 상황(옮기지 않고 버틴 뒤 나중에 옮김)에도 같은 확률이 통하는지는 모른다. 그래서 1단계 성능이 좋아도 정책에 실제로 도움이 되는지는 <b>3단계의 켜고 끄기 비교로만</b> 판정한다.</div>
+    </div>
+
+    <div class="stage" style="--c:var(--s1)">
+      <h3>2단계 · 신호 예측 <span class="tag">회귀</span></h3>
+      <dl class="kv">
+        <dt>목표</dt><dd>"10초 뒤 지금 셀의 RSRP가 몇 dB 변할지"를 예측한다(주). 5초·15초는 보조로 본다.</dd>
+        <dt>원리</dt><dd>지금 서빙 셀을 기준으로 10초 뒤 같은 셀의 RSRP를 정답으로 한다. 중간에 핸드오버가 일어나도 같은 셀을 이웃 목록에서 계속 찾아 정답을 만든다. 핸드오버를 사이에 둔 값이 튀는 문제를 이렇게 피한다. 찾지 못한 표본은 빼고, 뺀 비율을 보고한다.</dd>
+        <dt>입력</dt><dd>4절 공통 입력의 과거 60초</dd>
+        <dt>출력</dt><dd>10초 뒤 RSRP 변화량 1개 (dB) → 3단계 정책의 선택 입력</dd>
+        <dt>비교 모델</dt><dd><span class="pill">현재값 유지 · 기준선</span><span class="pill">최근 기울기 연장 · 기준선</span><span class="pill">LightGBM · 다른 계열</span><span class="pill">GRU</span><span class="pill">LSTM</span><br>
+          "현재값 유지"는 아무것도 학습하지 않아도 나오는 수준이다. 학습 모델은 이걸 이겨야 의미가 있다. LightGBM은 "순서를 읽는 신경망이 꼭 필요한가"를 보는 비교군이다. 데이터가 적으면 트리가 더 잘 맞는 경우가 많다.</dd>
+        <dt>결과 지표</dt><dd><b>MAE</b>(주 지표, 평균 오차 dB) · RMSE · 3 dB 이상 하락을 미리 맞힌 비율 · 이동수단별 MAE · 신호가 급변하는 구간의 MAE · 기준선 대비 개선율</dd>
+        <dt>정책에 넘기는 것</dt><dd>검증 MAE 1위를 대표로 쓰고, 2위는 확인용이다. 학습 모델이 기준선을 못 이기면 B·D 구성에 기준선 값을 넣는다. 그것도 결과다.</dd>
+      </dl>
+    </div>
+
+    <div class="stage" style="--c:var(--e3)">
+      <h3>3단계 · 정책 <span class="tag">강화학습</span></h3>
+      <dl class="kv">
+        <dt>목표</dt><dd>이동 후보가 생길 때마다 행동을 골라서 HO·핑퐁을 줄이고 신호 품질(RSRP·SINR)은 지킨다.</dd>
+        <dt>원리</dt><dd>재생 환경에서 정책이 행동을 고르면 그 결과로 보상을 받는다. 핸드오버·핑퐁·강제 이동은 고정 벌점이고, 약전계·신호 손실·SINR 손실은 자동으로 크기가 조정되는 벌점이다. 이 보상의 합이 커지도록 반복해서 배운다. 보상 설계는 6절에 있고, 모든 구성에 같은 방식을 쓴다.</dd>
+        <dt>입력</dt><dd>현재 상태 + 이동 이력 + 다른 주파수 정보 (항상) · 핑퐁 위험 확률 (C·D 구성) · 10초 뒤 신호 변화 예측 (B·D 구성)</dd>
+        <dt>출력</dt><dd>행동 1개 (행동 공간은 아래 두 가지)</dd>
+        <dt>행동 공간</dt><dd><b>S1 주 실험:</b> 같은 주파수 후보에 대해 0 보류 / 1 허용. 다른 주파수 이동은 실제 망을 따른다.<br>
+          <b>S2 확장 실험:</b> 0 보류 / 1 같은 주파수 최강 이웃으로 / 2 다른 주파수 최강 후보로(대역별 최강 중 추정 SINR이 가장 높은 셀). 실제 망의 주파수 간 이동도 정책이 따를지 말지 고른다.
+          RSRP를 대역 사이에서 비교하는 규칙은 넣지 않는다. 그 대신 대역 표시·RSRQ·추정 SINR을 입력으로 주고, SINR 손실 벌점을 보상에 넣는다. 그러면 "언제 다른 대역이 실제로 나은가"를 모델이 스스로 찾는다.</dd>
+        <dt>비교 모델</dt><dd><span class="pill">Double DQN</span><span class="pill">PPO</span><br>
+          <b>Double DQN</b>은 "이 상황에서 허용/보류 각각의 장기 점수"를 신경망으로 추정하고 큰 쪽을 고른다. 일반 DQN이 점수를 부풀려 추정하는 문제를 고친 버전이라, DQN은 따로 넣지 않는다.
+          <b>PPO</b>는 점수를 거치지 않고 "허용할 확률"을 직접 배우고, 한 번에 너무 크게 바뀌지 않게 조금씩 고친다. 원리가 서로 다른 두 방식을 비교하는 것이다.</dd>
+        <dt>기준선 사다리</dt><dd>
+          <span class="pill">실제 망</span> 로그 그대로 ·
+          <span class="pill">고정 A3</span> 3 dB 규칙 ·
+          <span class="pill">튜닝 규칙</span> 히스테리시스·핑퐁 벌점을 검증 데이터로 조정 ·
+          <span class="pill">표 Q-learning</span> 상태를 몇 칸으로 잘라 표에 점수를 적는 가장 단순한 강화학습<br>
+          표 Q-learning은 칸 수가 곱으로 늘어나서 예측값까지 넣기 어렵다. 그래서 조합 대상이 아니라 "신경망이 꼭 필요했나"를 보는 기준선으로 둔다.</dd>
+      </dl>
+      <div class="note"><b>S2의 한계.</b> 주파수 간 이동은 93건뿐이라 대역 간 보정값과 SINR 추정기의 불확실성이 크다. 또 정책이 다른 주파수 셀에 있는 동안의 SINR은 대부분 추정값이다. 그래서 S2 결과는 <b>탐색적 결과</b>로 표시하고, 주 결론은 S1으로 낸다. S2에서 좋은 결과가 나오면 앱에서 주파수 간 측정을 늘려 데이터를 더 모은 뒤 다시 확인한다.</div>
+      <div class="note"><b>미리 적어 두는 예상.</b> 재생 환경에서 행동이 바꾸는 것은 "지금 어느 셀에 있나"뿐이다. 그래서 이 문제는 긴 계획보다 상황별 판단에 가깝고, 튜닝 규칙이 강할 수 있다(1차 시도에서도 튜닝 규칙이 HO 101→72, 핑퐁 30→3을 냈다). 강화학습이 튜닝 규칙을 못 이기면 그것도 중요한 결론으로 그대로 보고한다.</div>
+    </div>
+  </div>
+
+  <!-- 6 보상·손실 -->
+  <div class="card" id="loss">
+    <div class="num">06</div>
+    <h2>보상·벌점·학습 손실 설계</h2>
+    <p>모델이 "무엇을 잘하면 점수를 받고, 무엇을 잘못하면 깎이는지"를 정하는 부분이다. 정책(강화학습)은 <b>보상</b>을 크게 만들도록 배우고, 예측 모델(분류·회귀)은 <b>손실</b>을 작게 만들도록 배운다. 아래 값은 실행 전에 고정하고, 결과를 본 뒤에는 바꾸지 않는다.</p>
+
+    <h3>설계 원칙 세 가지</h3>
+    <ul>
+      <li><b>행이 아니라 "건"과 "초"로 센다.</b> 측정 간격이 1~5초로 섞여 있다. 행마다 벌점을 주면 촘촘히 기록된 구간이 더 많이 벌점을 받는다. 그래서 이벤트(HO·핑퐁)는 건당, 상태(약전계·신호 손실)는 지속 시간(초)에 비례해 준다.</li>
+      <li><b>목표와 제약을 나눈다.</b> 줄이고 싶은 것(HO·핑퐁)은 고정 벌점이다. 지켜야 할 선(약전계·신호 손실·SINR 손실)은 "허용치"로 정하고, 그 선을 넘으면 벌점이 저절로 커진다.</li>
+      <li><b>제약 벌점의 크기는 모델이 찾는다.</b> 1차 시도처럼 가중치 후보를 사람이 고르지 않는다. 학습 중에 허용치를 넘으면 벌점을 올리고, 여유가 있으면 내리는 <b>자동 조정(라그랑주 방식)</b>을 쓴다.</li>
+    </ul>
+
+    <h3>정책 보상: 결정 사이 구간마다 아래를 더한다</h3>
+    <div class="tbl"><table>
+      <tr><th>항목</th><th>계산</th><th class="c">크기</th><th>정하는 방법과 이유</th></tr>
+      <tr><td><b>핸드오버</b></td><td>이동 1건마다</td><td class="c">−1</td><td>고정. 모든 벌점의 기준 단위</td></tr>
+      <tr><td><b>핑퐁</b></td><td>30초 안에 원래 셀로 돌아간 이동 1건마다 추가</td><td class="c">−4</td><td>고정. 핑퐁 1건이 총 −5가 된다. 목표가 HO 30%, 핑퐁 80% 감소라 핑퐁을 더 무겁게 둔다. 2·8로 바꿔 보는 민감도 확인을 한다</td></tr>
+      <tr><td><b>강제 이동</b></td><td>보류하다가 원래 셀이 목록에서 사라져 강제로 옮긴 1건마다 추가</td><td class="c">−3</td><td>고정. 실제 망이라면 연결이 끊겼을 수도 있는 상황이라, 무리한 보류를 막는다</td></tr>
+      <tr><td><b>약전계</b></td><td>서빙 RSRP ≤ −105 dBm인 시간(초)</td><td class="c">−λ<sub>약</sub> × 초</td><td>자동 조정. 허용치: 실제 망 대비 약전계 비율 증가 ≤ ε (0단계에서 확정, 예: +0.2%p)</td></tr>
+      <tr><td><b>RSRP 손실</b></td><td>max(0, 실제 망 RSRP − 정책 셀 RSRP) dB × 초</td><td class="c">−λ<sub>RSRP</sub> × dB·초</td><td>자동 조정. 허용치: 평균 1 dB. <b>S1에서만</b> 쓴다(같은 주파수끼리라 비교할 수 있다)</td></tr>
+      <tr><td><b>SINR 손실</b></td><td>max(0, 실제 망 SINR − 정책 셀 SINR) dB × 초</td><td class="c">−λ<sub>SINR</sub> × dB·초</td><td>자동 조정. 허용치: 평균 1 dB. S1에서는 보조 제약이고, <b>S2에서는 주 품질 제약</b>이다(대역이 달라도 비교할 수 있다). 정책 셀 SINR은 실측이 있으면 실측, 없으면 추정기 값을 쓴다</td></tr>
+      <tr><td><b>할인</b></td><td>미래 보상을 γ<sup>경과 초</sup>로 줄인다</td><td class="c">γ = 0.97/초</td><td>고정. 반감기가 약 23초라 30초 핑퐁 창 안의 결과까지 현재 결정에 반영된다. 1차 시도는 행 기준이었다</td></tr>
+    </table></div>
+
+    <h3>자동 조정(라그랑주 방식)은 이렇게 움직인다</h3>
+    <ul>
+      <li>λ는 모두 0에서 시작한다. 처음에는 HO·핑퐁만 줄이려고 해서 보류를 많이 한다.</li>
+      <li>학습을 한 바퀴 돌 때마다 <b>학습 세션 안의 검증 데이터</b>에서 약전계 증가, RSRP 손실, SINR 손실을 잰다.</li>
+      <li>허용치를 넘은 항목의 λ를 올리고, 여유가 있는 항목의 λ는 내린다(0 아래로는 안 내려간다): λ ← max(0, λ + η × (측정값 − 허용치)), η는 고정.</li>
+      <li>그러면 모델은 "선을 넘지 않는 범위 안에서 HO·핑퐁을 최대한 줄이는" 지점을 스스로 찾아간다. 사람은 선만 정하고 가중치는 정하지 않는다.</li>
+      <li>학습이 끝나면 λ를 고정하고 평가 세션에 적용한다. 평가 세션은 λ 조정에 쓰지 않는다.</li>
+      <li>Double DQN·PPO·표 Q-learning·직접 읽기(E) 모두 같은 방식으로 조정해서 공정하게 비교한다.</li>
+    </ul>
+
+    <h3>정책 모델별 학습 손실과 주요 설정</h3>
+    <div class="tbl"><table>
+      <tr><th>모델</th><th>학습 손실 (무엇을 줄이나)</th><th>주요 설정 (탐색 범위)</th></tr>
+      <tr><td><b>Double DQN</b></td><td>TD 오차의 Huber 손실. 목표값은 보상 + γ<sup>Δt</sup> × Q<sub>목표망</sub>(다음 상태, 온라인망이 고른 행동)이다. 행동은 온라인망이 고르고 점수는 목표망이 매겨서 부풀림을 줄인다</td><td>은닉층 2 × {64, 128} · 학습률 {3e-4, 1e-3} · 리플레이 5만 · 목표망 소프트 갱신 τ=0.01 · ε 1.0→0.05 감소</td></tr>
+      <tr><td><b>PPO</b></td><td>잘린 대리 목적(clip ε=0.2) + 0.5 × 가치 오차(MSE) − 0.01 × 엔트로피. 정책이 한 번에 20% 넘게 바뀌지 않게 막고, 엔트로피로 너무 일찍 한 행동에 굳는 것을 막는다</td><td>은닉층 2 × {64, 128} · 학습률 {1e-4, 3e-4} · GAE λ=0.95 · 배치당 4회 갱신 · 미니배치 256</td></tr>
+      <tr><td><b>표 Q-learning</b></td><td>표 갱신: Q ← Q + α(보상 + γ<sup>Δt</sup>·max Q′ − Q)</td><td>상태 칸: 서빙−이웃 차이 5칸 × 유지시간 4칸 × 최근 이동 3칸 · α {0.05, 0.1} · ε 0.1→0.01</td></tr>
+      <tr><td><b>튜닝 규칙</b></td><td>학습 없음. 검증 데이터에서 아래 범위를 전부 시험한다</td><td>히스테리시스 0~8 dB · 유지 조건(TTT) {0, 5, 10}초 · 최근 떠난 셀 추가 dB {0, 2, 4, 6} · S2용: 서빙 SINR 하한 × 다른 대역 RSRQ 하한</td></tr>
+    </table></div>
+
+    <h3>예측 모델별 학습 손실과 주요 설정</h3>
+    <div class="tbl"><table>
+      <tr><th>단계·모델</th><th>학습 손실</th><th>주요 설정 (탐색 범위)</th></tr>
+      <tr class="grp"><td colspan="3">1단계 위험 판단: 정답이 드물다(핑퐁 약 16%) → 양성 가중으로 균형을 맞추고, 학습 뒤 확률을 보정한다</td></tr>
+      <tr><td><b>Logistic</b></td><td>로그 손실 + L2 규제, 클래스 균형 가중</td><td>규제 강도 C {0.01, 0.1, 1, 10}</td></tr>
+      <tr><td><b>XGBoost</b></td><td>이진 로그 손실, scale_pos_weight = 음성 수 / 양성 수(약 5)</td><td>깊이 {3, 5} · 학습률 {0.03, 0.1} · min_child_weight {5, 20} · 조기 종료 50회. 1차 시도에서 과적합해 잎 최소 크기를 크게 잡는다</td></tr>
+      <tr><td><b>LightGBM</b></td><td>이진 로그 손실, scale_pos_weight 같음</td><td>잎 수 {15, 31} · 잎 최소 표본 {20, 50} · 학습률 {0.03, 0.1} · 특징 샘플링 0.8 · 조기 종료 50회</td></tr>
+      <tr><td><b>GRU</b></td><td>이진 교차 엔트로피, pos_weight 약 5</td><td>은닉 {32, 64} · 1층 · 드롭아웃 0.2 · AdamW 1e-3 · 조기 종료(5회 개선 없으면)</td></tr>
+      <tr><td>공통</td><td colspan="2">학습 뒤 내부 검증 데이터로 확률을 보정한다(Platt 방식). 모델 고르기는 내부 검증 PR-AUC 기준이다.</td></tr>
+      <tr class="grp"><td colspan="3">2단계 신호 예측: RSRP에는 측정 튐이 있다 → 큰 오차 몇 개가 학습을 끌고 가지 않도록 Huber 손실을 쓴다</td></tr>
+      <tr><td><b>현재값 유지 · 기울기 연장</b></td><td>학습 없음 (기준선)</td><td>기울기 연장은 최근 {10, 20, 30}초 기울기</td></tr>
+      <tr><td><b>LightGBM</b></td><td>Huber 손실, δ = 3 dB</td><td>잎 수 {15, 31} · 잎 최소 표본 {20, 50} · 학습률 {0.03, 0.1} · 조기 종료</td></tr>
+      <tr><td><b>GRU · LSTM</b></td><td>Huber 손실, δ = 3 dB. 정답이 없는 표본(같은 셀을 못 찾음)은 마스크로 뺀다</td><td>은닉 {32, 64} · 1층 · 드롭아웃 0.2 · AdamW 1e-3 · 조기 종료</td></tr>
+      <tr class="grp"><td colspan="3">0단계 SINR 추정기</td></tr>
+      <tr><td><b>선형식 · LightGBM</b></td><td>Huber 손실, δ = 2 dB. 서빙 실측 SINR이 정답</td><td>LightGBM은 위와 같은 범위. 고르기는 "핸드오버 직전 추정 vs 직후 실측" MAE 기준</td></tr>
+    </table></div>
+    <div class="note"><b>설정 탐색 예산.</b> 모든 모델은 위 범위에서 <b>최대 8개 후보</b>만 시험한다. 고르는 기준은 학습 세션 안의 검증 데이터로만 잰다. 정책은 "허용치를 지킨 후보 중 HO·핑퐁 감소가 큰 것"을 고른다. 후보 수가 같으니 "더 많이 튜닝해서 이겼다"는 차이를 줄일 수 있다.</div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card" id="combo">
+    <div class="num">07</div>
+    <h2>조합 설계: 모든 조합을 다 돌리나?</h2>
+    <p><b>아니다.</b> 1·2단계 모델은 전부 단독으로 비교하지만, 정책에는 단계마다 대표 하나만 붙인다. 모두 곱하면 위험 4 × 신호 5 × 정책 2 = 40개(D 구성만)인데, 31세션으로는 칸 사이 차이 대부분이 잡음이다. 칸이 많을수록 우연히 좋아 보이는 칸도 생긴다.
+      대표를 검증 데이터로 미리 정한 규칙에 따라 고르면 "좋은 것만 골라 붙였다"는 편향도 생기지 않는다.</p>
+
+    <div class="total">
+      <div><div class="k">1단계 단독 비교</div><div class="v">4</div><div class="s">위험 판단 모델</div></div>
+      <div><div class="k">2단계 단독 비교</div><div class="v">5</div><div class="s">신호 예측 (기준선 2 포함)</div></div>
+      <div><div class="k">정책 주 실험</div><div class="v">8</div><div class="s">입력 4가지 × 정책 2</div></div>
+      <div><div class="k">기준선</div><div class="v">4</div><div class="s">실제 망·A3·튜닝·표 Q</div></div>
+      <div><div class="k">확장 S2</div><div class="v">4</div><div class="s">다른 주파수까지 결정 (탐색적)</div></div>
+    </div>
+
+    <h3>주 실험: 입력을 켜고 끄는 4가지 × 정책 2 = 8개 구성</h3>
+    <div class="tbl"><table>
+      <tr><th>구성</th><th>현재 상태</th><th class="c">1단계 위험</th><th class="c">2단계 예측</th><th>답하는 질문</th><th>정책</th></tr>
+      <tr><td><b>A</b> 현재만</td><td>○</td><td class="c">–</td><td class="c">–</td><td>예측 없이 어디까지 되나</td><td>Double DQN, PPO</td></tr>
+      <tr><td><b>B</b> + 신호</td><td>○</td><td class="c">–</td><td class="c">○</td><td>미래 신호를 알면 도움이 되나</td><td>Double DQN, PPO</td></tr>
+      <tr><td><b>C</b> + 위험</td><td>○</td><td class="c">○</td><td class="c">–</td><td>핑퐁 위험 확률이 도움이 되나</td><td>Double DQN, PPO</td></tr>
+      <tr><td><b>D</b> + 둘 다</td><td>○</td><td class="c">○</td><td class="c">○</td><td>둘이 서로 보완하나, 겹치나</td><td>Double DQN, PPO</td></tr>
+    </table></div>
+    <p style="margin-top:10px">읽는 법은 이렇다. B − A가 신호 예측의 효과, C − A가 위험 판단의 효과다. D가 B·C보다 낫지 않으면 두 정보가 겹친다는 뜻이다. Double DQN과 PPO에서 같은 경향이 나와야 정책 종류와 상관없는 효과라고 말할 수 있다.</p>
+
+    <h3>보조 실험 (주 결론이 흔들리지 않는지 확인용)</h3>
+    <div class="tbl"><table>
+      <tr><th>보조 실험</th><th>내용</th><th class="c">구성 수</th><th>확인하는 것</th></tr>
+      <tr><td>대표 교체</td><td>B·C·D의 대표 예측기를 2위 모델로 바꿈 (× 정책 2)</td><td class="c">6</td><td>결론이 특정 예측기에 달린 것인지</td></tr>
+      <tr><td>보류 가정</td><td>주 실험 8개를 G2·G3에서 다시 학습·평가</td><td class="c">16</td><td>결론이 재생 가정 때문인지</td></tr>
+      <tr><td>직접 읽기 (E)</td><td>예측 단계 없이 GRU가 과거 60초를 직접 읽고 정책과 함께 학습 (Double DQN, PPO)</td><td class="c">2</td><td>예측을 따로 거치는 것이 필요한지</td></tr>
+      <tr><td>표 Q + 위험</td><td>핑퐁 위험을 3칸(낮음·중간·높음)으로 잘라 표 Q에 추가</td><td class="c">1</td><td>단순한 방법으로도 위험 정보를 쓸 수 있는지</td></tr>
+    </table></div>
+    <h3>확장 실험 S2: 다른 주파수 이동까지 정책이 결정</h3>
+    <div class="tbl"><table>
+      <tr><th>구성</th><th>입력</th><th>정책</th><th class="c">구성 수</th><th>비교 대상</th></tr>
+      <tr><td><b>A-S2</b></td><td>현재 상태 + 다른 주파수 정보</td><td>Double DQN, PPO</td><td class="c">2</td><td rowspan="2">실제 망(대역 우선순위 기반 주파수 간 이동), S2용 튜닝 규칙, 같은 구성의 S1 결과</td></tr>
+      <tr><td><b>D-S2</b></td><td>A-S2 + 위험 확률 + 신호 예측</td><td>Double DQN, PPO</td><td class="c">2</td></tr>
+    </table></div>
+    <p style="margin-top:10px">A와 D만 넣는 이유는 이렇다. S2의 질문은 "다른 주파수 결정까지 맡기면 나아지나"이므로, 예측이 없는 끝(A)과 다 있는 끝(D)만 보면 충분하다. B·C까지 넣으면 주파수 간 이동 93건으로는 구성 사이 차이를 구분하기 어렵다.</p>
+    <p style="margin-top:10px"><b>돌리지 않는 것:</b> 모든 모델 × 모든 예측 시점 × 모든 보상 × 모든 학습률을 다 곱하는 탐색. 예측 시점은 10초로 고정한다. 5·15초는 2단계 단독 비교에서만 본다.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="card" id="train">
+    <div class="num">08</div>
+    <h2>학습·평가 규칙: 공정하게 비교하기 위한 약속</h2>
+    <ul>
+      <li><b>세션 단위로 나눈다.</b> 31세션을 5묶음으로 나눠 돌아가며 평가한다(바깥 5분할). 같은 날 같은 경로를 반복한 세션은 같은 묶음에 넣어서, 경로를 외워 맞히는 일을 막는다. 이동수단 비율은 묶음마다 비슷하게 맞춘다.</li>
+      <li><b>평가 묶음은 고를 때 쓰지 않는다.</b> 모델 고르기, 보상 가중치, 튜닝 규칙의 값은 모두 학습 묶음 안을 다시 나눈 검증 데이터로만 정한다.</li>
+      <li><b>예측값은 "안 본 데이터"로 만든다.</b> 정책 학습에 넣는 1·2단계 출력은 학습 세션 안에서 다시 나눠, 예측기가 학습할 때 보지 않은 세션에 대해 낸 값만 쓴다. 예측기가 외운 답을 정책이 받으면 실제보다 좋아 보이기 때문이다.</li>
+      <li><b>시드 5개를 반복한다.</b> 신경망은 시작값에 따라 결과가 달라서, 분할마다 시드 5개로 돌리고 평균과 흔들림 폭을 같이 보여준다. 시드를 골라내지 않는다.</li>
+      <li><b>예산을 맞추고 기록한다.</b> 정책마다 환경 경험 수 상한을 같게 두고, 업데이트 수·학습 시간·예측기 학습 비용을 함께 기록한다. epoch가 같다고 계산량이 같다고 하지 않는다.</li>
+      <li><b>새 세션은 잠가 둔다.</b> 이제부터 새로 측정하는 세션(목표: 차량·지하철·도보 각 2개 이상)은 열어 보지 않고 두었다가, 모든 설정을 고정한 뒤 <b>한 번만</b> 평가한다.</li>
+      <li><b>설정과 결과를 함께 남긴다.</b> 실행마다 데이터 해시, 분할, 시드, 고른 설정, 고른 이유를 파일로 남긴다.</li>
+    </ul>
+  </div>
+
+  <!-- 8 -->
+  <div class="card" id="show">
+    <div class="num">09</div>
+    <h2>결과는 이렇게 보여준다</h2>
+    <div class="tbl"><table>
+      <tr><th>번호</th><th>그림·표</th><th>보여주는 것</th><th>읽는 목적</th></tr>
+      <tr><td>R1</td><td>재생 환경 점검표</td><td>원본 재현 여부, 보류 가시율, 이웃→서빙 보정값 분포</td><td>재생 결과를 믿어도 되는지</td></tr>
+      <tr><td>R2</td><td>위험 판단 비교</td><td>모델별 PR-AUC·Brier 표, PR 곡선, 보정 곡선</td><td>확률을 믿고 정책에 넣어도 되는지</td></tr>
+      <tr><td>R3</td><td>신호 예측 비교</td><td>예측 시점 × 모델 MAE 표, 이동수단별 막대, 실제/예측 시계열 예시</td><td>언제 맞고 언제 틀리는지, 기준선을 이겼는지</td></tr>
+      <tr><td>R4</td><td>정책 핵심 결과표</td><td>12행(기준선 4 + 주 실험 8) × 4개 목표 지표, 95% 구간</td><td>목표를 달성했는지</td></tr>
+      <tr><td>R5</td><td>켜고 끄기 효과 그림</td><td>정책별 A→B→C→D 막대(HO 감소, 신호 손실)</td><td>어떤 정보가 효과를 냈는지</td></tr>
+      <tr><td>R6</td><td>절충 산점도</td><td>가로 신호 손실 dB, 세로 HO 감소 %, 목표 영역 음영, 시드별 작은 점</td><td>HO를 줄이려고 신호를 희생했는지</td></tr>
+      <tr><td>R7</td><td>보류 가정 민감도</td><td>같은 구성의 G1·G2·G3 결과를 나란히, 뒤집힌 결론 표시</td><td>결론이 가정에 달린 것인지</td></tr>
+      <tr><td>R8</td><td>실패 사례</td><td>특정 구간의 입력·예측·행동·결과 타임라인</td><td>평균에 가려진 문제</td></tr>
+      <tr><td>R9</td><td>계산 비용표</td><td>학습·추론 시간, 모델 크기</td><td>실제로 쓸 만한지</td></tr>
+      <tr><td>R10</td><td>새 세션 최종 검증</td><td>고정한 후보와 기준선을 잠가 둔 새 세션에서 1회 평가</td><td>일반화되는지</td></tr>
+      <tr><td>R11</td><td>SINR 추정기 점검</td><td>핸드오버 직전 추정 vs 직후 실측 산점도, 대역별 MAE, 평가 시간 중 실측·추정 SINR 비율</td><td>SINR 결과를 얼마나 믿을 수 있는지</td></tr>
+      <tr><td>R12</td><td>주파수 간 이동 분석 (S2)</td><td>정책이 다른 대역을 고른 상황(대역 쌍·RSRQ·추정 SINR), 실제 망 선택과의 차이, 이동 뒤 SINR 변화</td><td>모델이 찾은 대역 간 판단 기준이 무엇인지</td></tr>
+      <tr><td>R13</td><td>자동 조정 기록</td><td>학습 진행에 따른 λ<sub>약</sub>·λ<sub>RSRP</sub>·λ<sub>SINR</sub> 변화와 제약 지표 변화</td><td>벌점이 어디서 자리 잡았는지, 수렴했는지</td></tr>
+    </table></div>
+    <h3>R4 정책 핵심 결과표 (틀만 있음, 모두 미실행)</h3>
+    <div class="tbl"><table>
+      <tr><th>구성</th><th>정책</th><th class="c">HO 감소</th><th class="c">핑퐁 감소</th><th class="c">약전계 변화 %p</th><th class="c">RSRP 손실 dB</th><th class="c">SINR 손실 dB</th><th class="c">SINR ≤ 0 dB 변화 %p</th><th class="c">목표</th></tr>
+      <tr class="grp"><td colspan="9">기준선</td></tr>
+      <tr><td>실제 망</td><td>–</td><td class="na">0% (기준)</td><td class="na">0% (기준)</td><td class="na">0 (기준)</td><td class="na">0 (기준)</td><td class="na">0 (기준)</td><td class="na">0 (기준)</td><td class="na">–</td></tr>
+      <tr><td>고정 A3</td><td>규칙</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr><td>튜닝 규칙</td><td>규칙</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr><td>표 Q-learning</td><td>표 Q</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr class="grp"><td colspan="9">주 실험 (S1)</td></tr>
+      <tr><td>A 현재만</td><td>Double DQN / PPO</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr><td>B + 신호</td><td>Double DQN / PPO</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr><td>C + 위험</td><td>Double DQN / PPO</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr><td>D + 둘 다</td><td>Double DQN / PPO</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+      <tr class="grp"><td colspan="9">확장 실험 (S2, 탐색적)</td></tr>
+      <tr><td>A-S2 · D-S2</td><td>Double DQN / PPO</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">참고</td><td class="na">미실행</td><td class="na">미실행</td><td class="na">–</td></tr>
+    </table></div>
+    <p style="margin-top:8px;font-size:13px;color:var(--ink-3)">실제 표에서는 정책마다 한 행씩, S1 12행과 S2 4행이다. 감소율은 실제 망 대비이고, 세션 단위 부트스트랩 95% 구간과 함께 표시한다. SINR 칸은 실측 구간 값과 추정 포함 값을 나눠 적는다. S2의 RSRP 손실은 대역이 섞여 직접 비교할 수 없어서 참고로만 둔다.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="card" id="success">
+    <div class="num">10</div>
+    <h2>성공 기준과 판정 순서</h2>
+    <div class="tbl"><table>
+      <tr><th>순서</th><th>기준</th><th>왜 이 순서인가</th></tr>
+      <tr><td>1</td><td><b>약전계 비율 증가 없음</b></td><td rowspan="2">보호 조건이다. 모든 이동을 보류하면 HO 감소는 공짜로 얻을 수 있어서, 신호를 지켰는지를 먼저 본다.</td></tr>
+      <tr><td>2</td><td><b>평균 신호 손실 1 dB 이내</b></td></tr>
+      <tr><td>3</td><td><b>핸드오버 30% 이상 감소</b></td><td rowspan="2">1·2를 통과한 구성끼리만 비교한다.</td></tr>
+      <tr><td>4</td><td><b>핑퐁 80% 이상 감소</b></td></tr>
+      <tr><td>보조</td><td><b>평균 SINR 손실 1 dB 이내 · SINR ≤ 0 dB 시간 비율 증가 없음</b></td><td>실제 데이터 전송 품질에 더 가까운 지표다. 다만 실제 망과 다른 셀에 있는 시간에는 추정값이라, S1에서는 보조 조건으로 실측 구간과 추정 포함 값을 따로 판정한다. <b>S2에서는 2번(RSRP 손실) 대신 이 SINR 조건을 쓴다</b>. 대역 사이에서는 RSRP를 비교할 수 없기 때문이다.</td></tr>
+    </table></div>
+    <ul>
+      <li><b>"증가 없음"의 기준을 미리 정한다.</b> 1차 시도는 약전계 변화의 95% 구간이 0을 걸쳐서(약 −0.28 ~ +0.21%p) 판정이 안 됐다. 이번에는 허용 폭(예: 구간 상한 +0.2%p)을 0단계가 끝나면 확정하고, 실험 결과를 본 뒤에는 바꾸지 않는다.</li>
+      <li><b>강한 결과:</b> G1·G2·G3 세 가정 모두에서 4개 기준을 충족하고, 튜닝 규칙보다 나을 때.</li>
+      <li><b>"AI가 필요했다"고 말하려면:</b> 같은 기준에서 튜닝 규칙과 표 Q-learning보다 확실히 나아야 한다.</li>
+      <li>점수 하나로 순위를 매기지 않는다. 기준 충족 여부와 절충 관계(R6)를 먼저 보여준다.</li>
+    </ul>
+  </div>
+
+  <!-- 10 -->
+  <div class="card" id="order">
+    <div class="num">11</div>
+    <h2>진행 순서와 다음 단계로 넘어가는 조건</h2>
+    <ol class="steps">
+      <li><b>0단계: 공통 준비·재생 환경·SINR 추정기</b><span class="when">넘어가는 조건: 0단계 완료 조건 ①~⑦ 통과, G2 보정값·대역 간 보정값·"증가 없음" 허용 폭 확정</span></li>
+      <li><b>1·2단계 단독 비교 (동시에 진행 가능)</b><span class="when">넘어가는 조건: 모델별 결과표(R2·R3) 완성, 대표·2위를 미리 정한 규칙으로 선정</span></li>
+      <li><b>기준선 4개 실행</b><span class="when">넘어가는 조건: 튜닝 규칙의 검증 선택 이력 보존 → 강화학습이 넘어야 할 기준 확정</span></li>
+      <li><b>정책 주 실험 8개 구성 (G1)</b><span class="when">넘어가는 조건: 5분할 × 5시드 완료, R4·R5·R6 작성</span></li>
+      <li><b>보조 실험 (대표 교체, G2·G3, 직접 읽기, 표 Q + 위험, 핑퐁 벌점 2·8)</b><span class="when">넘어가는 조건: R7 작성, 결론이 뒤집히는 조건 정리</span></li>
+      <li><b>확장 실험 S2 (다른 주파수까지 결정)</b><span class="when">넘어가는 조건: R11·R12 작성, 탐색적 결과로 표시해 S1 결론과 분리</span></li>
+      <li><b>새 세션으로 최종 1회 검증</b><span class="when">후보와 기준선을 고정하고 잠가 둔 세션을 연다 → R10, 적용 범위와 한계 정리</span></li>
+    </ol>
+    <p style="margin-top:6px"><b>보류한 것:</b> CQL·IQL 같은 오프라인 강화학습. 실제 망의 행동 기록만으로는 "보류했을 때" 데이터가 없어서 같은 조건으로 비교할 수 없다. 별도 연구로 둔다. Jev(유료 판단 모델)는 결제 후 1단계 비교에 같은 분할로 추가할 자리를 남겨 둔다.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="card" id="words">
+    <div class="num">12</div>
+    <h2>용어 풀이</h2>
+    <div class="tbl"><table>
+      <tr><th>용어</th><th>쉬운 설명</th></tr>
+      <tr><td>핑퐁</td><td>셀을 옮긴 뒤 30초 안에 원래 셀로 되돌아가는 이동. 불필요한 핸드오버의 대표 사례</td></tr>
+      <tr><td>약전계</td><td>서빙 RSRP가 −105 dBm 이하인 상태</td></tr>
+      <tr><td>RSRP · RSRQ · SINR</td><td>RSRP는 내 셀 신호의 세기, RSRQ는 그 세기가 전체 수신 전력에서 차지하는 몫(부하·간섭이 많으면 낮아짐), SINR은 신호 ÷ (간섭 + 잡음)이다. 대역이 달라도 SINR은 "실제로 얼마나 깨끗하게 받나"라는 같은 의미라서 비교할 수 있다</td></tr>
+      <tr><td>S1 · S2 행동 공간</td><td>S1은 같은 주파수 이동만 정책이 정한다. S2는 다른 주파수 이동까지 정책이 정한다</td></tr>
+      <tr><td>보상 · 벌점</td><td>정책이 받는 점수. 좋은 결과는 +, 나쁜 결과(HO·핑퐁·약전계)는 −. 정책은 점수 합이 커지도록 배운다</td></tr>
+      <tr><td>손실</td><td>예측 모델의 틀린 정도. 모델은 이 값이 작아지도록 배운다</td></tr>
+      <tr><td>자동 조정(라그랑주)</td><td>"넘으면 안 되는 선"을 넘을 때마다 그 항목의 벌점을 키우고, 여유가 있으면 줄이는 방식. 사람이 가중치를 고르지 않아도 선을 지키는 균형점을 찾는다</td></tr>
+      <tr><td>Huber 손실</td><td>작은 오차는 제곱으로, 큰 오차는 절댓값으로 세는 손실. 측정 튐 몇 개가 학습을 끌고 가는 것을 막는다</td></tr>
+      <tr><td>교차 엔트로피 · 양성 가중</td><td>확률 예측이 정답과 얼마나 다른지 재는 분류 손실. 정답(핑퐁)이 드물면 그 표본에 가중을 더 줘서 무시되지 않게 한다</td></tr>
+      <tr><td>할인율 γ</td><td>나중에 받는 보상을 얼마나 덜 쳐 줄지. 0.97/초면 23초 뒤 보상은 절반으로 친다</td></tr>
+      <tr><td>조기 종료</td><td>검증 성능이 더 나아지지 않으면 학습을 멈추는 것. 학습 데이터만 외우는 과적합을 막는다</td></tr>
+      <tr><td>재생 환경</td><td>측정 로그를 시간순으로 다시 돌리면서 "이때 다르게 판단했다면?"을 계산하는 시뮬레이터</td></tr>
+      <tr><td>보류 가정</td><td>정책이 이동을 보류했을 때 원래 셀 신호를 어떻게 채울지에 대한 약속. 로그에 직접 없는 값이라 가정이 필요하다</td></tr>
+      <tr><td>A3 규칙</td><td>이웃 셀이 서빙보다 일정 dB 이상 세지면 옮기는 표준 핸드오버 규칙(3GPP 이벤트 A3)</td></tr>
+      <tr><td>PR-AUC</td><td>"핑퐁이라고 한 것 중 진짜 비율"과 "진짜 핑퐁 중 잡아낸 비율"을 함께 보는 점수. 정답이 드물 때 ROC-AUC보다 정직하다</td></tr>
+      <tr><td>Brier 점수 · 보정</td><td>확률이 실제 빈도와 맞는지. "70%"라고 한 경우들 중 실제로 70%가 일어나야 잘 보정된 것이다</td></tr>
+      <tr><td>MAE</td><td>예측과 실제의 차이(dB)를 평균한 값. 낮을수록 좋다</td></tr>
+      <tr><td>Double DQN</td><td>행동별 장기 점수를 신경망으로 추정하는 강화학습. 점수를 고르는 망과 매기는 망을 나눠 부풀림을 줄인다</td></tr>
+      <tr><td>PPO</td><td>행동 확률을 직접 배우는 강화학습. 한 번에 정책이 너무 크게 바뀌지 않게 제한한다</td></tr>
+      <tr><td>표 Q-learning</td><td>상태를 몇 칸으로 잘라 칸마다 점수를 표에 적는 가장 단순한 강화학습. 해석은 쉽지만 입력이 늘면 표가 폭발한다</td></tr>
+      <tr><td>시드</td><td>신경망 시작값을 정하는 번호. 같은 설정도 시드에 따라 결과가 달라서 여러 번 돌린다</td></tr>
+      <tr><td>누수</td><td>판단 시점에는 알 수 없는 정보(미래 값, 평가 데이터 정답)가 학습에 섞여 결과가 실제보다 좋아 보이는 문제</td></tr>
+    </table></div>
+  </div>
+
+  <!-- 12 -->
+  <div class="card" id="v1">
+    <div class="num">13</div>
+    <h2>1차 시도 자료 (보관)</h2>
+    <p>1차 시도 결과는 버리지 않고 비교 기록으로 둔다. 2차 결과와 같은 표에 섞지 않는다.</p>
+    <ul>
+      <li>결과 페이지: <a href="model_research.html">10/28 모델 연구</a> · <a href="policy_research.html">11/01 정책 심화 연구</a> · <a href="all_model_policy.html">전체 모델·정책 결합 비교</a> · <a href="research_progress.html">쉽게 읽는 진행</a> · <a href="research_stages.html">4단계 점검</a></li>
+      <li>코드: <code>analysis/research_v1/</code> (설명은 같은 폴더의 <code>README.md</code>)</li>
+      <li>결과 데이터: <code>analysis_output/policy_v2/</code>, <code>analysis_output/stats/model_compare.json</code></li>
+      <li>2차 연구 코드는 <code>analysis/research_v2/</code>에 새로 만든다(예정).</li>
+    </ul>
+  </div>
+
+  <footer>NetworkTrackerApp · 핸드오버 AI 연구 2차 설계 · 2026-11-05 작성 · 실행 결과가 나오면 이 페이지의 틀을 채우지 않고 결과 페이지를 따로 만든다.</footer>
+</div>
+</body>
+</html>

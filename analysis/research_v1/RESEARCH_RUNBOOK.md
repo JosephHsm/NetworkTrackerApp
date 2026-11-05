@@ -1,5 +1,7 @@
 # 핸드오버 연구 재실행·보고서 안내
 
+> 2026-11-05: 이 문서와 코드는 `analysis/research_v1/`로 옮겨졌다(1차 시도 보관). 아래 `analysis/...` 경로는 `analysis/research_v1/...`로 읽는다. 새 연구 설계는 `viz_build/research_architecture.html`.
+
 현재 비교 대상은 Q, DQN, PPO, CQL, DQN+XGBoost, DQN+RNN, DQN+LSTM, DQN+GRU, Rule입니다.
 예측기 네 종류가 동일한 과거 12행으로 10초 뒤 관측 서빙 RSRP 변화량을 예측해 같은 DQN 입력에 들어갑니다.
 기존 10/28 예측 비교와 11/01 policy_v2 최종 평가는 별도 기록으로 보존합니다.

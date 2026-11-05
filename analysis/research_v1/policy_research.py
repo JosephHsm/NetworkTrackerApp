@@ -11,9 +11,11 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # analysis/ 공용 모듈 (ho_review)
 import ho_review as hr
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 GAMMA = .99  # discount per observed ROW, not per decision or second
 FIELDS = ('ho', 'pp', 'forced', 'rows', 'weak105', 'rsrp_sum', 'gap_sum')
 

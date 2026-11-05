@@ -55,7 +55,7 @@ def generate(when=None,archive=None):
             inclusive_note+=f' 마지막 완료 라운드: 선별 설정 {h["screening_configurations"]}개·확인 설정 {h["confirmation_configurations"]}개·정책 학습 {h["policy_fit_count"]}회, 합산 {h["seconds"]/60:.1f}분입니다.'
     md=f'''# 研究進捗_PLACEHOLDER
 
-작성 기준: {when} · 완료 배치 {state['completed_batches']}개 · 정량적 진행률을 임의로 부여하지 않았습니다.
+작성 기준: {when} · 과거 Q 중심 탐색 완료 배치 {state['completed_batches']}개 · 새 전체 모델 비교는 아래 별도 집계 · 정량적 진행률을 임의로 부여하지 않았습니다.
 
 ## 현재 위치를 먼저 말하면
 
@@ -104,7 +104,7 @@ def generate(when=None,archive=None):
 ### 남은 일
 
 - 반복 검증도 검증셋에 과적합될 수 있습니다. 최종 평가를 동결한 것과 새 데이터 일반화가 입증된 것은 다릅니다.
-- 모델마다 탐색 후보 수와 누적 탐색 횟수가 다릅니다. 특히 Q는 매번 실행하고 다른 정책은 순환하므로 총 탐색 예산이 같지 않습니다. 모델 자체의 우열을 주장하려면 예산을 맞춘 비교가 필요합니다.
+- 과거 Q 중심 순환 탐색에서는 Q를 매번 실행하고 다른 정책을 순환해 누적 탐색 예산이 달랐습니다. 현재 전체 모델 비교는 이 과거 탐색을 중단하고, 라운드마다 9계열의 후보 수와 확인 시드를 맞춥니다. 실제 계산량과 데이터 이용 방식의 차이는 별도로 남습니다.
 - 기존 policy_v2에는 XGBoost·RNN·LSTM 결합 비교가 빠졌고 Q 중심 보상 후보 선택의 제한이 있었습니다. 새 전체 모델 실험은 예측기 4종 결합과 모델별 독립 탐색으로 이 범위를 확장했습니다. 후보 수·시드는 맞췄지만 예측기 추가 학습, CQL/PPO의 데이터 이용 방식과 실제 계산량까지 같게 한 것은 아닙니다. 시간·학습 재생 행 수를 함께 기록합니다.
 - 일부 초기 지도학습 특징에는 핸드오버 직후 신호가 들어갑니다. 사후 진단에는 사용할 수 있지만 핸드오버 전 차단 성능을 주장하려면 그 시점에 알 수 없는 입력을 제외해야 합니다.
 - 초기 분류의 핑퐁 326건과 정책 재생의 353건은 집계·셀 식별 정의가 다릅니다. 논문에서는 문제별 정의를 명확히 쓰고 서로 같은 수치처럼 섞지 않아야 합니다.
@@ -167,6 +167,7 @@ DQN은 HO {d['ho_reduction']:.1%}, 핑퐁 {d['pp_reduction']:.1%} 감소, 평균
 
 ## 근거와 연결 문서
 
+- 현재 전체 모델 비교: outputs/all_model_policy/state.json, round_*/plan.json, progress.json, complete.json, fold별 선별·확인 기록, verification.json. 라운드 완료 여부와 설정 교체는 이 기록을 기준으로 집계합니다.
 - 초기 질문·연구 방향: C:\\Users\\admin\\NetworkTrackerApp\\핸드오버_AI_연구방향.md 및 viz_build/model_research.html의 RQ1~3·라벨 정의·한계.
 - 정책 설계·평가: analysis_output/policy_v2/manifest.json, summary.json, search.json, records.json.
 - 추가 탐색: outputs/policy_continuous/state.json, batch_*/plan.json, trials.json, confirmations.json, comparisons.json, verification.json.

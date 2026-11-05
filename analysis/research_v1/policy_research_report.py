@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 LABEL={'Network':'실제 망','A3':'고정 A3 · 3 dB','Rule':'검증으로 고른 규칙','Q':'표 Q-learning','DQN':'DQN','DQN+GRU':'DQN + GRU 예측','CQL':'CQL · 합성 고정 버퍼','PPO':'PPO'}
 ORDER=list(LABEL)
 def read(p):return json.loads(p.read_text(encoding='utf-8'))

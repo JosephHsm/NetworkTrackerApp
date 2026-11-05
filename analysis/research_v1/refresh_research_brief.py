@@ -28,7 +28,11 @@ def main():
     status='12개 배치 연속 기준 이상 개선이 없어 추가 계산을 쉬는 상태입니다. 검증 설계 변경이나 새 독립 평가가 필요합니다.' if state.get('status')=='plateau' else '검증 데이터에서 보상 설정을 추가 탐색 중입니다. 아직 최적 설정을 확정한 단계는 아닙니다.'
     inclusive_path=OUT/'all_model_policy/state.json'
     inclusive=load(inclusive_path) if inclusive_path.exists() else None
+    if inclusive:
+        from model_policy_sweep_report import generate as refresh_model_report
+        refresh_model_report(OUT/'all_model_policy')
     inclusive_note='전체 예측기 결합 비교는 아직 시작하지 않았습니다.'
+    since=[]
     model_scope='XGBoost·RNN·LSTM·GRU는 10/28 예측 비교를 마쳤고, 이전 정책 심화에는 GRU 결합만 포함했습니다. 이들은 너무 커서 제외한 것이 아닙니다.'
     inclusive_table='새 공통 비교의 완료 결과는 아직 없습니다.'
     if inclusive:
@@ -36,6 +40,10 @@ def main():
         status='전체 예측기·정책의 공통 비교를 진행하고 있습니다. 기존 Q 중심 순환 탐색은 과거 이력으로 보존합니다.'
         latest=inclusive['history'][-1] if inclusive['history'] else None
         since=[r for r in inclusive['history'] if r['round']>prior.get('inclusive_last_round',0)]
+        if since:
+            interval=f'지난 설명 문서 이후 전체 모델 비교 {len(since)}개 라운드를 완료했습니다. 선별 설정 {sum(r["screening_configurations"] for r in since)}개와 확인 설정 {sum(r["confirmation_configurations"] for r in since)}개를 비교했고, 분할별 설정을 {sum(r["updates"] for r in since)}곳 교체했습니다.'
+        else:
+            interval='지난 설명 문서 이후 새로 완료된 전체 비교 라운드는 없습니다. 진행 중인 라운드는 완료 횟수와 결과 표에 합산하지 않았습니다.'
         inclusive_note=f'새 공통 비교는 완료 라운드 {count}개입니다. 지난 설명 문서 이후 완료 라운드 {len(since)}개를 추가했습니다.'
         if latest:
             inclusive_note+=f' 마지막 완료 라운드는 9계열×{latest["folds"]}분할, 선별 설정 {latest["screening_configurations"]}개, 확인 설정 {latest["confirmation_configurations"]}개, 정책 학습 {latest["policy_fit_count"]}회, 실행 시간 합계 {latest["seconds"]/60:.1f}분입니다.'
@@ -69,7 +77,7 @@ def main():
     recent='\n'.join(f'- 배치 {h["batch"]}: Q-learning + {h["neural_family"]}, 후보 {h["trials"]}개, 설정 교체 {h["updates"]}곳, {h["seconds"]/60:.1f}분.' for h in history[-6:])
     md=f'''# 핸드오버 연구 진행 — 쉽게 읽는 최신 설명
 
-갱신: {when} · 완료 배치 {state['completed_batches']}개 · 이 문서는 3시간마다 갱신합니다.
+갱신: {when} · 과거 Q 중심 탐색 완료 배치 {state['completed_batches']}개 · 새 전체 모델 비교는 아래 별도 집계 · 이 문서는 3시간마다 갱신합니다.
 
 ## 이 연구는 무엇을 해결하려는 건가요?
 
@@ -89,7 +97,7 @@ def main():
 | 기존 연구와 차별점을 정하기 | 관련 문헌은 모았지만, 우리만의 핵심 기여를 더 명확히 정리해야 합니다. |
 | 비교 기준과 데이터 분리 | 고정 규칙·튜닝한 규칙·여러 학습 정책을 비교하며 학습/검증/평가 세션을 분리했습니다. |
 | 설정 탐색과 반복 학습 | 2시드 선별 후 기존 설정과 후보를 별도 5시드로 확인합니다. |
-| 왜 좋아졌는지 원인 분리 | GRU 유무 비교는 있지만, 보상 항목·강제 이동·상태 특징을 하나씩 바꾸는 체계적 실험은 더 필요합니다. |
+| 왜 좋아졌는지 원인 분리 | 공통 DQN 설정에서 예측기만 바꾼 비교를 보존했습니다. 보상 항목·강제 이동·상태 특징의 제거·민감도 실험은 더 필요합니다. |
 | 처음 보는 환경에서 최종 확인 | 새로운 날짜·경로의 외부 평가는 아직 없습니다. 실제 망 반응도 검증하지 않았습니다. |
 
 특히 현재 로그에는 ‘우리가 핸드오버를 보류했다면 실제 통신망이 어떻게 반응했을지’가 직접 기록되어 있지 않습니다. 재생 환경에서 줄어든 핑퐁 수를 실제 망에서 같은 만큼 줄일 수 있다고 바로 주장할 수 없는 이유입니다. 재생 환경의 관측 누락·강제 이동 처리에 따른 민감도를 확인하는 것이 중요한 후속 실험입니다.
@@ -220,6 +228,6 @@ DQN은 핸드오버 {d['ho_reduction']:.1%}, 핑퐁 {d['pp_reduction']:.1%}를 �
     from sync_research_hub import sync
     hub=sync()
     save(marker,json.dumps(dict(timestamp=now.timestamp(),time=when,last_batch=state.get('last_batch',state['completed_batches']),archive=archive,mirrored=mirror,inclusive_last_round=inclusive['completed_rounds'] if inclusive else 0,**stage),ensure_ascii=False,indent=2))
-    print(json.dumps(dict(status='UPDATED',time=when,new_batches=len(new),configurations=configs,weight_updates=changes,mirrored=mirror,**hub),ensure_ascii=False))
+    print(json.dumps(dict(status='UPDATED',time=when,legacy_new_batches=len(new),new_inclusive_rounds=len(since),inclusive_screening_configurations=sum(r['screening_configurations'] for r in since),inclusive_confirmation_configurations=sum(r['confirmation_configurations'] for r in since),inclusive_weight_updates=sum(r['updates'] for r in since),mirrored=mirror,**hub),ensure_ascii=False))
 
 if __name__=='__main__':main()
