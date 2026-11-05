@@ -314,6 +314,14 @@ def build_anchors(df, st, name=None):
     a = df[df["collect_trigger"] == "anchor"][cols]
     man = load_manual_anchors(name)
     if man is not None:
+        # station이 '-'로 시작하면 그 시각의 앱 앵커를 무시 (잘못 누른 태그, 원본 CSV는 그대로)
+        neg = man["anchor_station"].str.startswith("-")
+        for r in man[neg].itertuples():
+            hit = (a["datetime"] == r.datetime) & (a["anchor_station"] == r.anchor_station[1:])
+            print(f"  앱 앵커 무시: {r.datetime} {r.anchor_station[1:]}" + ("" if hit.any() else " (일치 없음)"))
+            a = a[~hit]
+        man = man[~neg]
+    if man is not None and len(man):
         print(f"  수동 앵커 {len(man)}개 추가: " + ", ".join(man['anchor_station']))
         a = pd.concat([a, man[cols]], ignore_index=True)
     a = a.sort_values("timestamp").reset_index(drop=True)
